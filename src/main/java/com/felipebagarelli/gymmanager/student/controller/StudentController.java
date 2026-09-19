@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 public class StudentController {
 
     private final StudentService studentService;
@@ -32,6 +31,11 @@ public class StudentController {
     public List<StudentProfileResponse> listStudentsByTrainer(@PathVariable Long trainerId,
                                                                @AuthenticationPrincipal Jwt jwt) {
         return studentService.listByTrainer(trainerId, jwt.getSubject());
+    }
+
+    @GetMapping("/api/v1/students/me")
+    public StudentProfileResponse getMyProfile(@AuthenticationPrincipal Jwt jwt) {
+        return studentService.getMyProfile(jwt.getSubject());
     }
 
     @GetMapping("/api/v1/students/{id}")

@@ -192,4 +192,29 @@ class StudentServiceTest {
         assertThat(response.name()).isEqualTo("Maria Aluna");
         assertThat(response.status()).isEqualTo(TrainerStudentStatus.PAUSED);
     }
+
+    @Test
+    void getMyProfile_returnsTheAuthenticatedStudentWithLinkStatus() {
+        User user = User.builder().email("aluno@example.com").role(Role.STUDENT).build();
+        StudentProfile student = StudentProfile.builder().id(2L).user(user).name("Maria Aluna").active(true).build();
+        TrainerStudent link = TrainerStudent.builder().trainer(trainer()).student(student)
+                .status(TrainerStudentStatus.ACTIVE).build();
+
+        when(studentProfileRepository.findByUserEmail("aluno@example.com")).thenReturn(Optional.of(student));
+        when(trainerStudentRepository.findByStudentId(2L)).thenReturn(Optional.of(link));
+
+        StudentProfileResponse response = studentService.getMyProfile("aluno@example.com");
+
+        assertThat(response.id()).isEqualTo(2L);
+        assertThat(response.email()).isEqualTo("aluno@example.com");
+        assertThat(response.status()).isEqualTo(TrainerStudentStatus.ACTIVE);
+    }
+
+    @Test
+    void getMyProfile_throwsNotFound_whenUserHasNoStudentProfile() {
+        when(studentProfileRepository.findByUserEmail("trainer@example.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> studentService.getMyProfile("trainer@example.com"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

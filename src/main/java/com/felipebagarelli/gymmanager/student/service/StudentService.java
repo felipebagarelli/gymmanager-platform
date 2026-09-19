@@ -160,4 +160,15 @@ public class StudentService {
         student.setActive(false);
         studentProfileRepository.save(student);
     }
+
+    public StudentProfileResponse getMyProfile(String authenticatedEmail) {
+        StudentProfile student = studentProfileRepository.findByUserEmail(authenticatedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado!"));
+
+        TrainerStudentStatus status = trainerStudentRepository.findByStudentId(student.getId())
+                .map(TrainerStudent::getStatus)
+                .orElse(null);
+
+        return toResponse(student, status);
+    }
 }

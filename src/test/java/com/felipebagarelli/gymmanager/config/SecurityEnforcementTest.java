@@ -28,12 +28,13 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {ExerciseController.class, StudentController.class})
-@Import({SecurityConfig.class, JwtConfig.class, JwtService.class, GlobalExceptionHandler.class})
-@TestPropertySource(properties = "jwt.secret=test-secret-used-only-in-security-enforcement-tests-1234567890")
+@Import({SecurityConfig.class, CorsConfig.class, JwtConfig.class, JwtService.class, GlobalExceptionHandler.class})
+@TestPropertySource(properties = {"jwt.secret=test-secret-used-only-in-security-enforcement-tests-1234567890", "app.cors.allowed-origins=http://localhost:5173"})
 class SecurityEnforcementTest {
 
     @Autowired
@@ -117,5 +118,24 @@ class SecurityEnforcementTest {
                   "goal": "hipertrofia"
                 }
                 """.formatted(LocalDate.of(2000, 1, 1));
+    }
+
+    @Test
+    void cors_preflightFromAllowedOrigin_isAccepted() throws Exception {
+        mockMvc.perform(options("/exercises")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "GET")
+                        .header("Access-Control-Request-Headers", "Authorization"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+    }
+
+    @Test
+    void cors_preflightFromUnknownOrigin_isRejected() throws Exception {
+        mockMvc.perform(options("/exercises")
+                        .header("Origin", "http://evil.example.com")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isForbidden());
     }
 }
