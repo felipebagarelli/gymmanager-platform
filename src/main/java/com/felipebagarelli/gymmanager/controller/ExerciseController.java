@@ -1,12 +1,9 @@
 package com.felipebagarelli.gymmanager.controller;
 
 import com.felipebagarelli.gymmanager.dto.request.CreateExerciseRequest;
-import com.felipebagarelli.gymmanager.dto.request.CreateMemberRequest;
-import com.felipebagarelli.gymmanager.dto.request.UpdateMemberRequest;
 import com.felipebagarelli.gymmanager.dto.response.ExerciseResponse;
-import com.felipebagarelli.gymmanager.dto.response.MemberResponse;
 import com.felipebagarelli.gymmanager.service.ExerciseService;
-import com.felipebagarelli.gymmanager.service.MemberService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,7 +20,7 @@ public class ExerciseController {
     }
 
    @PostMapping
-    public ExerciseResponse addExercise(@RequestBody CreateExerciseRequest request){
+    public ExerciseResponse addExercise(@RequestBody @Valid CreateExerciseRequest request){
         return exerciseService.addExercise(request);
    }
 
@@ -43,7 +40,7 @@ public class ExerciseController {
    }
 
    @PutMapping("/{id}")
-    public ExerciseResponse updateExercise(@PathVariable Long id, @RequestBody CreateExerciseRequest request){
+    public ExerciseResponse updateExercise(@PathVariable Long id, @RequestBody @Valid CreateExerciseRequest request){
         return exerciseService.updateById(request, id);
    }
 

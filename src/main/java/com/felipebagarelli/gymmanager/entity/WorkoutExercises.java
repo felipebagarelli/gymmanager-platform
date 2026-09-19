@@ -21,5 +21,9 @@ public class WorkoutExercises {
     private Workout workout;
     private int sets;
     private int reps;
+    private Integer position;
+    private Integer restSeconds;
+    private Double targetLoad;
+    private String notes;
 
 }

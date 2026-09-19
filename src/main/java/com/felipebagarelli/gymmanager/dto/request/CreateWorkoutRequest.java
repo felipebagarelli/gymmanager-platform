@@ -1,7 +1,9 @@
 package com.felipebagarelli.gymmanager.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record CreateWorkoutRequest(
-        String name,
-        Long memberId
+        @NotBlank String name,
+        Long studentId
 ) {
 }
