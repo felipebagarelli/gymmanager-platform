@@ -1,13 +1,17 @@
 import { NavLink } from "react-router-dom";
+import { useUnreadTotal } from "../../hooks/useUnreadTotal";
 
 const navItems: { to: string; label: string; end: boolean; icon?: string }[] = [
     { to: "/", label: "Dashboard", end: true },
     { to: "/students", label: "Alunos", end: false },
     { to: "/workouts", label: "Treinos", end: false },
+    { to: "/chat", label: "Mensagens", end: false },
     { to: "/exercises", label: "Exercícios", end: false },
 ];
 
 function Sidebar() {
+    const unread = useUnreadTotal();
+
     return (
         <aside className="sidebar">
             <div className="sidebar-brand">
@@ -29,6 +33,11 @@ function Sidebar() {
                             {item.icon}
                         </span>
                         <span>{item.label}</span>
+                        {item.to === "/chat" && unread > 0 && (
+                            <span className="nav-badge" aria-label={`${unread} mensagens não lidas`}>
+                                {unread}
+                            </span>
+                        )}
                     </NavLink>
                 ))}
             </nav>
