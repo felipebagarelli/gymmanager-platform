@@ -18,3 +18,12 @@ export const apiFetch = async (path: string, options: RequestInit = {}): Promise
 
     return response;
 };
+
+export const readError = async (response: Response, fallback = "Erro inesperado."): Promise<string> => {
+    try {
+        const body = await response.json();
+        return body.message ?? fallback;
+    } catch {
+        return fallback;
+    }
+};

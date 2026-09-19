@@ -8,6 +8,8 @@ import Exercises from "./pages/Exercises";
 import Workouts from "./pages/Workouts";
 import WorkoutExercise from "./pages/WorkoutExercise";
 import Login from "./pages/Login";
+import WorkoutLibrary from "./pages/WorkoutLibrary";
+import StudentSessions from "./pages/StudentSessions";
 import "./App.css";
 
 function App() {
@@ -24,6 +26,9 @@ function App() {
                                     <Route path="/" element={<Dashboard />} />
                                     <Route path="/students" element={<Students />} />
                                     <Route path="/exercises" element={<Exercises />} />
+                                    <Route path="/workouts" element={<WorkoutLibrary />} />
+                                    <Route path="/workouts/:workoutId/exercises" element={<WorkoutExercise/>}/>
+                                    <Route path="/students/:studentId/sessions" element={<StudentSessions />} />
                                     <Route path="/students/:studentId/workouts" element={<Workouts />} />
                                     <Route path="/students/:studentId/workouts/:workoutId/exercises" element={<WorkoutExercise/>}/>
                                 </Routes>

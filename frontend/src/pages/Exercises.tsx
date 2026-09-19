@@ -31,7 +31,7 @@ function Exercise() {
 
             {showForm && (
                 <div className="form-panel">
-                    <ExerciseForm onSuccess={(exercise) => { setExercises(exercise), setShowForm(false) }}/>
+                    <ExerciseForm onSuccess={(exercise) => { setExercises(exercise); setShowForm(false); }}/>
                 </div>
             )}
 

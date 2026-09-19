@@ -3,7 +3,8 @@ import { addWorkoutExercise } from "../services/WorkoutExerciseService";
 import type { WorkoutExercise } from "../types/WorkoutExercise"
 import {useEffect, useState} from "react"
 import type {Exercises} from "../types/Exercises";
-
+import WorkoutExerciseFields from "./WorkoutExerciseFields";
+import { optionalNumber, optionalText } from "./workoutExerciseFormUtils";
 
 
 type WorkoutExerciseFormProps = {
@@ -22,42 +23,29 @@ function WorkoutExerciseForm({onSuccess, workoutId }:WorkoutExerciseFormProps) {
     const handleSubmit = async(event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const exerciseId = Number(formData.get("exerciseId"))
-        const sets = Number(formData.get("sets") as string);
-        const reps = Number(formData.get("reps") as string);
-        //tenho q arrumar isso, tava fazendo para adicionar o exercicio ao treino do mesmo jeito q cria o treino ou exercicio, mas nao eh assim
-        // o exercicio ja existe, e o treino ja existe, entao tem q ser um formulario com opcoes dos exercicios para selecionar, e apenas 
-        // colocar as repeticoes e series, ja esta manejado desta forma no backend, tenho q fazer assima gora aqui manipulando com os id dos treinos e exercicios
-        // ainda falta eu corrigir isso, pra depois ajeitar o css, e depois voltar pro backend terminar as coisas de seguranca e afins ( OK)
 
-        onSuccess(await addWorkoutExercise({workoutId, exerciseId, sets, reps, }))
+        onSuccess(await addWorkoutExercise({
+            workoutId,
+            exerciseId: Number(formData.get("exerciseId")),
+            sets: Number(formData.get("sets")),
+            reps: Number(formData.get("reps")),
+            position: optionalNumber(formData.get("position")),
+            restSeconds: optionalNumber(formData.get("restSeconds")),
+            targetLoad: optionalNumber(formData.get("targetLoad")),
+            notes: optionalText(formData.get("notes")),
+        }))
     }
-
 
     return (
         <form onSubmit={handleSubmit}>
             <h2>Adicionar exercicio</h2>
 
-            <label>Exercicio:</label>
-            <select name="exerciseId" required>
-                <option value="">Selecione um exercicio</option>
-                {exercises.map((exercise) => (
-                <option key={exercise.id} value={exercise.id}>
-                {exercise.name}
-                </option>
-                ))}
-            </select>
-            <label>Series:</label>
-            <input type="number" name="sets" required/>
-            <label>Repeticoes:</label>
-            <input type="number" name="reps" required/>
+            <WorkoutExerciseFields exercises={exercises} />
 
             <button type="submit" >
                 Adicionar
             </button>
-        
-
         </form>
-    )//nao estou conseguindo adicionar um novo exercisewworkout, tenho q ver isso(OK)OK!
+    )
 }
 export default WorkoutExerciseForm;

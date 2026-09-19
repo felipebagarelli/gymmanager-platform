@@ -1,4 +1,4 @@
-import { apiFetch } from "./httpClient";
+import { apiFetch, readError } from "./httpClient";
 import type { CreateWorkout } from "../types/CreateWorkout";
 import type { Workout } from "../types/Workout";
 
@@ -38,4 +38,41 @@ export const updateWorkoutById = async (id: number, name: string, studentId: num
         }, body: JSON.stringify({ name })
     })
     return await getAllWorkout(studentId)
+}
+
+export const getMyWorkouts = async (): Promise<Workout[]> => {
+    const response = await apiFetch(API_URL);
+    return await response.json();
+}
+
+export const createTemplate = async (name: string): Promise<Workout[]> => {
+    await apiFetch(API_URL, {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+    })
+    return await getMyWorkouts()
+}
+
+export const renameTemplate = async (id: number, name: string): Promise<Workout[]> => {
+    await apiFetch(API_URL + "/" + id, {
+        method: 'PUT',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+    })
+    return await getMyWorkouts()
+}
+
+export const deleteTemplate = async (id: number): Promise<string | null> => {
+    const response = await apiFetch(API_URL + "/" + id, { method: 'DELETE' })
+    return response.ok ? null : await readError(response)
+}
+
+export const assignWorkout = async (workoutId: number, studentId: number): Promise<string | null> => {
+    const response = await apiFetch(API_URL + "/" + workoutId + "/assignments", {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId })
+    })
+    return response.ok ? null : await readError(response)
 }

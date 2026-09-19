@@ -53,6 +53,17 @@ function Dashboard() {
 
     <button
         className="quick-link-card"
+        onClick={() => navigate("/workouts")}
+    >
+        <span className="quick-link-icon" aria-hidden="true"></span>
+        <span className="quick-link-title">Treinos</span>
+        <span className="quick-link-description">
+            Biblioteca de treinos e atribuição aos alunos
+        </span>
+    </button>
+
+    <button
+        className="quick-link-card"
         onClick={() => navigate("/exercises")}
     >
         <span className="quick-link-icon" aria-hidden="true"></span>

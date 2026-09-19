@@ -33,7 +33,7 @@ function Students() {
 
             {showForm && (
                 <div className="form-panel">
-                    <StudentForm trainerId={trainerId} onSuccess={(students) => { setStudents(students), setShowForm(false)}} />
+                    <StudentForm trainerId={trainerId} onSuccess={(students) => { setStudents(students); setShowForm(false);}} />
                 </div>
             )}
 

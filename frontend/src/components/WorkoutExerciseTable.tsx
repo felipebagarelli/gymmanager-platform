@@ -3,7 +3,7 @@ import type { WorkoutExercise } from "../types/WorkoutExercise";
 import type { Exercises } from "../types/Exercises";
 import { deleteWorkoutExerciseById } from "../services/WorkoutExerciseService";
 import { getAllWorkoutExercise } from "../services/WorkoutExerciseService";
-import WorkoutExerciseUploadForm from "./workoutExerciseUploadForm"
+import WorkoutExerciseUploadForm from "./WorkoutExerciseUploadForm"
 
 
 type WorkoutExerciseTableProps = {
@@ -13,7 +13,6 @@ type WorkoutExerciseTableProps = {
     showUploadForm: boolean;
     setShowForm: React.Dispatch<React.SetStateAction<boolean>>;
     showForm: boolean;
-    workoutId: number;
     exercises:Exercises[] ;
     setSelectedWorkoutExerciseId: React.Dispatch<React.SetStateAction<number | null>>;
     selectedWorkoutExerciseId: number | null;
@@ -27,7 +26,6 @@ const WorkoutExerciseTable = ({
     setShowUploadForm, 
     showUploadForm,
     exercises,
-    workoutId,
     setSelectedWorkoutExerciseId
 }: WorkoutExerciseTableProps) => {
     return (
@@ -38,6 +36,10 @@ const WorkoutExerciseTable = ({
                     <th>Musculo</th>
                     <th>Series</th>
                     <th>Repeticoes</th>
+                    <th>Ordem</th>
+                    <th>Descanso</th>
+                    <th>Carga alvo</th>
+                    <th>Obs.</th>
                     <th>acoes</th>
                 </tr>
             </thead>
@@ -51,6 +53,10 @@ const WorkoutExerciseTable = ({
                             exercise.id === workoutExercise.exerciseId)?.muscleGroup}</td>
                         <td>{workoutExercise.sets}</td>
                         <td>{workoutExercise.reps}</td>
+                        <td>{workoutExercise.position ?? "—"}</td>
+                        <td>{workoutExercise.restSeconds != null ? `${workoutExercise.restSeconds}s` : "—"}</td>
+                        <td>{workoutExercise.targetLoad != null ? `${workoutExercise.targetLoad} kg` : "—"}</td>
+                        <td>{workoutExercise.notes ?? "—"}</td>
                         <td>
                             <button
                                 className="btn btn-edit btn-sm"
@@ -78,10 +84,9 @@ const WorkoutExerciseTable = ({
                     </tr>,
                     showUploadForm && selectedWorkoutExerciseId === workoutExercise.id && (
                         <tr key={`form-${workoutExercise.id}`}>
-                            <td colSpan={8}>
+                            <td colSpan={9}>
                                 <WorkoutExerciseUploadForm
-                                id={workoutExercise.id}
-                                workoutId={workoutId}
+                                workoutExercise={workoutExercise}
                                 onSuccess={(newWorkoutExercise) => {
                                     setWorkoutExercises(newWorkoutExercise)
                                     setShowUploadForm(false)

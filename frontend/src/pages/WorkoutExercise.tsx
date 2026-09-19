@@ -28,13 +28,13 @@ function WorkoutExercises() {
     useEffect(() => {
         getAllWorkoutExercise(idWorkout).then((data) => {
             setWorkoutExercise(data);
-        });}, []);
+        });}, [idWorkout]);
 
 
     return (
     <>
-        <button className="btn btn-secondary btn-sm back-link" onClick={() => navigate(`/students/${studentId}/workouts`)}>
-            ← Voltar para Treinos
+        <button className="btn btn-secondary btn-sm back-link" onClick={() => navigate(studentId ? `/students/${studentId}/workouts` : "/workouts")}>
+            ← {studentId ? "Voltar para Treinos" : "Voltar para a biblioteca"}
         </button>
 
         <PageHeader
@@ -47,8 +47,10 @@ function WorkoutExercises() {
 
         {showForm && (
             <div className="form-panel">
-                <WorkoutExerciseForm workoutId={idWorkout} onSuccess={(workoutExercise) =>
-                {setWorkoutExercise(workoutExercise), setShowForm(false)}}/>
+                <WorkoutExerciseForm workoutId={idWorkout} onSuccess={(workoutExercise) => {
+                    setWorkoutExercise(workoutExercise);
+                    setShowForm(false);
+                }}/>
             </div>
         )}
 
@@ -59,7 +61,6 @@ function WorkoutExercises() {
             setShowUploadForm={setShowUploadForm}
             setSelectedWorkoutExerciseId={setSelectedWorkoutExerciseId}
             showUploadForm={showUploadForm}
-            workoutId={idWorkout}
             exercises={exercises}
             setShowForm={setShowForm}
             showForm={showForm}

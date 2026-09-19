@@ -533,3 +533,32 @@ form button[type="submit"]:hover {
         white-space: nowrap;
     }
 }
+
+
+/* ============================================================
+   FEEDBACK / SESSOES
+   ============================================================ */
+
+.form-error {
+    color: var(--color-danger);
+    font-size: 14px;
+    margin: 0 0 14px;
+}
+
+.muted {
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+.session-card {
+    margin-bottom: 16px;
+    padding: 20px;
+}
+
+.session-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}

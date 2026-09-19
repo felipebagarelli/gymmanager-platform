@@ -1,8 +1,9 @@
 import { NavLink } from "react-router-dom";
 
-const navItems = [
+const navItems: { to: string; label: string; end: boolean; icon?: string }[] = [
     { to: "/", label: "Dashboard", end: true },
     { to: "/students", label: "Alunos", end: false },
+    { to: "/workouts", label: "Treinos", end: false },
     { to: "/exercises", label: "Exercícios", end: false },
 ];
 
