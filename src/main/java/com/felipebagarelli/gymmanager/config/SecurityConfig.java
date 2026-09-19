@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/workout-sessions/**").hasRole("STUDENT")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/workout-sessions/**").hasRole("STUDENT")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/workout-sessions/**").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/ai/**").hasRole("STUDENT")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

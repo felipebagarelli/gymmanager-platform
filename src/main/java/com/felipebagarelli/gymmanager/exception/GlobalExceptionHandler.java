@@ -14,6 +14,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.felipebagarelli.gymmanager.ai.provider.AiProviderException;
+import com.felipebagarelli.gymmanager.ai.provider.AiUnavailableException;
+
 import java.time.Instant;
 
 @RestControllerAdvice
@@ -40,6 +43,22 @@ public class GlobalExceptionHandler{
   @ExceptionHandler(ConflictException.class)
   public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, HttpServletRequest request){
     return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(RateLimitExceededException.class)
+  public ResponseEntity<ErrorResponse> handleRateLimit(RateLimitExceededException ex, HttpServletRequest request){
+    return build(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(AiUnavailableException.class)
+  public ResponseEntity<ErrorResponse> handleAiUnavailable(AiUnavailableException ex, HttpServletRequest request){
+    return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(AiProviderException.class)
+  public ResponseEntity<ErrorResponse> handleAiProvider(AiProviderException ex, HttpServletRequest request){
+    log.warn("Falha do provedor de IA em {}", request.getRequestURI());
+    return build(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
   }
 
   @ExceptionHandler(InvalidCredentialsException.class)
