@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../assistant/presentation/assistant_page.dart';
 import '../../chat/application/chat_providers.dart';
 import '../../chat/presentation/chat_page.dart';
 import '../../profile/presentation/profile_page.dart';
@@ -17,8 +18,9 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   int _index = 0;
 
-  static const _titles = ['Meus treinos', 'Histórico', 'Mensagens', 'Perfil'];
+  static const _titles = ['Meus treinos', 'Histórico', 'Mensagens', 'Assistente', 'Perfil'];
   static const _chatIndex = 2;
+  static const _assistantIndex = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           const MyWorkoutsPage(),
           const HistoryPage(),
           _index == _chatIndex ? const ChatPage() : const SizedBox.shrink(),
+          _index == _assistantIndex ? const AssistantPage() : const SizedBox.shrink(),
           const ProfilePage(),
         ],
       ),
@@ -50,6 +53,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             label: 'Mensagens',
           ),
+          const NavigationDestination(icon: Icon(Icons.smart_toy_outlined), label: 'Assistente'),
           const NavigationDestination(icon: Icon(Icons.person), label: 'Perfil'),
         ],
       ),

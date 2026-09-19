@@ -14,8 +14,9 @@ lib/
     ├── workouts/    meus treinos e exercícios de cada treino
     ├── sessions/    execução do treino (sessão, séries) e histórico
     ├── chat/        conversa com o personal (polling 3s aberta / 10s contador)
+    ├── assistant/   assistente de IA (privado do aluno; limite diário; aviso de que não substitui o personal)
     ├── profile/     perfil e sair
-    └── home/        abas: Treinos / Histórico / Mensagens / Perfil
+    └── home/        abas: Treinos / Histórico / Mensagens / Assistente / Perfil
 ```
 
 Estado com Riverpod; cada feature separa `data` (API), `domain` (modelos), `application`
@@ -55,3 +56,9 @@ flutter test test/integration/api_contract_test.dart \
   --dart-define=API_PASSWORD=... \
   --dart-define=API_TRAINER_EMAIL=personal@exemplo.com
 ```
+
+## Assistente de IA
+
+Aba "Assistente" (`/api/v1/ai/*`, somente aluno). Sem `AI_API_KEY` no backend, o app mostra
+"O assistente não está disponível no momento." Para ativar: definir `AI_API_KEY` (e opcionalmente
+`AI_MODEL`, `AI_DAILY_LIMIT`) no ambiente do backend — nunca commitar a chave.
