@@ -4,16 +4,16 @@ import { addWorkout } from "../services/WorkoutService"
 
 type WorkoutFormProps = {
     onSuccess: (workout: Workout[]) => void
-    memberId: number 
+    studentId: number
 }
 
-function WorkoutForm ({onSuccess, memberId}: WorkoutFormProps) {
+function WorkoutForm ({onSuccess, studentId}: WorkoutFormProps) {
     const handleSubmit = async  (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const name = formData.get("name") as string;
 
-        onSuccess(await addWorkout({name, memberId}))
+        onSuccess(await addWorkout({name, studentId}))
     }
 
     return(

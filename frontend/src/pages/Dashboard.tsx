@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
-import { getMembers } from "../services/MemberService";
+import { getStudents } from "../services/StudentService";
 import { getExercises } from "../services/ExerciseService";
+import { getTrainerId } from "../services/AuthService";
 import PageHeader from "../components/ui/PageHeader";
 import Card from "../components/ui/Card";
 import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
-    const [memberCount, setMemberCount] = useState<number | null>(null);
+    const [studentCount, setStudentCount] = useState<number | null>(null);
     const [exerciseCount, setExerciseCount] = useState<number | null>(null);
 
     useEffect(() => {
-        getMembers().then((data) => setMemberCount(data.length));
+        const trainerId = getTrainerId();
+        if (trainerId) {
+            getStudents(trainerId).then((data) => setStudentCount(data.length));
+        }
     }, []);
 
     useEffect(() => {
@@ -26,7 +30,7 @@ function Dashboard() {
             <div className="stat-grid">
                 <Card className="stat-card">
                     <span className="stat-card-label">Alunos cadastrados</span>
-                    <span className="stat-card-value">{memberCount ?? "—"}</span>
+                    <span className="stat-card-value">{studentCount ?? "—"}</span>
                 </Card>
                 <Card className="stat-card">
                     <span className="stat-card-label">Exercícios cadastrados</span>
@@ -38,7 +42,7 @@ function Dashboard() {
 
     <button
         className="quick-link-card"
-        onClick={() => navigate("/members")}
+        onClick={() => navigate("/students")}
     >
         <span className="quick-link-icon" aria-hidden="true"></span>
         <span className="quick-link-title">Alunos</span>

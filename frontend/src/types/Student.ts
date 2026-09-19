@@ -1,10 +1,12 @@
-export interface Member {
+export interface Student {
     id: number;
-    name: string;
     email: string;
-    phone: string;
+    name: string;
     birthDate: string;
+    phone: string;
+    goal: string;
     height: number;
     weight: number;
     active: boolean;
+    status: string;
 }

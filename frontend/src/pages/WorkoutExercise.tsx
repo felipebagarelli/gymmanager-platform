@@ -14,7 +14,7 @@ function WorkoutExercises() {
     const [showForm, setShowForm] = useState(false);
     const [showUploadForm, setShowUploadForm] = useState(false);
     const [selectedWorkoutExerciseId, setSelectedWorkoutExerciseId] = useState<number | null>(null);
-    const { memberId, workoutId } = useParams();
+    const { studentId, workoutId } = useParams();
     const idWorkout = Number(workoutId);
     const [exercises, setExercises] = useState<Exercises[]>([]);
     const navigate = useNavigate();
@@ -33,7 +33,7 @@ function WorkoutExercises() {
 
     return (
     <>
-        <button className="btn btn-secondary btn-sm back-link" onClick={() => navigate(`/members/${memberId}/workouts`)}>
+        <button className="btn btn-secondary btn-sm back-link" onClick={() => navigate(`/students/${studentId}/workouts`)}>
             ← Voltar para Treinos
         </button>
 

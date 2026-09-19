@@ -1,4 +1,4 @@
 export interface CreateWorkout {
     name: string;
-    memberId: number;
+    studentId: number;
 }

@@ -12,8 +12,8 @@ function Workouts() {
     const [showForm, setShowForm] = useState(false);
     const [showUploadForm, setShowUploadForm] = useState(false);
     const [selectedWorkoutId, setSelectedWorkoutId] = useState<number | null>(null);
-    const { memberId } = useParams();
-    const id = Number(memberId);
+    const { studentId } = useParams();
+    const id = Number(studentId);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -24,7 +24,7 @@ function Workouts() {
 
     return (
     <>
-        <button className="btn btn-secondary btn-sm back-link" onClick={() => navigate("/members")}>
+        <button className="btn btn-secondary btn-sm back-link" onClick={() => navigate("/students")}>
             ← Voltar para Alunos
         </button>
 
@@ -38,7 +38,7 @@ function Workouts() {
 
         {showForm && (
             <div className="form-panel">
-                <WorkoutForm memberId={id} onSuccess={(workout) =>
+                <WorkoutForm studentId={id} onSuccess={(workout) =>
                 {setWorkout(workout), setShowForm(false)}}/>
             </div>
         )}
@@ -50,7 +50,7 @@ function Workouts() {
             setShowUploadform={setShowUploadForm}
             setSelectedWorkoutId={setSelectedWorkoutId}
             showUploadForm={showUploadForm}
-            memberId={id}
+            studentId={id}
             selectedWorkoutId={selectedWorkoutId}
             />
         </div>

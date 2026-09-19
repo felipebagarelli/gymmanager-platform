@@ -1,28 +1,30 @@
-import type { Member } from "../types/Member";
-import { deleteMember } from "../services/MemberService";
-import MemberUploadForm from "./MemberUploadForm";
+import type { Student } from "../types/Student";
+import { deactivateStudent } from "../services/StudentService";
+import StudentUploadForm from "./StudentUploadForm";
 import { useNavigate } from "react-router-dom";
 
 
 
 
-type MemberTableProps = {
-    members: Member[];
-    setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+type StudentTableProps = {
+    students: Student[];
+    setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
     showUploadForm: boolean;
-    selectedMemberId: number | null;
+    selectedStudentId: number | null;
     setShowUploadForm: React.Dispatch<React.SetStateAction<boolean>>;
-    setSelectedMemberId: React.Dispatch<React.SetStateAction<number | null>>;
+    setSelectedStudentId: React.Dispatch<React.SetStateAction<number | null>>;
+    trainerId: number;
 };
 
-export const MemberTable = ({
-    members,
-    setMembers,
+export const StudentTable = ({
+    students,
+    setStudents,
     showUploadForm,
-    selectedMemberId,
+    selectedStudentId,
     setShowUploadForm,
-    setSelectedMemberId
-}: MemberTableProps) => {
+    setSelectedStudentId,
+    trainerId
+}: StudentTableProps) => {
 
     const navigate = useNavigate();
 
@@ -42,17 +44,17 @@ export const MemberTable = ({
             </thead>
 
             <tbody>
-                {members.map((member) => [
-                    <tr key={member.id}>
-                        <td>{member.name}</td>
-                        <td>{member.email}</td>
-                        <td>{member.phone}</td>
-                        <td>{member.birthDate}</td>
-                        <td>{member.height} m</td>
-                        <td>{member.weight} kg</td>
+                {students.map((student) => [
+                    <tr key={student.id}>
+                        <td>{student.name}</td>
+                        <td>{student.email}</td>
+                        <td>{student.phone}</td>
+                        <td>{student.birthDate}</td>
+                        <td>{student.height} m</td>
+                        <td>{student.weight} kg</td>
                         <td>
-                            <span className={`badge ${member.active ? "badge-active" : "badge-inactive"}`}>
-                                {member.active ? "Ativo" : "Inativo"}
+                            <span className={`badge ${student.active ? "badge-active" : "badge-inactive"}`}>
+                                {student.active ? "Ativo" : "Inativo"}
                             </span>
                         </td>
 
@@ -60,7 +62,7 @@ export const MemberTable = ({
                             <button
                                 className="btn btn-edit btn-sm"
                                 onClick={() => {
-                                    setSelectedMemberId(member.id);
+                                    setSelectedStudentId(student.id);
                                     setShowUploadForm(true);
                                 }}
                             >
@@ -70,18 +72,17 @@ export const MemberTable = ({
                             <button
                                 className="btn btn-danger btn-sm"
                                 onClick={async () => {
-                                    await deleteMember(member.id);
-                                    setMembers(
-                                        prev => prev.filter(m => m.id !== member.id)
-                                    );
+                                    if (confirm("Tem certeza que deseja desativar este aluno?")) {
+                                        setStudents(await deactivateStudent(trainerId, student.id));
+                                    }
                                 }}
                             >
-                                Excluir
+                                Desativar
                             </button>
 
                             <button
                                 className="btn btn-secondary btn-sm"
-                                onClick={() => {navigate(`/members/${member.id}/workouts`)}}
+                                onClick={() => {navigate(`/students/${student.id}/workouts`)}}
                                 >
                                     Treinos
                                 </button>
@@ -89,13 +90,14 @@ export const MemberTable = ({
                     </tr>,
 
                     showUploadForm &&
-                    selectedMemberId === member.id && (
-                        <tr key={`form-${member.id}`}>
+                    selectedStudentId === student.id && (
+                        <tr key={`form-${student.id}`}>
                             <td colSpan={8}>
-                                <MemberUploadForm
-                                    memberId={member.id}
-                                    onSuccess={(updatedMembers) => {
-                                        setMembers(updatedMembers);
+                                <StudentUploadForm
+                                    studentId={student.id}
+                                    trainerId={trainerId}
+                                    onSuccess={(updatedStudents) => {
+                                        setStudents(updatedStudents);
                                         setShowUploadForm(false);
                                     }}
                                 />

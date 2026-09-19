@@ -1,5 +1,6 @@
 import WorkoutUploadForm from "./WorkoutUploadForm";
 import type { Workout } from "../types/Workout";
+import  { unassignWorkout, getAllWorkout } from "../services/WorkoutService";
 
 type WorkoutTableProps = {
     workout: Workout[];
@@ -7,17 +8,17 @@ type WorkoutTableProps = {
     setShowUploadform: React.Dispatch<React.SetStateAction<boolean>>;
     showUploadForm: boolean;
     setSelectedWorkoutId: React.Dispatch<React.SetStateAction<number | null>>;
-    memberId: number;
+    studentId: number;
     selectedWorkoutId: number | null;
 };
 
-const WorkoutTable = ({ 
-    workout, 
-    setWorkout, 
+const WorkoutTable = ({
+    workout,
+    setWorkout,
     setShowUploadform,
     setSelectedWorkoutId,
-    showUploadForm, 
-    memberId, 
+    showUploadForm,
+    studentId,
     selectedWorkoutId
 }: WorkoutTableProps) => {
     return (
@@ -46,9 +47,17 @@ const WorkoutTable = ({
                             <button
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => {
-                            window.location.href = `/members/${memberId}/workouts/${workout.id}/exercises`; } }>
+                            window.location.href = `/students/${studentId}/workouts/${workout.id}/exercises`; } }>
                                 Exercícios
                             </button>
+                            <button
+                                className="btn btn-danger btn-sm"
+                                onClick={async () => {
+                                    if (confirm("Remover este treino do aluno? (o treino em si é mantido)")) {
+                                        await unassignWorkout(workout.id, studentId)
+                                        setWorkout(await getAllWorkout(studentId))}}}>
+                                            Remover
+                                        </button>
                         </td>
                     </tr>,
 
@@ -56,17 +65,18 @@ const WorkoutTable = ({
                         <tr key={`form-${workout.id}`}>
                             <td colSpan={8}>
                                 <WorkoutUploadForm
-                                memberId = {memberId}
-                                id = {workout.id} 
+                                studentId = {studentId}
+                                id = {workout.id}
                                 onSuccess = {(updatedWorkouts) => {
                                     setWorkout(updatedWorkouts)
+                                    setShowUploadform(false)
                                 }}
                                 />
                             </td>
-                        </tr>                        
+                        </tr>
 
                     )
-                
+
                 ])}
             </tbody>
         </table>)}

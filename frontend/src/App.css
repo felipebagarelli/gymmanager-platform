@@ -108,6 +108,7 @@
 .topbar {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 18px 36px;
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
@@ -117,6 +118,30 @@
     font-size: 18px;
     font-weight: 600;
     color: var(--color-text);
+}
+
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+
+.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--color-bg);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 360px;
+}
+
+.login-error {
+    color: var(--color-danger);
+    font-size: 13px;
+    margin-top: 8px;
 }
 
 

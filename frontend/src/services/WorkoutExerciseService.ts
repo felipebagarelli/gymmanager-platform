@@ -1,26 +1,27 @@
+import { apiFetch } from "./httpClient";
 import type { CreateWorkoutExercise } from "../types/CreateWorkoutExercise";
 import type { WorkoutExercise } from "../types/WorkoutExercise";
 
-const API_URL = ("http://localhost:8080/" + "workout-exercises" ) as string;
+const API_URL = "/workout-exercises";
 
 
 export const getAllWorkoutExercise = async (id: number): Promise<WorkoutExercise[]> => {
-    const response = await fetch(API_URL + "/" + "workout/" + id);
+    const response = await apiFetch(API_URL + "/" + "workout/" + id);
     return await response.json();
 }
 
 export const getWorkoutExerciseById = async (id: number): Promise<WorkoutExercise> => {
-    const response = await fetch(API_URL + "/" + id);
+    const response = await apiFetch(API_URL + "/" + id);
     return await response.json();
-} 
+}
 
 export const deleteWorkoutExerciseById = async (id: number) => {
-    await fetch(API_URL + "/" + id,{
+    await apiFetch(API_URL + "/" + id,{
         method: 'DELETE'});
 }
 
 export const addWorkoutExercise = async (createWorkoutExercise: CreateWorkoutExercise): Promise<WorkoutExercise[]> => {
-    await fetch(API_URL, {
+    await apiFetch(API_URL, {
         method: 'POST',
         headers: {
             "Content-Type": "application/json",
@@ -30,7 +31,7 @@ export const addWorkoutExercise = async (createWorkoutExercise: CreateWorkoutExe
 }
 
 export const updateWorkoutExerciseById = async (workoutExercise: WorkoutExercise): Promise<WorkoutExercise[]> => {
-    await fetch(API_URL + "/" + workoutExercise.id, {
+    await apiFetch(API_URL + "/" + workoutExercise.id, {
         method: 'PUT',
         headers: {
             "Content-Type": "application/json",
