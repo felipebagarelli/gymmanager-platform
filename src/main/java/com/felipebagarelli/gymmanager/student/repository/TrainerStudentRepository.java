@@ -11,4 +11,6 @@ import java.util.Optional;
 public interface TrainerStudentRepository extends JpaRepository<TrainerStudent, Long> {
     List<TrainerStudent> findByTrainerId(Long trainerId);
     Optional<TrainerStudent> findByStudentId(Long studentId);
+    List<TrainerStudent> findByTrainerUserEmail(String email);
+    List<TrainerStudent> findByStudentUserEmail(String email);
 }
