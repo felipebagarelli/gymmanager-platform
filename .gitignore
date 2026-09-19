@@ -1,0 +1,23 @@
+# Environment variables
+.env
+.env.*
+
+# IntelliJ / JetBrains
+.idea/
+*.iml
+
+# Visual Studio
+.vs/
+
+# Maven
+target/
+
+# Node
+node_modules/
+
+# Frontend build
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
