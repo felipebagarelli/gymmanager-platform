@@ -13,8 +13,9 @@ lib/
     ├── auth/        login, sessão, perfil (GET /api/v1/students/me)
     ├── workouts/    meus treinos e exercícios de cada treino
     ├── sessions/    execução do treino (sessão, séries) e histórico
+    ├── chat/        conversa com o personal (polling 3s aberta / 10s contador)
     ├── profile/     perfil e sair
-    └── home/        abas: Treinos / Histórico / Perfil
+    └── home/        abas: Treinos / Histórico / Mensagens / Perfil
 ```
 
 Estado com Riverpod; cada feature separa `data` (API), `domain` (modelos), `application`
