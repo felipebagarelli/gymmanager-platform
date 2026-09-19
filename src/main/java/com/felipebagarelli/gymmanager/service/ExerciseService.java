@@ -4,6 +4,7 @@ package com.felipebagarelli.gymmanager.service;
 import com.felipebagarelli.gymmanager.dto.request.CreateExerciseRequest;
 import com.felipebagarelli.gymmanager.dto.response.ExerciseResponse;
 import com.felipebagarelli.gymmanager.entity.Exercises;
+import com.felipebagarelli.gymmanager.exception.ResourceNotFoundException;
 import com.felipebagarelli.gymmanager.repository.ExerciseRepository;
 import org.springframework.stereotype.Service;
 
@@ -39,7 +40,7 @@ public class ExerciseService {
     }
 
     public ExerciseResponse getExercisesById(Long id){
-        return toResponse(exerciseRepository.findById(id).orElseThrow());
+        return toResponse(exerciseRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Exercício não encontrado!")));
     }
 
     public void deleteById (Long id){
@@ -47,7 +48,7 @@ public class ExerciseService {
     }
 
     public ExerciseResponse updateById(CreateExerciseRequest request, Long id){
-        Exercises exercise = exerciseRepository.findById(id).orElseThrow();
+        Exercises exercise = exerciseRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Exercício não encontrado!"));
         exercise.setName(request.name());
         exercise.setMuscleGroup(request.muscleGroup());
         exerciseRepository.save(exercise);

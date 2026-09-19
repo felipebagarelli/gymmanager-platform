@@ -1,6 +1,8 @@
 package com.felipebagarelli.gymmanager.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+
 public record CreateExerciseRequest (
-                                    String name,
-                                    String muscleGroup) {
+                                    @NotBlank String name,
+                                    @NotBlank String muscleGroup) {
 }
