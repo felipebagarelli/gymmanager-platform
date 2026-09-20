@@ -12,7 +12,7 @@ lib/
 └── features/
     ├── auth/        login, sessão, perfil (GET /api/v1/students/me)
     ├── workouts/    meus treinos e exercícios de cada treino
-    ├── sessions/    execução do treino (sessão, séries) e histórico
+    ├── sessions/    execução do treino, histórico e evolução de carga por exercício
     ├── chat/        conversa com o personal (polling 3s aberta / 10s contador)
     ├── billing/     assinatura do aluno (planos, checkout Stripe, aviso de atraso)
     ├── assistant/   assistente de IA (privado do aluno; limite diário; aviso de que não substitui o personal)
@@ -63,3 +63,10 @@ flutter test test/integration/api_contract_test.dart \
 Aba "Assistente" (`/api/v1/ai/*`, somente aluno). Sem `AI_API_KEY` no backend, o app mostra
 "O assistente não está disponível no momento." Para ativar: definir `AI_API_KEY` (e opcionalmente
 `AI_MODEL`, `AI_DAILY_LIMIT`) no ambiente do backend — nunca commitar a chave.
+
+## Evolução e lembrete diário
+
+Na aba "Histórico" há duas sub-abas: **Sessões** (como antes) e **Evolução**, com um gráfico de
+linha por exercício (carga máxima por sessão) calculado no app a partir do histórico — sem endpoint
+novo no backend. Na aba "Treinos", um aviso aparece no topo enquanto o aluno não tiver nenhuma sessão
+iniciada no dia.

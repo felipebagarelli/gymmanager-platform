@@ -6,9 +6,37 @@ import '../../../core/utils/formatters.dart';
 import '../../workouts/application/workout_providers.dart';
 import '../application/session_providers.dart';
 import '../domain/workout_session.dart';
+import 'evolution_page.dart';
 
-class HistoryPage extends ConsumerWidget {
+/// Abas: sessões executadas e evolução de carga por exercício.
+class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          const TabBar(
+            tabs: [
+              Tab(text: 'Sessões', icon: Icon(Icons.history)),
+              Tab(text: 'Evolução', icon: Icon(Icons.trending_up)),
+            ],
+          ),
+          const Expanded(
+            child: TabBarView(
+              children: [_SessionsTab(), EvolutionPage()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SessionsTab extends ConsumerWidget {
+  const _SessionsTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
