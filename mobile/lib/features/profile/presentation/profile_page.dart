@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/formatters.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../billing/presentation/subscription_card.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -29,6 +30,8 @@ class ProfilePage extends ConsumerWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        const SubscriptionCard(),
         const SizedBox(height: 16),
         OutlinedButton.icon(
           key: const Key('logout'),

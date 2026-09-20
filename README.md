@@ -234,3 +234,13 @@ As melhorias menores estão registradas nas [Issues](https://github.com/felipeba
 O Gym Manager faz parte da minha jornada de estudos em desenvolvimento de software, com foco inicial em Backend Java e evolução gradual para Full Stack. Ele é construído de forma incremental, usando cada nova funcionalidade como oportunidade de aplicar na prática os conceitos estudados.
 
 **Felipe Bagarelli** · [LinkedIn](https://www.linkedin.com/in/felipebagarelli) · fbagarelli@gmail.com
+
+## Pagamentos (Stripe Connect)
+
+O aluno paga o personal; a plataforma retém uma porcentagem (`PLATFORM_FEE_PERCENT`, padrão 10).
+Sem `STRIPE_SECRET_KEY` os endpoints de cobrança respondem 503 e o restante do sistema funciona normalmente.
+
+Variáveis: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PLATFORM_FEE_PERCENT`, `APP_URL` (retorno do checkout).
+Webhook: `POST /api/v1/billing/webhook` — eventos usados: `checkout.session.completed`, `invoice.paid`,
+`invoice.payment_failed`, `customer.subscription.deleted`, `account.updated` (habilitar "eventos de contas conectadas").
+Aluno com a última assinatura em atraso (`PAST_DUE`) recebe 402 em treinos, sessões e chat; o personal não é afetado.

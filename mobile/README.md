@@ -14,6 +14,7 @@ lib/
     ├── workouts/    meus treinos e exercícios de cada treino
     ├── sessions/    execução do treino (sessão, séries) e histórico
     ├── chat/        conversa com o personal (polling 3s aberta / 10s contador)
+    ├── billing/     assinatura do aluno (planos, checkout Stripe, aviso de atraso)
     ├── assistant/   assistente de IA (privado do aluno; limite diário; aviso de que não substitui o personal)
     ├── profile/     perfil e sair
     └── home/        abas: Treinos / Histórico / Mensagens / Assistente / Perfil
