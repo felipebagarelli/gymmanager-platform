@@ -35,6 +35,7 @@ public class SecurityConfig {
                         // pré-flight de CORS não carrega Authorization; sem isso o navegador
                         // recebe 401/403 no OPTIONS e a chamada real nunca sai.
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register-trainer").permitAll()
                         .requestMatchers("/api/v1/trainers/*/students").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/students/*").hasRole("TRAINER")

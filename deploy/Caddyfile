@@ -1,0 +1,26 @@
+# Dois hosts: o painel e a API ficam separados porque as rotas /workouts existem nos dois.
+# Os certificados HTTPS (Let's Encrypt) sao emitidos e renovados sozinhos pelo Caddy.
+
+{$APP_DOMAIN} {
+	root * /srv
+	encode gzip
+	try_files {path} /index.html
+	file_server
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Strict-Transport-Security "max-age=31536000"
+	}
+}
+
+{$API_DOMAIN} {
+	encode gzip
+	reverse_proxy backend:8080
+
+	header {
+		X-Content-Type-Options nosniff
+		Strict-Transport-Security "max-age=31536000"
+	}
+}

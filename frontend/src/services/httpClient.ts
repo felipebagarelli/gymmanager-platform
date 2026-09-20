@@ -1,4 +1,5 @@
-const BASE_URL = "http://localhost:8080";
+// em producao o painel e servido em outro host que a API: defina VITE_API_URL no build
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
 export const apiFetch = async (path: string, options: RequestInit = {}): Promise<Response> => {
     const token = localStorage.getItem("token");

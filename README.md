@@ -235,6 +235,10 @@ O Gym Manager faz parte da minha jornada de estudos em desenvolvimento de softwa
 
 **Felipe Bagarelli** · [LinkedIn](https://www.linkedin.com/in/felipebagarelli) · fbagarelli@gmail.com
 
+## Produção
+
+Ver [docs/DEPLOY.md](docs/DEPLOY.md) (Docker Compose, HTTPS, backup, checklist). Modelo de variáveis: `.env.example`.
+
 ## Pagamentos (Stripe Connect)
 
 O aluno paga o personal; a plataforma retém uma porcentagem (`PLATFORM_FEE_PERCENT`, padrão 10).
