@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import WorkoutLibrary from "./pages/WorkoutLibrary";
 import StudentSessions from "./pages/StudentSessions";
 import Chat from "./pages/Chat";
+import Payments from "./pages/Payments";
 import "./App.css";
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
                                     <Route path="/exercises" element={<Exercises />} />
                                     <Route path="/workouts" element={<WorkoutLibrary />} />
                                     <Route path="/chat" element={<Chat />} />
+                                    <Route path="/pagamentos" element={<Payments />} />
                                     <Route path="/workouts/:workoutId/exercises" element={<WorkoutExercise/>}/>
                                     <Route path="/students/:studentId/sessions" element={<StudentSessions />} />
                                     <Route path="/students/:studentId/workouts" element={<Workouts />} />

@@ -6,6 +6,7 @@ const navItems: { to: string; label: string; end: boolean; icon?: string }[] = [
     { to: "/students", label: "Alunos", end: false },
     { to: "/workouts", label: "Treinos", end: false },
     { to: "/chat", label: "Mensagens", end: false },
+    { to: "/pagamentos", label: "Pagamentos", end: false },
     { to: "/exercises", label: "Exercícios", end: false },
 ];
 
