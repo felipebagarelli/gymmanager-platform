@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.felipebagarelli.gymmanager.ai.provider.AiProviderException;
 import com.felipebagarelli.gymmanager.ai.provider.AiUnavailableException;
 
+import com.felipebagarelli.gymmanager.billing.provider.InvalidWebhookException;
+import com.felipebagarelli.gymmanager.billing.provider.PaymentProviderException;
+import com.felipebagarelli.gymmanager.billing.provider.PaymentUnavailableException;
+
 import java.time.Instant;
 
 @RestControllerAdvice
@@ -43,6 +47,26 @@ public class GlobalExceptionHandler{
   @ExceptionHandler(ConflictException.class)
   public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex, HttpServletRequest request){
     return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(PaymentRequiredException.class)
+  public ResponseEntity<ErrorResponse> handlePaymentRequired(PaymentRequiredException ex, HttpServletRequest request){
+    return build(HttpStatus.PAYMENT_REQUIRED, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(PaymentUnavailableException.class)
+  public ResponseEntity<ErrorResponse> handlePaymentUnavailable(PaymentUnavailableException ex, HttpServletRequest request){
+    return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(PaymentProviderException.class)
+  public ResponseEntity<ErrorResponse> handlePaymentProvider(PaymentProviderException ex, HttpServletRequest request){
+    return build(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
+  }
+
+  @ExceptionHandler(InvalidWebhookException.class)
+  public ResponseEntity<ErrorResponse> handleInvalidWebhook(InvalidWebhookException ex, HttpServletRequest request){
+    return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
   }
 
   @ExceptionHandler(RateLimitExceededException.class)

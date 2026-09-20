@@ -1,5 +1,6 @@
 package com.felipebagarelli.gymmanager.chat.service;
 
+import com.felipebagarelli.gymmanager.billing.service.BillingAccessGuard;
 import com.felipebagarelli.gymmanager.chat.dto.ConversationSummary;
 import com.felipebagarelli.gymmanager.chat.dto.MessageResponse;
 import com.felipebagarelli.gymmanager.chat.entity.Conversation;
@@ -32,13 +33,23 @@ public class ChatService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final TrainerStudentRepository trainerStudentRepository;
+    private final BillingAccessGuard billingAccessGuard;
 
     public ChatService(ConversationRepository conversationRepository,
                        MessageRepository messageRepository,
-                       TrainerStudentRepository trainerStudentRepository) {
+                       TrainerStudentRepository trainerStudentRepository,
+                       BillingAccessGuard billingAccessGuard) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.trainerStudentRepository = trainerStudentRepository;
+        this.billingAccessGuard = billingAccessGuard;
+    }
+
+    /** Aluno com mensalidade em atraso nao le nem envia mensagens (402). */
+    private void guardStudentSide(TrainerStudent link, MessageSender side) {
+        if (side == MessageSender.STUDENT) {
+            billingAccessGuard.assertStudentNotBlocked(link.getStudent().getId());
+        }
     }
 
     private MessageResponse toResponse(Message message) {
@@ -112,7 +123,7 @@ public class ChatService {
      */
     public List<MessageResponse> messages(Long conversationId, Long after, Integer limit, String email) {
         Conversation conversation = findConversation(conversationId);
-        sideOf(conversation.getTrainerStudent(), email);
+        guardStudentSide(conversation.getTrainerStudent(), sideOf(conversation.getTrainerStudent(), email));
 
         int size = limit == null ? DEFAULT_LIMIT : Math.max(1, Math.min(limit, MAX_LIMIT));
         List<Message> messages;
@@ -132,6 +143,7 @@ public class ChatService {
         Conversation conversation = findConversation(conversationId);
         TrainerStudent link = conversation.getTrainerStudent();
         MessageSender side = sideOf(link, email);
+        guardStudentSide(link, side);
 
         if (!canSend(link)) {
             throw new ConflictException("Esta conversa está encerrada: só é possível ler o histórico.");

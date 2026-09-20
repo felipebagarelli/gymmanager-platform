@@ -51,6 +51,9 @@ class ChatServiceTest {
     @Mock
     private TrainerStudentRepository trainerStudentRepository;
 
+    @Mock
+    private com.felipebagarelli.gymmanager.billing.service.BillingAccessGuard billingAccessGuard;
+
     @InjectMocks
     private ChatService chatService;
 
@@ -160,6 +163,18 @@ class ChatServiceTest {
 
         verify(messageRepository, times(2)).findByConversationIdOrderByIdDesc(eq(7L), captor.capture());
         assertThat(captor.getAllValues()).extracting(Pageable::getPageSize).containsExactly(ChatService.MAX_LIMIT, 1);
+    }
+
+    @Test
+    void studentWithOverdueSubscription_cannotReadNorSend_butTrainerCan() {
+        doThrow(new com.felipebagarelli.gymmanager.exception.PaymentRequiredException("atraso"))
+                .when(billingAccessGuard).assertStudentNotBlocked(2L);
+
+        assertThatThrownBy(() -> chatService.send(7L, "Oi", STUDENT))
+                .isInstanceOf(com.felipebagarelli.gymmanager.exception.PaymentRequiredException.class);
+        assertThatThrownBy(() -> chatService.messages(7L, null, null, STUDENT))
+                .isInstanceOf(com.felipebagarelli.gymmanager.exception.PaymentRequiredException.class);
+        assertThat(chatService.send(7L, "Cobrei você", TRAINER).senderRole()).isEqualTo(MessageSender.TRAINER);
     }
 
     @Test

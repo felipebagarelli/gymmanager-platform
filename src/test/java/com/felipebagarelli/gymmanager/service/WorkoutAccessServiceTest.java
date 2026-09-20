@@ -36,6 +36,9 @@ class WorkoutAccessServiceTest {
     @Mock
     private WorkoutAssignmentRepository workoutAssignmentRepository;
 
+    @Mock
+    private com.felipebagarelli.gymmanager.billing.service.BillingAccessGuard billingAccessGuard;
+
     @InjectMocks
     private WorkoutAccessService accessService;
 
@@ -73,6 +76,16 @@ class WorkoutAccessServiceTest {
     void assertCanRead_allowsOwningTrainerAndTheStudentThemselves() {
         assertThatCode(() -> accessService.assertCanRead(2L, "trainer@example.com")).doesNotThrowAnyException();
         assertThatCode(() -> accessService.assertCanRead(2L, "aluno@example.com")).doesNotThrowAnyException();
+    }
+
+    @Test
+    void assertCanRead_blocksOverdueStudentButNotTheTrainer() {
+        org.mockito.Mockito.doThrow(new com.felipebagarelli.gymmanager.exception.PaymentRequiredException("atraso"))
+                .when(billingAccessGuard).assertStudentNotBlocked(2L);
+
+        assertThatThrownBy(() -> accessService.assertCanRead(2L, "aluno@example.com"))
+                .isInstanceOf(com.felipebagarelli.gymmanager.exception.PaymentRequiredException.class);
+        assertThatCode(() -> accessService.assertCanRead(2L, "trainer@example.com")).doesNotThrowAnyException();
     }
 
     @Test

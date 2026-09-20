@@ -52,6 +52,9 @@ class WorkoutSessionServiceTest {
     @Mock
     private WorkoutAccessService workoutAccessService;
 
+    @Mock
+    private com.felipebagarelli.gymmanager.billing.service.BillingAccessGuard billingAccessGuard;
+
     @InjectMocks
     private WorkoutSessionService service;
 

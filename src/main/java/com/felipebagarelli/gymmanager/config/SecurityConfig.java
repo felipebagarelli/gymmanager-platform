@@ -46,6 +46,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/workout-sessions/**").hasRole("STUDENT")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/workout-sessions/**").hasRole("STUDENT")
                         .requestMatchers("/api/v1/ai/**").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/billing/webhook").permitAll()
+                        .requestMatchers("/api/v1/plans/available", "/api/v1/subscriptions/**").hasRole("STUDENT")
+                        .requestMatchers("/api/v1/plans", "/api/v1/plans/*", "/api/v1/billing/payout-account/**", "/api/v1/billing/subscriptions").hasRole("TRAINER")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

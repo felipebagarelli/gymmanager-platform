@@ -1,5 +1,6 @@
 package com.felipebagarelli.gymmanager.service;
 
+import com.felipebagarelli.gymmanager.billing.service.BillingAccessGuard;
 import com.felipebagarelli.gymmanager.entity.Workout;
 import com.felipebagarelli.gymmanager.exception.ResourceNotFoundException;
 import com.felipebagarelli.gymmanager.repository.WorkoutAssignmentRepository;
@@ -19,13 +20,16 @@ public class WorkoutAccessService {
     private final TrainerStudentRepository trainerStudentRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final WorkoutAssignmentRepository workoutAssignmentRepository;
+    private final BillingAccessGuard billingAccessGuard;
 
     public WorkoutAccessService(TrainerStudentRepository trainerStudentRepository,
                                 StudentProfileRepository studentProfileRepository,
-                                WorkoutAssignmentRepository workoutAssignmentRepository) {
+                                WorkoutAssignmentRepository workoutAssignmentRepository,
+                                BillingAccessGuard billingAccessGuard) {
         this.trainerStudentRepository = trainerStudentRepository;
         this.studentProfileRepository = studentProfileRepository;
         this.workoutAssignmentRepository = workoutAssignmentRepository;
+        this.billingAccessGuard = billingAccessGuard;
     }
 
     public void assertCanWrite(Long studentId, String authenticatedEmail) {
@@ -35,7 +39,11 @@ public class WorkoutAccessService {
     }
 
     public void assertCanRead(Long studentId, String authenticatedEmail) {
-        if (isOwningTrainer(studentId, authenticatedEmail) || isStudentThemselves(studentId, authenticatedEmail)) {
+        if (isOwningTrainer(studentId, authenticatedEmail)) {
+            return;
+        }
+        if (isStudentThemselves(studentId, authenticatedEmail)) {
+            billingAccessGuard.assertStudentNotBlocked(studentId);
             return;
         }
         throw new AccessDeniedException(DENIED_STUDENT);
@@ -48,8 +56,11 @@ public class WorkoutAccessService {
     }
 
     public void assertCanReadWorkout(Workout workout, String authenticatedEmail) {
-        if (isWorkoutOwner(workout, authenticatedEmail)
-                || workoutAssignmentRepository.existsByWorkoutIdAndStudentUserEmail(workout.getId(), authenticatedEmail)) {
+        if (isWorkoutOwner(workout, authenticatedEmail)) {
+            return;
+        }
+        if (workoutAssignmentRepository.existsByWorkoutIdAndStudentUserEmail(workout.getId(), authenticatedEmail)) {
+            billingAccessGuard.assertStudentNotBlockedByEmail(authenticatedEmail);
             return;
         }
         throw new AccessDeniedException(DENIED_WORKOUT);

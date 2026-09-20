@@ -1,5 +1,6 @@
 package com.felipebagarelli.gymmanager.session.service;
 
+import com.felipebagarelli.gymmanager.billing.service.BillingAccessGuard;
 import com.felipebagarelli.gymmanager.entity.WorkoutAssignment;
 import com.felipebagarelli.gymmanager.entity.WorkoutAssignmentStatus;
 import com.felipebagarelli.gymmanager.entity.WorkoutExercises;
@@ -31,12 +32,15 @@ public class WorkoutSessionService {
     private final WorkoutAssignmentRepository assignmentRepository;
     private final WorkoutExercisesRepository workoutExercisesRepository;
     private final WorkoutAccessService workoutAccessService;
+    private final BillingAccessGuard billingAccessGuard;
 
     public WorkoutSessionService(WorkoutSessionRepository sessionRepository,
                                  ExercisePerformanceRepository performanceRepository,
                                  WorkoutAssignmentRepository assignmentRepository,
                                  WorkoutExercisesRepository workoutExercisesRepository,
-                                 WorkoutAccessService workoutAccessService) {
+                                 WorkoutAccessService workoutAccessService,
+                                 BillingAccessGuard billingAccessGuard) {
+        this.billingAccessGuard = billingAccessGuard;
         this.sessionRepository = sessionRepository;
         this.performanceRepository = performanceRepository;
         this.assignmentRepository = assignmentRepository;
@@ -84,6 +88,7 @@ public class WorkoutSessionService {
 
     @Transactional
     public WorkoutSessionResponse start(Long workoutId, String authenticatedEmail) {
+        billingAccessGuard.assertStudentNotBlockedByEmail(authenticatedEmail);
         WorkoutAssignment assignment = assignmentRepository
                 .findByWorkoutIdAndStudentUserEmailAndStatus(workoutId, authenticatedEmail, WorkoutAssignmentStatus.ACTIVE)
                 .orElseThrow(() -> new AccessDeniedException("Este treino não está atribuído e ativo para você."));
