@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getStudentSessions } from "../services/SessionService";
 import { getMyWorkouts } from "../services/WorkoutService";
@@ -7,6 +7,8 @@ import { getAllWorkoutExercise } from "../services/WorkoutExerciseService";
 import type { WorkoutSession } from "../types/WorkoutSession";
 import PageHeader from "../components/ui/PageHeader";
 import Card from "../components/ui/Card";
+import Sparkline from "../components/ui/Sparkline";
+import { bestLoad, computeEvolution, lastDelta } from "../utils/evolution";
 
 const formatDateTime = (value: string) => new Date(value).toLocaleString("pt-BR");
 
@@ -23,6 +25,7 @@ function StudentSessions() {
     const [workoutNames, setWorkoutNames] = useState<Record<number, string>>({});
     const [exerciseNames, setExerciseNames] = useState<Record<number, string>>({});
     const [loading, setLoading] = useState(true);
+    const [tab, setTab] = useState<"sessions" | "evolution">("sessions");
 
     useEffect(() => {
         const load = async () => {
@@ -53,6 +56,8 @@ function StudentSessions() {
         load();
     }, [id]);
 
+    const evolution = useMemo(() => computeEvolution(sessions, exerciseNames), [sessions, exerciseNames]);
+
     return (
         <>
             <button className="btn btn-secondary btn-sm back-link" onClick={() => navigate(`/students/${id}/workouts`)}>
@@ -65,45 +70,97 @@ function StudentSessions() {
                 <p className="muted">Este aluno ainda não executou nenhum treino.</p>
             )}
 
-            {sessions.map((session) => (
-                <Card key={session.id} className="session-card">
-                    <div className="session-header">
-                        <strong>{workoutNames[session.workoutId] ?? `Treino #${session.workoutId}`}</strong>
-                        <span className={`badge ${session.finishedAt ? "badge-active" : "badge-inactive"}`}>
-                            {session.finishedAt ? "Finalizada" : "Em andamento"}
-                        </span>
-                    </div>
-                    <p className="muted">
-                        Início: {formatDateTime(session.startedAt)}
-                        {session.finishedAt && ` · Duração: ${formatDuration(session.startedAt, session.finishedAt)}`}
-                    </p>
+            {(loading || sessions.length > 0) && (
+                <div className="tab-switch" role="tablist">
+                    <button
+                        className={`btn btn-sm ${tab === "sessions" ? "btn-primary" : "btn-secondary"}`}
+                        role="tab"
+                        aria-selected={tab === "sessions"}
+                        onClick={() => setTab("sessions")}
+                    >
+                        Sessões
+                    </button>
+                    <button
+                        className={`btn btn-sm ${tab === "evolution" ? "btn-primary" : "btn-secondary"}`}
+                        role="tab"
+                        aria-selected={tab === "evolution"}
+                        onClick={() => setTab("evolution")}
+                    >
+                        Evolução
+                    </button>
+                </div>
+            )}
 
-                    {session.performances.length === 0 ? (
-                        <p className="muted">Nenhuma série registrada.</p>
-                    ) : (
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Exercício</th>
-                                    <th>Série</th>
-                                    <th>Repetições</th>
-                                    <th>Carga</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {session.performances.map((performance) => (
-                                    <tr key={performance.id}>
-                                        <td>{exerciseNames[performance.workoutExerciseId] ?? `#${performance.workoutExerciseId}`}</td>
-                                        <td>{performance.setNumber}</td>
-                                        <td>{performance.reps}</td>
-                                        <td>{performance.loadKg != null ? `${performance.loadKg} kg` : "—"}</td>
+            {tab === "sessions" &&
+                sessions.map((session) => (
+                    <Card key={session.id} className="session-card">
+                        <div className="session-header">
+                            <strong>{workoutNames[session.workoutId] ?? `Treino #${session.workoutId}`}</strong>
+                            <span className={`badge ${session.finishedAt ? "badge-active" : "badge-inactive"}`}>
+                                {session.finishedAt ? "Finalizada" : "Em andamento"}
+                            </span>
+                        </div>
+                        <p className="muted">
+                            Início: {formatDateTime(session.startedAt)}
+                            {session.finishedAt && ` · Duração: ${formatDuration(session.startedAt, session.finishedAt)}`}
+                        </p>
+
+                        {session.performances.length === 0 ? (
+                            <p className="muted">Nenhuma série registrada.</p>
+                        ) : (
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Exercício</th>
+                                        <th>Série</th>
+                                        <th>Repetições</th>
+                                        <th>Carga</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </Card>
-            ))}
+                                </thead>
+                                <tbody>
+                                    {session.performances.map((performance) => (
+                                        <tr key={performance.id}>
+                                            <td>{exerciseNames[performance.workoutExerciseId] ?? `#${performance.workoutExerciseId}`}</td>
+                                            <td>{performance.setNumber}</td>
+                                            <td>{performance.reps}</td>
+                                            <td>{performance.loadKg != null ? `${performance.loadKg} kg` : "—"}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </Card>
+                ))}
+
+            {tab === "evolution" &&
+                (evolution.length === 0 ? (
+                    <p className="muted">Nenhuma sessão finalizada com série registrada ainda.</p>
+                ) : (
+                    evolution.map((progress) => {
+                        const best = bestLoad(progress);
+                        const delta = lastDelta(progress);
+                        const loads = progress.points.filter((p) => p.maxLoadKg != null).map((p) => p.maxLoadKg as number);
+                        return (
+                            <Card key={progress.exerciseName} className="session-card">
+                                <div className="session-header">
+                                    <strong>{progress.exerciseName}</strong>
+                                    {best != null && <span className="muted">Melhor: {best} kg</span>}
+                                </div>
+                                {loads.length > 0 ? (
+                                    <Sparkline values={loads} />
+                                ) : (
+                                    <p className="muted">{progress.points.length} sessões registradas (sem carga informada).</p>
+                                )}
+                                {delta != null && delta !== 0 && (
+                                    <p className={delta > 0 ? "trend-up" : "trend-down"}>
+                                        {delta > 0 ? "▲" : "▼"} {delta > 0 ? "+" : ""}
+                                        {delta} kg desde a última sessão
+                                    </p>
+                                )}
+                            </Card>
+                        );
+                    })
+                ))}
         </>
     );
 }

@@ -563,6 +563,24 @@ form button[type="submit"]:hover {
     margin-bottom: 4px;
 }
 
+.tab-switch {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.trend-up {
+    color: var(--color-primary-dark);
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+.trend-down {
+    color: var(--color-warning-dark);
+    font-size: 14px;
+    margin-top: 8px;
+}
+
 
 /* ============================================================
    CHAT
