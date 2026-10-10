@@ -37,6 +37,7 @@ class SessionRepository {
     required int setNumber,
     required int reps,
     double? loadKg,
+    Effort? effort,
   }) =>
       _guard(() => _dio.post<void>(
             '/api/v1/workout-sessions/$sessionId/performances',
@@ -45,6 +46,7 @@ class SessionRepository {
               'setNumber': setNumber,
               'reps': reps,
               'loadKg': loadKg,
+              'effort': effort?.api,
             },
           ));
 
@@ -54,10 +56,11 @@ class SessionRepository {
     required int setNumber,
     required int reps,
     double? loadKg,
+    Effort? effort,
   }) =>
       _guard(() => _dio.put<void>(
             '/api/v1/workout-sessions/$sessionId/performances/$performanceId',
-            data: {'setNumber': setNumber, 'reps': reps, 'loadKg': loadKg},
+            data: {'setNumber': setNumber, 'reps': reps, 'loadKg': loadKg, 'effort': effort?.api},
           ));
 
   Future<void> deletePerformance(int sessionId, int performanceId) => _guard(() =>

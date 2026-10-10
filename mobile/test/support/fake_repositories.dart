@@ -73,6 +73,7 @@ class FakeSessionRepository extends SessionRepository {
     required int setNumber,
     required int reps,
     double? loadKg,
+    Effort? effort,
   }) async {
     _maybeFail();
     calls.add('add:$workoutExerciseId#$setNumber');
@@ -91,6 +92,7 @@ class FakeSessionRepository extends SessionRepository {
             setNumber: setNumber,
             reps: reps,
             loadKg: loadKg,
+            effort: effort,
           ),
         ],
       ),
@@ -104,6 +106,7 @@ class FakeSessionRepository extends SessionRepository {
     required int setNumber,
     required int reps,
     double? loadKg,
+    Effort? effort,
   }) async {
     _maybeFail();
     calls.add('update:$performanceId');
@@ -123,6 +126,7 @@ class FakeSessionRepository extends SessionRepository {
                     setNumber: setNumber,
                     reps: reps,
                     loadKg: loadKg,
+                    effort: effort,
                   )
                 : p,
         ],

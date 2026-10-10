@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/session_repository.dart';
+import '../domain/training_stats.dart';
 import '../domain/workout_session.dart';
 
 final sessionRepositoryProvider =
@@ -46,7 +47,7 @@ class ExecutionController extends AsyncNotifier<WorkoutSession?> {
     ref.invalidate(historyProvider);
   }
 
-  Future<void> addSet(int workoutExerciseId, {required int reps, double? loadKg}) async {
+  Future<void> addSet(int workoutExerciseId, {required int reps, double? loadKg, Effort? effort}) async {
     final session = _open;
     final existing = session.setsOf(workoutExerciseId);
     // maior numero + 1 (e nao a contagem): o servidor nao renumera apos remocoes
@@ -57,11 +58,12 @@ class ExecutionController extends AsyncNotifier<WorkoutSession?> {
       setNumber: setNumber,
       reps: reps,
       loadKg: loadKg,
+      effort: effort,
     );
     await _refresh(session.id);
   }
 
-  Future<void> editSet(Performance performance, {required int reps, double? loadKg}) async {
+  Future<void> editSet(Performance performance, {required int reps, double? loadKg, Effort? effort}) async {
     final session = _open;
     await _repository.updatePerformance(
       session.id,
@@ -69,6 +71,7 @@ class ExecutionController extends AsyncNotifier<WorkoutSession?> {
       setNumber: performance.setNumber,
       reps: reps,
       loadKg: loadKg,
+      effort: effort,
     );
     await _refresh(session.id);
   }
@@ -95,3 +98,9 @@ final executionProvider =
     AsyncNotifierProvider.family<ExecutionController, WorkoutSession?, int>(
   ExecutionController.new,
 );
+
+/// Números da home (semana, sequência, "treinou hoje"); null enquanto o histórico carrega.
+final trainingStatsProvider = Provider<TrainingStats?>((ref) {
+  final history = ref.watch(historyProvider).value;
+  return history == null ? null : TrainingStats.from(history);
+});

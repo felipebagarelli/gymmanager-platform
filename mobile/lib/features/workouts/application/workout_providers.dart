@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/workout_repository.dart';
+import '../domain/plan_stats.dart';
 import '../domain/workout.dart';
 
 final workoutRepositoryProvider =
@@ -32,4 +33,9 @@ final workoutPlanProvider = FutureProvider.family<List<PlanRow>, int>((ref, work
         muscleGroup: exercises[item.exerciseId]?.muscleGroup,
       ),
   ];
+});
+
+/// Números do treino (exercícios, séries, duração estimada, foco muscular).
+final planStatsProvider = FutureProvider.family<PlanStats, int>((ref, workoutId) async {
+  return PlanStats.from(await ref.watch(workoutPlanProvider(workoutId).future));
 });

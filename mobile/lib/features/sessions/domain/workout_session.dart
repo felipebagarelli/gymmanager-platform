@@ -1,3 +1,23 @@
+/// "Como foi?" informado pelo aluno ao registrar uma série (opcional).
+enum Effort {
+  easy('EASY', 'Fácil'),
+  ideal('IDEAL', 'Ideal'),
+  hard('HARD', 'Difícil');
+
+  const Effort(this.api, this.label);
+
+  /// Valor enviado/recebido pela API.
+  final String api;
+  final String label;
+
+  static Effort? fromApi(String? value) {
+    for (final effort in Effort.values) {
+      if (effort.api == value) return effort;
+    }
+    return null;
+  }
+}
+
 class Performance {
   const Performance({
     required this.id,
@@ -5,6 +25,7 @@ class Performance {
     required this.setNumber,
     required this.reps,
     this.loadKg,
+    this.effort,
   });
 
   final int id;
@@ -12,6 +33,7 @@ class Performance {
   final int setNumber;
   final int reps;
   final double? loadKg;
+  final Effort? effort;
 
   factory Performance.fromJson(Map<String, dynamic> json) => Performance(
         id: (json['id'] as num).toInt(),
@@ -19,6 +41,7 @@ class Performance {
         setNumber: (json['setNumber'] as num).toInt(),
         reps: (json['reps'] as num).toInt(),
         loadKg: (json['loadKg'] as num?)?.toDouble(),
+        effort: Effort.fromApi(json['effort'] as String?),
       );
 }
 

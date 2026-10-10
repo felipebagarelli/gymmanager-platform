@@ -21,8 +21,8 @@ class HomePage extends ConsumerWidget {
     final unread = ref.watch(chatSummaryProvider).value?.unreadCount ?? 0;
 
     return Scaffold(
-      // TODO(redesign): cada aba passa a desenhar o próprio cabeçalho; remover o AppBar ao fim.
-      appBar: AppBar(title: Text(appTabs[index].label)),
+      // TODO(redesign): cada aba passa a desenhar o próprio cabeçalho (Treinos já desenha); remover o AppBar ao fim.
+      appBar: index == HomeTab.workouts ? null : AppBar(title: Text(appTabs[index].label)),
       // chat e assistente só são construídos quando abertos (polling / chamadas sob demanda)
       body: IndexedStack(
         index: index,
