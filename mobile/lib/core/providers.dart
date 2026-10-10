@@ -13,3 +13,12 @@ final dioProvider = Provider<Dio>((ref) {
     onUnauthorized: () => ref.read(authControllerProvider.notifier).sessionExpired(),
   );
 });
+
+/// Relógio do app. Os cronômetros usam este provider para que os testes controlem o tempo.
+final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// Pulso de 1 segundo dos cronômetros (execução e descanso). É broadcast porque os dois
+/// cronômetros podem escutar ao mesmo tempo (o Timer só roda enquanto houver ouvinte). Nos testes é trocado por um
+/// StreamController, porque um Timer periódico impediria o `pumpAndSettle` de terminar.
+final secondTickerProvider =
+    Provider<Stream<void>>((ref) => Stream<void>.periodic(const Duration(seconds: 1)).asBroadcastStream());

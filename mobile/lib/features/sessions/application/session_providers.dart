@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/session_repository.dart';
+import '../domain/completion.dart';
 import '../domain/training_stats.dart';
 import '../domain/workout_session.dart';
 
@@ -82,11 +83,19 @@ class ExecutionController extends AsyncNotifier<WorkoutSession?> {
     await _refresh(session.id);
   }
 
-  Future<void> finish() async {
+  /// Finaliza e devolve a sessão com as séries e o horário de término (para o resumo).
+  Future<WorkoutSession> finish() async {
     final session = _open;
     await _repository.finish(session.id);
     state = const AsyncData(null);
     ref.invalidate(historyProvider);
+    return WorkoutSession(
+      id: session.id,
+      workoutId: session.workoutId,
+      startedAt: session.startedAt,
+      finishedAt: ref.read(clockProvider)(),
+      performances: session.performances,
+    );
   }
 
   Future<void> _refresh(int sessionId) async {
@@ -104,3 +113,14 @@ final trainingStatsProvider = Provider<TrainingStats?>((ref) {
   final history = ref.watch(historyProvider).value;
   return history == null ? null : TrainingStats.from(history);
 });
+
+/// Resumo do último treino finalizado, lido pela tela "Treino concluído".
+class CompletedWorkoutController extends Notifier<WorkoutCompletion?> {
+  @override
+  WorkoutCompletion? build() => null;
+
+  void set(WorkoutCompletion? value) => state = value;
+}
+
+final completedWorkoutProvider =
+    NotifierProvider<CompletedWorkoutController, WorkoutCompletion?>(CompletedWorkoutController.new);

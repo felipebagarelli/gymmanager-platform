@@ -5,9 +5,21 @@ import '../domain/evolution.dart';
 import '../domain/workout_session.dart';
 import 'session_providers.dart';
 
+/// Nome do exercício de cada item do plano (`workoutExerciseId`), para todos os treinos que
+/// aparecem no histórico, inclusive os antigos. Itens removidos do plano não aparecem.
+final exerciseNamesProvider = FutureProvider.autoDispose<Map<int, String>>((ref) async {
+  final history = await ref.watch(historyProvider.future);
+  final names = <int, String>{};
+  for (final workoutId in {for (final s in history) s.workoutId}) {
+    for (final row in await ref.watch(workoutPlanProvider(workoutId).future)) {
+      names[row.item.id] = row.exerciseName;
+    }
+  }
+  return names;
+});
+
 /// Evolução por exercício, calculada a partir do histórico de sessões (finalizadas, mais
-/// antigas primeiro). Cruza `workoutExerciseId` das séries com o plano de cada treino
-/// (inclusive treinos antigos) para descobrir o nome do exercício.
+/// antigas primeiro).
 final evolutionProvider = FutureProvider.autoDispose<List<ExerciseProgress>>((ref) async {
   final sessions = (await ref.watch(historyProvider.future))
       .where((s) => !s.isOpen && s.performances.isNotEmpty)
@@ -15,14 +27,7 @@ final evolutionProvider = FutureProvider.autoDispose<List<ExerciseProgress>>((re
     ..sort((a, b) => a.startedAt.compareTo(b.startedAt));
   if (sessions.isEmpty) return const [];
 
-  final workoutIds = {for (final s in sessions) s.workoutId};
-  final exerciseNameByWorkoutExerciseId = <int, String>{};
-  for (final workoutId in workoutIds) {
-    final plan = await ref.watch(workoutPlanProvider(workoutId).future);
-    for (final row in plan) {
-      exerciseNameByWorkoutExerciseId[row.item.id] = row.exerciseName;
-    }
-  }
+  final exerciseNameByWorkoutExerciseId = await ref.watch(exerciseNamesProvider.future);
 
   final pointsByExercise = <String, List<ProgressPoint>>{};
   for (final session in sessions) {

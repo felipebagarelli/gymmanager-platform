@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/sessions/presentation/completion_page.dart';
 import '../../features/sessions/presentation/execute_workout_page.dart';
 import '../../features/workouts/presentation/workout_detail_page.dart';
 
@@ -46,6 +47,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'run',
             builder: (context, state) =>
                 ExecuteWorkoutPage(workoutId: int.parse(state.pathParameters['id']!)),
+          ),
+          GoRoute(
+            path: 'done',
+            builder: (context, state) =>
+                CompletionPage(workoutId: int.parse(state.pathParameters['id']!)),
           ),
         ],
       ),

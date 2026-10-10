@@ -30,10 +30,12 @@ String formatLongDate(DateTime value) {
   return '${_weekdays[d.weekday - 1]} · ${d.day} de ${_months[d.month - 1]}';
 }
 
-/// "mm:ss" para cronômetros (passa de 59 min sem virar hora: "75:03").
+/// Cronômetro: "mm:ss" e, a partir de 1 hora, "h:mm:ss" (ex.: "1:15:03").
 String formatClock(int totalSeconds) {
   final s = totalSeconds < 0 ? 0 : totalSeconds;
-  return '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
+  String two(int v) => v.toString().padLeft(2, '0');
+  if (s >= 3600) return '${s ~/ 3600}:${two((s % 3600) ~/ 60)}:${two(s % 60)}';
+  return '${two(s ~/ 60)}:${two(s % 60)}';
 }
 
 /// Número com vírgula decimal e sem casas desnecessárias: 17.5 -> "17,5"; 20.0 -> "20".

@@ -22,6 +22,13 @@ class WorkoutDetailPage extends ConsumerWidget {
 
   final int workoutId;
 
+  /// Inicia a sessão (se ainda não houver uma em andamento) e abre a execução.
+  Future<void> _start(BuildContext context, WidgetRef ref, bool hasOpenSession) async {
+    final ok = hasOpenSession ||
+        await runAction(context, () => ref.read(executionProvider(workoutId).notifier).start());
+    if (ok && context.mounted) context.push('/workouts/$workoutId/run');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plan = ref.watch(workoutPlanProvider(workoutId));
@@ -106,7 +113,7 @@ class WorkoutDetailPage extends ConsumerWidget {
                 key: const Key('open-execution'),
                 label: hasOpenSession ? 'Continuar treino' : 'Iniciar treino',
                 icon: LucideIcons.play,
-                onPressed: (plan.value?.isNotEmpty ?? false) ? () => context.push('/workouts/$workoutId/run') : null,
+                onPressed: (plan.value?.isNotEmpty ?? false) ? () => _start(context, ref, hasOpenSession) : null,
               ),
             ),
           ],
