@@ -77,7 +77,8 @@ class _AssistantPageState extends ConsumerState<AssistantPage> {
         await controller.ask(text);
       }
       if (suggestion == null) _controller.clear();
-      _attachment = null;
+      // a sugestão envia só texto: a foto anexada (ainda não enviada) fica para o aluno
+      if (photo != null) _attachment = null;
     } catch (error) {
       if (error is AppException && error.statusCode == 503) {
         if (mounted) setState(() => _unavailable = true);

@@ -68,5 +68,6 @@ Pendente para as lojas (não feito): ícone/nome finais, assinatura de release (
 
 ## 9. Limites conhecidos
 - **Uma instância do backend.** O limitador de tentativas de login e o limite diário da IA (este é gravado no banco) funcionam assim; o limitador de login é em memória e reseta ao reiniciar. Para escalar horizontalmente, mover o limitador para armazenamento compartilhado.
+- **Fuso horário único.** A API grava horários sem fuso (`LocalDateTime`) e o app os lê como hora local; por isso o container do backend roda com `TZ=America/Sao_Paulo` (variável `APP_TIMEZONE` no `.env.prod`). Alunos em outro fuso veriam dias e cronômetro deslocados. Trocar o fuso depois de haver treinos gravados desloca os horários antigos.
 - Sem envio de e-mail (recuperação de senha, avisos de cobrança) e sem push notifications.
 - Imagens Docker e este roteiro **não foram executados** no ambiente de desenvolvimento (sem Docker instalado); o jar, o perfil `prod` e o build do painel foram verificados localmente.

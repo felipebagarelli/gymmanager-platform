@@ -168,11 +168,15 @@ class _ExecuteWorkoutPageState extends ConsumerState<ExecuteWorkoutPage> {
       if (confirmed != true || !mounted) return;
     }
 
-    // lê o histórico e os nomes ANTES de finalizar: finish() invalida o histórico
-    final history = await ref.read(historyProvider.future);
-    final names = await ref.read(exerciseNamesProvider.future);
-    if (!mounted) return;
-
+    // lê o histórico e os nomes ANTES de finalizar: finish() invalida o histórico.
+    // Dentro do runAction: se a rede falhar, o aluno vê a mensagem e a sessão continua aberta.
+    List<WorkoutSession>? history;
+    Map<int, String>? names;
+    final loaded = await runAction(context, () async {
+      history = await ref.read(historyProvider.future);
+      names = await ref.read(exerciseNamesProvider.future);
+    });
+    if (!loaded || !mounted) return;
     WorkoutSession? finished;
     final ok = await runAction(context, () async {
       finished = await ref.read(executionProvider(_workoutId).notifier).finish();
@@ -183,8 +187,8 @@ class _ExecuteWorkoutPageState extends ConsumerState<ExecuteWorkoutPage> {
           session: finished!,
           finishedAt: finished!.finishedAt!,
           plannedSets: planned,
-          history: history,
-          exerciseNames: names,
+          history: history!,
+          exerciseNames: names!,
         ));
     context.go('/workouts/$_workoutId/done');
   }

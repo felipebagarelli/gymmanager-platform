@@ -24,6 +24,7 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      TZ: ${APP_TIMEZONE:-America/Sao_Paulo}
       DB_URL: jdbc:postgresql://db:5432/gymmanager
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}

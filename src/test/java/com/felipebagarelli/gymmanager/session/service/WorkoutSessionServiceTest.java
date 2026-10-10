@@ -13,6 +13,8 @@ import com.felipebagarelli.gymmanager.repository.WorkoutExercisesRepository;
 import com.felipebagarelli.gymmanager.service.WorkoutAccessService;
 import com.felipebagarelli.gymmanager.session.dto.PerformanceResponse;
 import com.felipebagarelli.gymmanager.session.dto.RecordPerformanceRequest;
+import com.felipebagarelli.gymmanager.session.dto.UpdatePerformanceRequest;
+import com.felipebagarelli.gymmanager.session.entity.Effort;
 import com.felipebagarelli.gymmanager.session.dto.WorkoutSessionResponse;
 import com.felipebagarelli.gymmanager.session.entity.ExercisePerformance;
 import com.felipebagarelli.gymmanager.session.entity.WorkoutSession;
@@ -157,6 +159,54 @@ class WorkoutSessionServiceTest {
 
         assertThatThrownBy(() -> service.addPerformance(7L, new RecordPerformanceRequest(31L, 1, 12, 20.0, null), STUDENT))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    private ExercisePerformance savedSet(Effort effort) {
+        ExercisePerformance set = ExercisePerformance.builder().id(99L).session(openSession).workoutExercise(exerciseOfWorkout)
+                .setNumber(1).reps(10).loadKg(20.0).effort(effort).build();
+        when(sessionRepository.findById(7L)).thenReturn(Optional.of(openSession));
+        when(performanceRepository.findById(99L)).thenReturn(Optional.of(set));
+        when(performanceRepository.save(any(ExercisePerformance.class))).thenAnswer(i -> i.getArgument(0));
+        return set;
+    }
+
+    @Test
+    void updatePerformance_withoutEffortField_keepsTheStoredEffort() {
+        ExercisePerformance set = savedSet(Effort.HARD);
+
+        PerformanceResponse response = service.updatePerformance(7L, 99L, new UpdatePerformanceRequest(1, 12, 25.0, null, null), STUDENT);
+
+        assertThat(response.reps()).isEqualTo(12);
+        assertThat(response.loadKg()).isEqualTo(25.0);
+        assertThat(response.effort()).isEqualTo(Effort.HARD);
+        assertThat(set.getEffort()).isEqualTo(Effort.HARD);
+    }
+
+    @Test
+    void updatePerformance_withEffort_replacesIt() {
+        savedSet(Effort.HARD);
+
+        PerformanceResponse response = service.updatePerformance(7L, 99L, new UpdatePerformanceRequest(1, 10, 20.0, Effort.EASY, null), STUDENT);
+
+        assertThat(response.effort()).isEqualTo(Effort.EASY);
+    }
+
+    @Test
+    void updatePerformance_withClearEffort_removesIt() {
+        savedSet(Effort.HARD);
+
+        PerformanceResponse response = service.updatePerformance(7L, 99L, new UpdatePerformanceRequest(1, 10, 20.0, null, true), STUDENT);
+
+        assertThat(response.effort()).isNull();
+    }
+
+    @Test
+    void updatePerformance_clearEffortIsIgnoredWhenAnEffortIsSent() {
+        savedSet(Effort.HARD);
+
+        PerformanceResponse response = service.updatePerformance(7L, 99L, new UpdatePerformanceRequest(1, 10, 20.0, Effort.IDEAL, true), STUDENT);
+
+        assertThat(response.effort()).isEqualTo(Effort.IDEAL);
     }
 
     @Test

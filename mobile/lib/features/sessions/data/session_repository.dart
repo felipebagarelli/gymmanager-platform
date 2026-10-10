@@ -60,7 +60,14 @@ class SessionRepository {
   }) =>
       _guard(() => _dio.put<void>(
             '/api/v1/workout-sessions/$sessionId/performances/$performanceId',
-            data: {'setNumber': setNumber, 'reps': reps, 'loadKg': loadKg, 'effort': effort?.api},
+            data: {
+              'setNumber': setNumber,
+              'reps': reps,
+              'loadKg': loadKg,
+              'effort': effort?.api,
+              // sem isso o servidor mantém o valor atual (a falta do campo não apaga)
+              'clearEffort': effort == null,
+            },
           ));
 
   Future<void> deletePerformance(int sessionId, int performanceId) => _guard(() =>

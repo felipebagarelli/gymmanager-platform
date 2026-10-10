@@ -13,12 +13,22 @@ import 'app_tab_bar.dart';
 
 /// Casca das 5 abas principais. As telas de fluxo (detalhe do treino, execução,
 /// descanso, concluído, bloqueio) são rotas separadas e, por isso, ficam sem tab bar.
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  /// Abas já visitadas. Histórico e Perfil só são construídos na primeira visita (e depois mantêm o estado):
+  /// construí-los na abertura dispararia o cálculo de evolução e uma requisição por treino sem o aluno abrir a aba.
+  final _visited = <int>{HomeTab.workouts};
+
+  @override
+  Widget build(BuildContext context) {
     final index = ref.watch(homeTabProvider);
+    _visited.add(index);
     final unread = ref.watch(chatSummaryProvider).value?.unreadCount ?? 0;
     // mensalidade em atraso bloqueia treinos e chat; histórico e perfil seguem acessíveis
     final overdue = ref.watch(overdueProvider);
@@ -29,10 +39,10 @@ class HomePage extends ConsumerWidget {
         index: index,
         children: [
           overdue ? const OverdueView() : const MyWorkoutsPage(),
-          const HistoryPage(),
+          _visited.contains(HomeTab.history) ? const HistoryPage() : const SizedBox.shrink(),
           index == HomeTab.messages ? (overdue ? const OverdueView() : const ChatPage()) : const SizedBox.shrink(),
           index == HomeTab.assistant ? const AssistantPage() : const SizedBox.shrink(),
-          const ProfilePage(),
+          _visited.contains(HomeTab.profile) ? const ProfilePage() : const SizedBox.shrink(),
         ],
       ),
       bottomNavigationBar: AppTabBar(

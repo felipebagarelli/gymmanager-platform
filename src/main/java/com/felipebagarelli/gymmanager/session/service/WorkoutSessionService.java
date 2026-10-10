@@ -137,7 +137,12 @@ public class WorkoutSessionService {
         performance.setSetNumber(request.setNumber());
         performance.setReps(request.reps());
         performance.setLoadKg(request.loadKg());
-        performance.setEffort(request.effort());
+        // aditivo: quem não conhece o campo (app antigo) não apaga o "Como foi?" ao editar reps/carga
+        if (request.effort() != null) {
+            performance.setEffort(request.effort());
+        } else if (Boolean.TRUE.equals(request.clearEffort())) {
+            performance.setEffort(null);
+        }
         return toResponse(performanceRepository.save(performance));
     }
 

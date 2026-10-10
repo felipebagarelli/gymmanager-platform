@@ -8,6 +8,8 @@ public record UpdatePerformanceRequest(
         @Positive int setNumber,
         @PositiveOrZero int reps,
         @PositiveOrZero Double loadKg,
-        Effort effort
+        Effort effort,
+        /** true para apagar o "Como foi?" já gravado; sem isso, a falta de effort mantém o valor atual. */
+        Boolean clearEffort
 ) {
 }

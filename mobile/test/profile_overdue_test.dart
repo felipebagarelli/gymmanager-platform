@@ -15,6 +15,8 @@ import 'package:gymmanager_mobile/features/billing/domain/billing.dart';
 import 'package:gymmanager_mobile/features/chat/application/chat_providers.dart';
 import 'package:gymmanager_mobile/features/home/application/home_tab_provider.dart';
 import 'package:gymmanager_mobile/features/home/presentation/home_page.dart';
+import 'package:gymmanager_mobile/features/profile/presentation/profile_page.dart';
+import 'package:gymmanager_mobile/features/sessions/presentation/history_page.dart';
 import 'package:gymmanager_mobile/features/sessions/application/session_providers.dart';
 import 'package:gymmanager_mobile/features/sessions/domain/workout_session.dart';
 import 'package:gymmanager_mobile/features/workouts/application/workout_providers.dart';
@@ -212,6 +214,27 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byKey(const Key('profile-name')), findsNothing);
+      await _close(tester);
+    });
+  });
+
+  group('abas sob demanda', () {
+    testWidgets('Histórico e Perfil só são construídos na primeira visita (e mantidos depois)', (tester) async {
+      await _pump(tester, _app(subscription: _active));
+
+      expect(find.byType(HistoryPage, skipOffstage: false), findsNothing);
+      expect(find.byType(ProfilePage, skipOffstage: false), findsNothing);
+
+      await tester.tap(find.text('Histórico'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byType(HistoryPage), findsOneWidget);
+      expect(find.byType(ProfilePage, skipOffstage: false), findsNothing);
+
+      await tester.tap(find.text('Perfil'));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.byType(ProfilePage), findsOneWidget);
+      // voltando, o Histórico continua construído (mantém o estado)
+      expect(find.byType(HistoryPage, skipOffstage: false), findsOneWidget);
       await _close(tester);
     });
   });

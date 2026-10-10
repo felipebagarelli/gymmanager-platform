@@ -14,6 +14,8 @@ import 'package:gymmanager_mobile/features/sessions/domain/workout_session.dart'
 import 'package:gymmanager_mobile/features/sessions/presentation/completion_page.dart';
 import 'package:gymmanager_mobile/features/sessions/presentation/execute_workout_page.dart';
 import 'package:gymmanager_mobile/features/workouts/application/workout_providers.dart';
+import 'package:gymmanager_mobile/features/workouts/data/workout_repository.dart';
+import 'package:gymmanager_mobile/features/workouts/domain/workout.dart';
 
 import 'support/fake_repositories.dart';
 import 'support/fakes.dart';
@@ -29,7 +31,7 @@ class FakeTime {
   }
 }
 
-Widget buildApp(FakeSessionRepository sessions, FakeTime time) {
+Widget buildApp(FakeSessionRepository sessions, FakeTime time, {WorkoutRepository? workouts}) {
   final router = GoRouter(
     initialLocation: '/workouts/10/run',
     routes: [
@@ -51,7 +53,7 @@ Widget buildApp(FakeSessionRepository sessions, FakeTime time) {
         InMemoryTokenStorage(StoredSession(token: 't', expiresAt: DateTime.now().add(const Duration(hours: 1)))),
       ),
       authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-      workoutRepositoryProvider.overrideWithValue(FakeWorkoutRepository()),
+      workoutRepositoryProvider.overrideWithValue(workouts ?? FakeWorkoutRepository()),
       sessionRepositoryProvider.overrideWithValue(sessions),
       clockProvider.overrideWithValue(() => time.now),
       secondTickerProvider.overrideWithValue(time.ticks.stream),
@@ -89,6 +91,15 @@ Future<void> registerSet(WidgetTester tester, int itemId, {required String reps,
   if (find.byKey(const Key('rest-skip')).evaluate().isNotEmpty) {
     await tester.tap(find.byKey(const Key('rest-skip')));
     await tester.pumpAndSettle();
+  }
+}
+
+/// O plano do treino 11 (que aparece no histórico) não carrega: simula falha de rede ao finalizar.
+class _PlanOfWorkout11Fails extends FakeWorkoutRepository {
+  @override
+  Future<List<PlanItem>> plan(int workoutId) async {
+    if (workoutId == 11) throw AppException('Sem conexão com o servidor. Tente novamente.');
+    return super.plan(workoutId);
   }
 }
 
@@ -366,6 +377,33 @@ void main() {
     expect(find.byKey(const Key('start-workout')), findsNothing);
     expect(find.text('12 reps × 20 kg'), findsOneWidget);
     expect(progress(100, '1/3'), findsOneWidget);
+  });
+
+  testWidgets('falha de rede ao preparar o resumo: mostra a mensagem e a sessão continua aberta', (tester) async {
+    useTallScreen(tester);
+    final repository = FakeSessionRepository(initial: [
+      WorkoutSession(
+        id: 400,
+        workoutId: 11,
+        startedAt: DateTime(2026, 10, 1, 10),
+        finishedAt: DateTime(2026, 10, 1, 11),
+        performances: const [Performance(id: 1, workoutExerciseId: 100, setNumber: 1, reps: 10, loadKg: 20)],
+      ),
+    ]);
+    await repository.start(10);
+    await tester.pumpWidget(buildApp(repository, FakeTime(), workouts: _PlanOfWorkout11Fails()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('finish-workout')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-finish')));
+    await tester.pumpAndSettle();
+
+    // o erro do plano chega embrulhado pelo Riverpod: o aluno vê a mensagem genérica e pode tentar de novo
+    expect(find.text('Algo deu errado. Tente novamente.'), findsOneWidget);
+    expect(repository.sessions.last.isOpen, isTrue);
+    expect(find.byKey(const Key('finish-workout')), findsOneWidget);
+    expect(find.text('TREINO CONCLUÍDO'), findsNothing);
   });
 
   testWidgets('cronômetro mostra o tempo desde o início e acompanha o relógio', (tester) async {

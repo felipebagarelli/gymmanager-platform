@@ -14,4 +14,7 @@ COPY --from=build /src/target/gymmanager-*.jar /app/app.jar
 USER app
 EXPOSE 8080
 ENV SPRING_PROFILES_ACTIVE=prod
+# a API grava horarios sem fuso (LocalDateTime): o fuso do container passa a ser o fuso do sistema.
+# Sem isso a JVM roda em UTC e o app (que le como hora local) desloca dias, cronometro e limite diario da IA.
+ENV TZ=America/Sao_Paulo
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]

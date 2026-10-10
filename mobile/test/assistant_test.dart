@@ -349,6 +349,20 @@ void main() {
       expect(find.byKey(const Key('attachment-preview')), findsNothing); // anexo some depois de enviado
     });
 
+    testWidgets('enviar uma sugestão não descarta a foto anexada (só o texto é enviado)', (tester) async {
+      final repo = FakeAssistantRepository();
+      await _pump(tester, _app(repo, picker: FakePhotoPicker(photo: _photo())));
+      await _attachPhoto(tester);
+      expect(find.byKey(const Key('attachment-preview')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('suggestion-0')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resposta para: Como faço o agachamento?'), findsOneWidget);
+      expect(repo.photoQuestions, isEmpty);
+      expect(find.byKey(const Key('attachment-preview')), findsOneWidget);
+    });
+
     testWidgets('a pergunta digitada vai junto da foto', (tester) async {
       final repo = FakeAssistantRepository();
       await _pump(tester, _app(repo, picker: FakePhotoPicker(photo: _photo())));
