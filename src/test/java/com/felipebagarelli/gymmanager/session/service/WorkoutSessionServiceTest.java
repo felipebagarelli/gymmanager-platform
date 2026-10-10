@@ -122,18 +122,19 @@ class WorkoutSessionServiceTest {
             return p;
         });
 
-        PerformanceResponse response = service.addPerformance(7L, new RecordPerformanceRequest(30L, 1, 12, 20.0), STUDENT);
+        PerformanceResponse response = service.addPerformance(7L, new RecordPerformanceRequest(30L, 1, 12, 20.0, com.felipebagarelli.gymmanager.session.entity.Effort.HARD), STUDENT);
 
         assertThat(response.id()).isEqualTo(99L);
         assertThat(response.reps()).isEqualTo(12);
         assertThat(response.loadKg()).isEqualTo(20.0);
+        assertThat(response.effort()).isEqualTo(com.felipebagarelli.gymmanager.session.entity.Effort.HARD);
     }
 
     @Test
     void addPerformance_isDenied_forAnotherUser_includingTheTrainer() {
         when(sessionRepository.findById(7L)).thenReturn(Optional.of(openSession));
 
-        assertThatThrownBy(() -> service.addPerformance(7L, new RecordPerformanceRequest(30L, 1, 12, 20.0), "trainer@example.com"))
+        assertThatThrownBy(() -> service.addPerformance(7L, new RecordPerformanceRequest(30L, 1, 12, 20.0, null), "trainer@example.com"))
                 .isInstanceOf(AccessDeniedException.class);
         verify(performanceRepository, never()).save(any());
     }
@@ -143,7 +144,7 @@ class WorkoutSessionServiceTest {
         openSession.setFinishedAt(LocalDateTime.now());
         when(sessionRepository.findById(7L)).thenReturn(Optional.of(openSession));
 
-        assertThatThrownBy(() -> service.addPerformance(7L, new RecordPerformanceRequest(30L, 1, 12, 20.0), STUDENT))
+        assertThatThrownBy(() -> service.addPerformance(7L, new RecordPerformanceRequest(30L, 1, 12, 20.0, null), STUDENT))
                 .isInstanceOf(ConflictException.class);
     }
 
@@ -154,7 +155,7 @@ class WorkoutSessionServiceTest {
         when(sessionRepository.findById(7L)).thenReturn(Optional.of(openSession));
         when(workoutExercisesRepository.findById(31L)).thenReturn(Optional.of(foreign));
 
-        assertThatThrownBy(() -> service.addPerformance(7L, new RecordPerformanceRequest(31L, 1, 12, 20.0), STUDENT))
+        assertThatThrownBy(() -> service.addPerformance(7L, new RecordPerformanceRequest(31L, 1, 12, 20.0, null), STUDENT))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

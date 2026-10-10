@@ -49,7 +49,7 @@ public class WorkoutSessionService {
     }
 
     private PerformanceResponse toResponse(ExercisePerformance p) {
-        return new PerformanceResponse(p.getId(), p.getWorkoutExercise().getId(), p.getSetNumber(), p.getReps(), p.getLoadKg());
+        return new PerformanceResponse(p.getId(), p.getWorkoutExercise().getId(), p.getSetNumber(), p.getReps(), p.getLoadKg(), p.getEffort());
     }
 
     private WorkoutSessionResponse toResponse(WorkoutSession s) {
@@ -122,6 +122,7 @@ public class WorkoutSessionService {
                 .setNumber(request.setNumber())
                 .reps(request.reps())
                 .loadKg(request.loadKg())
+                .effort(request.effort())
                 .build());
         return toResponse(performance);
     }
@@ -136,6 +137,7 @@ public class WorkoutSessionService {
         performance.setSetNumber(request.setNumber());
         performance.setReps(request.reps());
         performance.setLoadKg(request.loadKg());
+        performance.setEffort(request.effort());
         return toResponse(performanceRepository.save(performance));
     }
 

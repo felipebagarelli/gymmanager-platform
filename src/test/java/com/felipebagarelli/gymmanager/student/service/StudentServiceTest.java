@@ -217,4 +217,36 @@ class StudentServiceTest {
         assertThatThrownBy(() -> studentService.getMyProfile("trainer@example.com"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
+
+    private TrainerStudent linkWithGoal(Integer goal) {
+        User user = User.builder().email("aluno@example.com").role(Role.STUDENT).build();
+        StudentProfile student = StudentProfile.builder().id(2L).user(user).name("Maria Aluna").weeklyGoal(goal).build();
+        TrainerStudent link = TrainerStudent.builder().trainer(trainer()).student(student)
+                .status(TrainerStudentStatus.ACTIVE).build();
+        when(trainerStudentRepository.findByStudentId(2L)).thenReturn(Optional.of(link));
+        return link;
+    }
+
+    @Test
+    void updateById_setsWeeklyGoal_whenProvided() {
+        TrainerStudent link = linkWithGoal(null);
+
+        StudentProfileResponse response = studentService.updateById(2L,
+                new com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest(
+                        "Maria Aluna", null, null, null, null, null, 4), "trainer@example.com");
+
+        assertThat(response.weeklyGoal()).isEqualTo(4);
+        assertThat(link.getStudent().getWeeklyGoal()).isEqualTo(4);
+    }
+
+    @Test
+    void updateById_keepsExistingWeeklyGoal_whenRequestOmitsIt() {
+        linkWithGoal(3);
+
+        StudentProfileResponse response = studentService.updateById(2L,
+                new com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest(
+                        "Maria Aluna", null, null, null, null, null, null), "trainer@example.com");
+
+        assertThat(response.weeklyGoal()).isEqualTo(3);
+    }
 }

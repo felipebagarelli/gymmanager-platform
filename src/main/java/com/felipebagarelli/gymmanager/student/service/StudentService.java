@@ -55,7 +55,8 @@ public class StudentService {
                 student.getHeight(),
                 student.getWeight(),
                 student.isActive(),
-                status
+                status,
+                student.getWeeklyGoal()
         );
     }
 
@@ -148,6 +149,10 @@ public class StudentService {
         student.setGoal(request.goal());
         student.setHeight(request.height());
         student.setWeight(request.weight());
+        // aditivo: quem não envia a meta (ex.: painel atual) não apaga a que já existe
+        if (request.weeklyGoal() != null) {
+            student.setWeeklyGoal(request.weeklyGoal());
+        }
         studentProfileRepository.save(student);
 
         return toResponse(student, link.getStatus());

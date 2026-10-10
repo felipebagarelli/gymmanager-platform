@@ -28,5 +28,7 @@ public class StudentProfile {
     private String goal;
     private Double height;
     private Double weight;
+    /** Meta de treinos por semana (opcional, 1 a 14). */
+    private Integer weeklyGoal;
     private boolean active;
 }

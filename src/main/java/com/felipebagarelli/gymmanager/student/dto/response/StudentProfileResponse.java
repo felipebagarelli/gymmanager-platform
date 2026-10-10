@@ -14,6 +14,7 @@ public record StudentProfileResponse(
         Double height,
         Double weight,
         boolean active,
-        TrainerStudentStatus status
+        TrainerStudentStatus status,
+        Integer weeklyGoal
 ) {
 }

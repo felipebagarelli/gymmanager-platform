@@ -27,4 +27,8 @@ public class ExercisePerformance {
     private int setNumber;
     private int reps;
     private Double loadKg;
+
+    /** Opcional: como o aluno achou a série. */
+    @Enumerated(EnumType.STRING)
+    private Effort effort;
 }
