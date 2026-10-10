@@ -133,7 +133,14 @@ class _RestViewState extends ConsumerState<RestView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(formatClock(_remaining), key: const Key('rest-time'), style: AppText.display(84)),
+                        // o anel tem largura fixa: reduz o relógio em vez de quebrar linha (fonte grande do sistema)
+                        SizedBox(
+                          width: 190,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(formatClock(_remaining), key: const Key('rest-time'), style: AppText.display(84)),
+                          ),
+                        ),
                         const LabelText('Descanso', size: 12),
                       ],
                     ),

@@ -21,7 +21,7 @@ import 'support/fakes.dart';
 /// Relógio e pulso de 1 s controlados pelo teste (nada de Timer real).
 class FakeTime {
   DateTime now = DateTime(2026, 10, 9, 10);
-  final ticks = StreamController<void>.broadcast();
+  final ticks = StreamController<void>.broadcast(sync: true);
 
   void advance(int seconds) {
     now = now.add(Duration(seconds: seconds));
@@ -63,6 +63,7 @@ Widget buildApp(FakeSessionRepository sessions, FakeTime time) {
 Finder progress(int itemId, String text) => find.descendant(
       of: find.byKey(Key('progress-$itemId')),
       matching: find.text(text),
+      matchRoot: true,
     );
 
 Future<void> openSheet(WidgetTester tester, int itemId) async {
@@ -316,8 +317,8 @@ void main() {
 
     expect(repository.sessions.single.isOpen, isFalse);
     expect(find.text('TREINO CONCLUÍDO'), findsOneWidget);
-    expect(find.descendant(of: find.byKey(const Key('kpi-sets')), matching: find.textContaining('1/7')), findsOneWidget);
-    expect(find.descendant(of: find.byKey(const Key('kpi-volume')), matching: find.textContaining('225')), findsOneWidget);
+    expect(find.descendant(of: find.byKey(const Key('kpi-sets')), matching: find.textContaining('1/7'), matchRoot: true), findsOneWidget);
+    expect(find.descendant(of: find.byKey(const Key('kpi-volume')), matching: find.textContaining('225'), matchRoot: true), findsOneWidget);
   });
 
   testWidgets('todas as séries feitas: finaliza direto, sem confirmação', (tester) async {
