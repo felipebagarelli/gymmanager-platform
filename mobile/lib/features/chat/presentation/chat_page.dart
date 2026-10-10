@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/async_widgets.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/composer_widgets.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../billing/presentation/overdue_view.dart';
 import '../application/chat_providers.dart';
@@ -273,63 +274,27 @@ class _Composer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    OutlineInputBorder border(Color color) => OutlineInputBorder(
-          borderRadius: BorderRadius.circular(99),
-          borderSide: BorderSide(color: color),
-        );
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(kScreenPadding, 8, kScreenPadding, 14),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
+            child: PillTextField(
               key: const Key('chat-input'),
               controller: controller,
+              hint: hint,
               maxLength: 2000,
-              minLines: 1,
-              maxLines: 4,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => onSend(),
-              style: AppText.body(size: 15),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: AppText.body(size: 15, color: AppColors.textMuted),
-                counterText: '',
-                filled: true,
-                fillColor: AppColors.surface,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-                border: border(AppColors.borderStrong),
-                enabledBorder: border(AppColors.borderStrong),
-                focusedBorder: border(AppColors.volt),
-              ),
+              onSubmitted: onSend,
             ),
           ),
           const SizedBox(width: 10),
           ListenableBuilder(
             listenable: controller,
-            builder: (context, _) {
-              final enabled = !sending && controller.text.trim().isNotEmpty;
-              return Semantics(
-                button: true,
-                enabled: enabled,
-                label: 'Enviar',
-                excludeSemantics: true,
-                child: GestureDetector(
-                  key: const Key('chat-send'),
-                  onTap: enabled ? onSend : null,
-                  child: Opacity(
-                    opacity: enabled ? 1 : 0.4,
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(gradient: AppColors.ctaGradient, shape: BoxShape.circle),
-                      child: const Icon(LucideIcons.send, size: 20, color: AppColors.onVolt),
-                    ),
-                  ),
-                ),
-              );
-            },
+            builder: (context, _) => SendButton(
+              key: const Key('chat-send'),
+              enabled: !sending && controller.text.trim().isNotEmpty,
+              onTap: onSend,
+            ),
           ),
         ],
       ),

@@ -29,6 +29,11 @@ public class AiMessage {
     @Column(nullable = false, length = 8000)
     private String body;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private AiMessageKind kind = AiMessageKind.TEXT;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 }

@@ -2,14 +2,20 @@ package com.felipebagarelli.gymmanager.ai.provider;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.errors.AnthropicException;
+import com.anthropic.models.messages.Base64ImageSource;
+import com.anthropic.models.messages.ContentBlockParam;
+import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.OutputConfig;
 import com.anthropic.models.messages.StopReason;
+import com.anthropic.models.messages.TextBlockParam;
 import com.felipebagarelli.gymmanager.ai.entity.AiRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Base64;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /** Adaptador para a API do Claude (SDK oficial). Nao loga perguntas nem respostas, so contagem de tokens. */
@@ -42,7 +48,18 @@ public class ClaudeAiProvider implements AiProvider {
                 builder.addAssistantMessage(turn.text());
             }
         }
-        builder.addUserMessage(request.question());
+        if (request.image() == null) {
+            builder.addUserMessage(request.question());
+        } else {
+            builder.addUserMessageOfBlockParams(List.of(
+                    ContentBlockParam.ofImage(ImageBlockParam.builder()
+                            .source(Base64ImageSource.builder()
+                                    .mediaType(Base64ImageSource.MediaType.of(request.image().mediaType()))
+                                    .data(Base64.getEncoder().encodeToString(request.image().data()))
+                                    .build())
+                            .build()),
+                    ContentBlockParam.ofText(TextBlockParam.builder().text(request.question()).build())));
+        }
         return builder.build();
     }
 

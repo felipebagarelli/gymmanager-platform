@@ -183,7 +183,7 @@ void main() {
 
       expect(find.text('Foi ótimo!'), findsOneWidget);
       expect(chat.messagesStore.last.body, 'Foi ótimo!');
-      expect(tester.widget<TextField>(find.byKey(const Key('chat-input'))).controller!.text, isEmpty);
+      expect(tester.widget<TextField>(find.descendant(of: find.byKey(const Key('chat-input')), matching: find.byType(TextField))).controller!.text, isEmpty);
       await closeApp(tester);
     });
 

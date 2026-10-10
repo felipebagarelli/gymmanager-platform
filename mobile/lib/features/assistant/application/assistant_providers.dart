@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../../core/media/photo.dart';
 import '../data/assistant_repository.dart';
 import '../domain/assistant.dart';
 
@@ -25,6 +26,13 @@ class AssistantController extends AsyncNotifier<List<AiMessage>> {
   /// Lanca AppException (limite diario, IA indisponivel, falha do provedor...).
   Future<void> ask(String question) async {
     final exchange = await ref.read(assistantRepositoryProvider).ask(question);
+    state = AsyncData([...state.value ?? const [], exchange.question, exchange.answer]);
+    ref.invalidate(assistantUsageProvider);
+  }
+
+  /// Foto do aparelho (texto opcional). A imagem só passa por aqui: o servidor não a guarda.
+  Future<void> askWithPhoto(PickedPhoto photo, {String? question}) async {
+    final exchange = await ref.read(assistantRepositoryProvider).askWithPhoto(photo, question: question);
     state = AsyncData([...state.value ?? const [], exchange.question, exchange.answer]);
     ref.invalidate(assistantUsageProvider);
   }

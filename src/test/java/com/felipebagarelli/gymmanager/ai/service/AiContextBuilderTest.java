@@ -53,4 +53,21 @@ class AiContextBuilderTest {
         assertThat(AiContextBuilder.clean("x".repeat(500))).hasSize(AiContextBuilder.MAX_FIELD_LENGTH + 1);
         assertThat(AiContextBuilder.clean(null)).isEmpty();
     }
+
+    @Test
+    void buildForPhoto_addsTheJsonRulesAndStillHidesPrivateData() {
+        AiContextBuilder builder = new AiContextBuilder(assignmentRepository, workoutExercisesRepository,
+                sessionRepository, performanceRepository);
+        User user = User.builder().email("segredo@example.com").build();
+        StudentProfile student = StudentProfile.builder().id(5L).user(user).name("Ana").phone("11999999999").build();
+        when(assignmentRepository.findByStudentIdAndStatus(eq(5L), any())).thenReturn(List.of());
+        when(sessionRepository.findByAssignmentStudentIdOrderByStartedAtDesc(5L)).thenReturn(List.of());
+
+        String prompt = builder.buildForPhoto(student);
+
+        assertThat(prompt).contains("FOTO DE UM APARELHO", "SOMENTE com um objeto JSON", "noPlano", "Nunca faça diagnóstico");
+        assertThat(prompt).contains("não comente o corpo");
+        assertThat(prompt).doesNotContain("segredo@example.com").doesNotContain("11999999999");
+        assertThat(builder.build(student)).doesNotContain("FOTO DE UM APARELHO");
+    }
 }

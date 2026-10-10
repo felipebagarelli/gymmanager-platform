@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/errors/app_exception.dart';
+import '../../../core/media/photo.dart';
 import '../domain/assistant.dart';
 
 class AssistantRepository {
@@ -26,6 +27,21 @@ class AssistantRepository {
           '/api/v1/ai/messages',
           data: {'question': question},
           options: Options(receiveTimeout: const Duration(seconds: 90)),
+        );
+        return AiExchange.fromJson(response.data!);
+      });
+
+  /// Pergunta com a foto de um aparelho (texto opcional). A resposta da IA com imagem demora mais.
+  Future<AiExchange> askWithPhoto(PickedPhoto photo, {String? question}) => _guard(() async {
+        final type = photo.mimeType.split('/');
+        final form = FormData.fromMap({
+          if (question != null && question.trim().isNotEmpty) 'question': question.trim(),
+          'image': MultipartFile.fromBytes(photo.bytes, filename: photo.name, contentType: DioMediaType(type[0], type[1])),
+        });
+        final response = await _dio.post<Map<String, dynamic>>(
+          '/api/v1/ai/messages',
+          data: form,
+          options: Options(receiveTimeout: const Duration(seconds: 120), sendTimeout: const Duration(seconds: 60)),
         );
         return AiExchange.fromJson(response.data!);
       });

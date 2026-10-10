@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>O GymManager usa a câmera para você fotografar um aparelho da academia e receber orientações de uso.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O GymManager acessa suas fotos só para você escolher a imagem de um aparelho da academia.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
