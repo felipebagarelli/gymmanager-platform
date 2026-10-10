@@ -5,17 +5,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/utils/async_widgets.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../application/billing_providers.dart';
 import '../domain/billing.dart';
 import 'overdue_view.dart';
-
-String _date(DateTime value) {
-  final d = value.toLocal();
-  return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
-}
 
 /// Situação da mensalidade do aluno + escolha de plano / pagamento / cancelamento.
 class SubscriptionCard extends ConsumerWidget {
@@ -123,7 +119,7 @@ class _Current extends ConsumerWidget {
                       children: [
                         Text(subscription.planName, style: AppText.display(30)),
                         if (end != null)
-                          Text('${pastDue ? 'Venceu em' : 'Renova em'} ${_date(end)}',
+                          Text('${pastDue ? 'Venceu em' : 'Renova em'} ${formatDayMonthPadded(end)}',
                               style: AppText.body(size: 13.5, color: AppColors.textSecondary)),
                       ],
                     ),

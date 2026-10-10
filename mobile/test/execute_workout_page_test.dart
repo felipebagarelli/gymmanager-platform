@@ -406,6 +406,23 @@ void main() {
     expect(find.text('TREINO CONCLUÍDO'), findsNothing);
   });
 
+  testWidgets('depois de remover uma série, o número exibido é o que será gravado', (tester) async {
+    useTallScreen(tester);
+    final repository = await startedRepository();
+    // séries 1 e 3 (a 2 foi removida; o servidor não renumera)
+    await repository.addPerformance(500, workoutExerciseId: 100, setNumber: 1, reps: 12, loadKg: 20);
+    await repository.addPerformance(500, workoutExerciseId: 100, setNumber: 3, reps: 12, loadKg: 20);
+    await tester.pumpWidget(buildApp(repository, FakeTime()));
+    await tester.pumpAndSettle();
+
+    await openSheet(tester, 100);
+    expect(find.text('SÉRIE 4 · SUPINO'), findsOneWidget);
+    await saveSheet(tester);
+
+    expect(repository.calls, contains('add:100#4'));
+    expect(find.text('Série 4 de Supino salva · 12 × 20 kg'), findsOneWidget);
+  });
+
   testWidgets('cronômetro mostra o tempo desde o início e acompanha o relógio', (tester) async {
     useTallScreen(tester);
     final time = FakeTime();

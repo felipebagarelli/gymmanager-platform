@@ -54,6 +54,8 @@ class _ExecuteWorkoutPageState extends ConsumerState<ExecuteWorkoutPage> {
     final item = row.item;
     final sets = session.setsOf(item.id);
     final last = sets.isEmpty ? null : sets.last;
+    // o servidor não renumera após remoções: o número exibido é o que o controller vai gravar
+    final setNumber = last == null ? 1 : last.setNumber + 1;
     final history = ref.read(historyProvider).value ?? const [];
     final before = lastPerformanceOf(history, item.id, exceptSessionId: session.id);
 
@@ -64,7 +66,7 @@ class _ExecuteWorkoutPageState extends ConsumerState<ExecuteWorkoutPage> {
 
     final result = await showSetSheet(
       context,
-      title: 'Série ${sets.length + 1} · ${row.exerciseName}',
+      title: 'Série $setNumber · ${row.exerciseName}',
       subtitle: subtitle,
       // pré-preenche com a série anterior desta sessão ou, na primeira, com a meta
       initialReps: last?.reps ?? item.reps,
@@ -78,7 +80,7 @@ class _ExecuteWorkoutPageState extends ConsumerState<ExecuteWorkoutPage> {
           .read(executionProvider(_workoutId).notifier)
           .addSet(item.id, reps: result.reps, loadKg: result.loadKg, effort: result.effort),
     );
-    if (saved && mounted) _afterSave(row, sets.length + 1, result);
+    if (saved && mounted) _afterSave(row, setNumber, result);
   }
 
   /// Decide o que vem depois de salvar: descanso, ou o aviso de treino completo.

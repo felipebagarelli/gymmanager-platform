@@ -33,7 +33,11 @@ class WorkoutDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final plan = ref.watch(workoutPlanProvider(workoutId));
     final name = ref.watch(myWorkoutsProvider).value?.where((w) => w.id == workoutId).firstOrNull?.name;
-    final hasOpenSession = ref.watch(executionProvider(workoutId)).value != null;
+    final execution = ref.watch(executionProvider(workoutId));
+    final hasOpenSession = execution.value != null;
+    // carregando (ou recarregando, caso em que o valor antigo pode estar desatualizado) não dá para saber
+    // se já existe sessão aberta: iniciar de novo daria 409
+    final checkingSession = execution.isLoading;
     final parts = splitWorkoutName(name ?? 'Treino');
 
     return Scaffold(
@@ -113,7 +117,9 @@ class WorkoutDetailPage extends ConsumerWidget {
                 key: const Key('open-execution'),
                 label: hasOpenSession ? 'Continuar treino' : 'Iniciar treino',
                 icon: LucideIcons.play,
-                onPressed: (plan.value?.isNotEmpty ?? false) ? () => _start(context, ref, hasOpenSession) : null,
+                onPressed: (plan.value?.isNotEmpty ?? false) && !checkingSession
+                    ? () => _start(context, ref, hasOpenSession)
+                    : null,
               ),
             ),
           ],

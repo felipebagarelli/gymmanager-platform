@@ -18,6 +18,9 @@ import 'equipment_answer.dart';
 
 const assistantDisclaimer = 'O Personal IA é uma IA e não substitui seu personal nem orientação médica.';
 
+/// Texto da fala do aluno quando ele envia só a foto, sem pergunta.
+const _photoOnlyLabel = 'Foto do aparelho';
+
 const _suggestions = ['Como faço o agachamento?', 'Quanto descanso entre as séries?', 'Como aquecer antes do treino?'];
 
 /// Personal IA: perguntas sobre treino e foto do aparelho. Somente leitura; conversa privada do aluno.
@@ -163,7 +166,7 @@ class _AssistantPageState extends ConsumerState<AssistantPage> {
                               onNotify: trainerName == null ? null : () => _notifyTrainer(message, trainerName),
                             ),
                     if (_pendingQuestion != null || _pendingPhoto != null)
-                      _UserBubble(text: _pendingQuestion ?? PhotoLabels.deviceFallback, photo: _pendingPhoto != null, thumbnail: _pendingPhoto),
+                      _UserBubble(text: _pendingQuestion ?? _photoOnlyLabel, photo: _pendingPhoto != null, thumbnail: _pendingPhoto),
                     if (_asking) _Typing(photo: _pendingPhoto != null),
                   ],
                 );
@@ -207,13 +210,6 @@ class _AssistantPageState extends ConsumerState<AssistantPage> {
       ),
     );
   }
-}
-
-/// Textos que dependem de existir uma foto sem pergunta digitada.
-class PhotoLabels {
-  PhotoLabels._();
-
-  static const deviceFallback = 'Foto do aparelho';
 }
 
 class _Header extends StatelessWidget {

@@ -65,3 +65,15 @@ String formatDayMonth(DateTime value) {
   final d = value.toLocal();
   return '${d.day}/${d.month}';
 }
+
+/// "05/10" (dia e mês com dois dígitos).
+String formatDayMonthPadded(DateTime value) {
+  final d = value.toLocal();
+  return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+}
+
+/// "10 out" (dia com dois dígitos e mês abreviado em minúsculas).
+String formatShortDate(DateTime value) {
+  final d = value.toLocal();
+  return '${d.day.toString().padLeft(2, '0')} ${formatShortMonth(d).toLowerCase()}';
+}

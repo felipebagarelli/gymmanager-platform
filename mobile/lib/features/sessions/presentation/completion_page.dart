@@ -15,8 +15,6 @@ import '../../workouts/domain/workout_name.dart';
 import '../application/session_providers.dart';
 import '../domain/completion.dart';
 
-const _shortMonths = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-
 /// "Treino concluído": resumo da sessão que acabou de ser finalizada (tela de fluxo, sem tab bar).
 class CompletionPage extends ConsumerWidget {
   const CompletionPage({super.key, required this.workoutId});
@@ -47,7 +45,7 @@ class CompletionPage extends ConsumerWidget {
     final subtitle = [
       if (parts.tag != null) parts.tag!,
       parts.title,
-      '${date.day.toString().padLeft(2, '0')} ${_shortMonths[date.month - 1]}',
+      formatShortDate(date),
     ].join(' · ');
 
     return PopScope(

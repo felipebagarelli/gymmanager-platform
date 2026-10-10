@@ -3,11 +3,6 @@ import 'evolution.dart';
 import 'training_stats.dart';
 import 'workout_session.dart';
 
-DateTime _dateOnly(DateTime value) {
-  final local = value.toLocal();
-  return DateTime(local.year, local.month, local.day);
-}
-
 /// Volume (repetições x carga) das séries de uma sessão.
 double sessionVolume(WorkoutSession session) => WorkoutCompletion.volumeOf(session.performances);
 
@@ -131,8 +126,6 @@ String durationLabel(WorkoutSession session) {
   return minutes < 1 ? '<1 min' : '$minutes min';
 }
 
-/// Mesmo dia civil (ignora horário).
-bool isSameDay(DateTime a, DateTime b) => _dateOnly(a) == _dateOnly(b);
 
 /// Quantas vezes o aluno bateu o próprio recorde de carga: sessões em que a carga máxima de um
 /// exercício superou todas as anteriores (a primeira marca de cada exercício não conta).

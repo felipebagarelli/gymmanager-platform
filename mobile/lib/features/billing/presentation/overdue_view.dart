@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/async_widgets.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../chat/application/chat_providers.dart';
@@ -152,7 +153,7 @@ class _OverdueViewState extends ConsumerState<OverdueView> {
                                 Padding(
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
-                                    'Venceu em ${dueDate.day.toString().padLeft(2, '0')}/${dueDate.month.toString().padLeft(2, '0')}',
+                                    'Venceu em ${formatDayMonthPadded(dueDate)}',
                                     style: AppText.body(size: 13.5, color: AppColors.textSecondary),
                                   ),
                                 ),
