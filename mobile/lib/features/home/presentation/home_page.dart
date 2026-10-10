@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../assistant/presentation/assistant_page.dart';
+import '../../billing/presentation/overdue_view.dart';
 import '../../chat/application/chat_providers.dart';
 import '../../chat/presentation/chat_page.dart';
 import '../../profile/presentation/profile_page.dart';
@@ -19,17 +20,19 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final index = ref.watch(homeTabProvider);
     final unread = ref.watch(chatSummaryProvider).value?.unreadCount ?? 0;
+    // mensalidade em atraso bloqueia treinos e chat; histórico e perfil seguem acessíveis
+    final overdue = ref.watch(overdueProvider);
 
     return Scaffold(
       // TODO(redesign): cada aba passa a desenhar o próprio cabeçalho (Treinos já desenha); remover o AppBar ao fim.
-      appBar: index == HomeTab.workouts || index == HomeTab.history || index == HomeTab.messages ? null : AppBar(title: Text(appTabs[index].label)),
+      appBar: index == HomeTab.assistant ? AppBar(title: Text(appTabs[index].label)) : null,
       // chat e assistente só são construídos quando abertos (polling / chamadas sob demanda)
       body: IndexedStack(
         index: index,
         children: [
-          const MyWorkoutsPage(),
+          overdue ? const OverdueView() : const MyWorkoutsPage(),
           const HistoryPage(),
-          index == HomeTab.messages ? const ChatPage() : const SizedBox.shrink(),
+          index == HomeTab.messages ? (overdue ? const OverdueView() : const ChatPage()) : const SizedBox.shrink(),
           index == HomeTab.assistant ? const AssistantPage() : const SizedBox.shrink(),
           const ProfilePage(),
         ],

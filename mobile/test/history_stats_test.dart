@@ -128,4 +128,27 @@ void main() {
     );
     expect(durationLabel(_session(1, start, const [], open: true)), 'Em andamento');
   });
+
+  group('recordCount', () {
+    ExerciseProgress exercise(List<double?> loads) => ExerciseProgress(
+          exerciseName: 'Supino',
+          points: [
+            for (var i = 0; i < loads.length; i++)
+              ProgressPoint(date: DateTime(2026, 9, 1 + 7 * i), maxLoadKg: loads[i], totalReps: 10),
+          ],
+        );
+
+    test('conta só quando supera todas as marcas anteriores; a primeira não conta', () {
+      expect(recordCount([exercise([40, 45, 42, 50, 50])]), 2);
+    });
+
+    test('soma os exercícios e ignora sessões sem carga', () {
+      expect(recordCount([exercise([40, null, 45]), exercise([20, 20, 25])]), 2);
+    });
+
+    test('sem exercícios ou com um único ponto, zero', () {
+      expect(recordCount(const []), 0);
+      expect(recordCount([exercise([40])]), 0);
+    });
+  });
 }

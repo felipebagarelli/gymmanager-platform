@@ -133,3 +133,19 @@ String durationLabel(WorkoutSession session) {
 
 /// Mesmo dia civil (ignora horário).
 bool isSameDay(DateTime a, DateTime b) => _dateOnly(a) == _dateOnly(b);
+
+/// Quantas vezes o aluno bateu o próprio recorde de carga: sessões em que a carga máxima de um
+/// exercício superou todas as anteriores (a primeira marca de cada exercício não conta).
+int recordCount(List<ExerciseProgress> progress) {
+  var records = 0;
+  for (final exercise in progress) {
+    double? best;
+    for (final point in exercise.points) {
+      final load = point.maxLoadKg;
+      if (load == null) continue;
+      if (best != null && load > best) records++;
+      if (best == null || load > best) best = load;
+    }
+  }
+  return records;
+}

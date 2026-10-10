@@ -101,7 +101,9 @@ class TodayDoneCard extends StatelessWidget {
 
     return AppCard(
       key: const Key('today-done-card'),
-      child: Column(
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const LabelText('Treino de hoje concluído', color: AppColors.success),
@@ -120,6 +122,7 @@ class TodayDoneCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }

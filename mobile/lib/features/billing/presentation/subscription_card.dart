@@ -1,29 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text.dart';
 import '../../../core/utils/async_widgets.dart';
+import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/pill_button.dart';
+import '../../../core/widgets/skeleton.dart';
 import '../application/billing_providers.dart';
 import '../domain/billing.dart';
 
-/// Situacao da mensalidade do aluno + escolha de plano / pagamento / cancelamento.
+String _date(DateTime value) {
+  final d = value.toLocal();
+  return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}';
+}
+
+/// Situação da mensalidade do aluno + escolha de plano / pagamento / cancelamento.
 class SubscriptionCard extends ConsumerWidget {
   const SubscriptionCard({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subscription = ref.watch(mySubscriptionProvider);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: subscription.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(mySubscriptionProvider)),
-          data: (current) => current == null || current.status == SubscriptionStatus.canceled
-              ? const _ChoosePlan()
-              : _Current(subscription: current),
-        ),
+    return subscription.when(
+      loading: () => const SkeletonBox(height: 150, radius: 20),
+      error: (error, _) => AppCard(
+        child: ErrorRetry(error: error, onRetry: () => ref.invalidate(mySubscriptionProvider)),
       ),
+      data: (current) => current == null || current.status == SubscriptionStatus.canceled
+          ? const _ChoosePlan()
+          : _Current(subscription: current),
     );
   }
 }
@@ -61,38 +68,86 @@ class _Current extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final (label, color, icon) = switch (subscription.status) {
-      SubscriptionStatus.active => ('Em dia', Colors.green, Icons.check_circle),
-      SubscriptionStatus.pastDue => ('Em atraso', Colors.red, Icons.warning_amber),
-      _ => ('Aguardando pagamento', Colors.orange, Icons.hourglass_top),
+    final (label, color) = switch (subscription.status) {
+      SubscriptionStatus.active => ('Ativo', AppColors.success),
+      SubscriptionStatus.pastDue => ('Em atraso', AppColors.ember),
+      _ => ('Aguardando pagamento', AppColors.sky),
     };
     final end = subscription.currentPeriodEnd;
+    final pastDue = subscription.status == SubscriptionStatus.pastDue;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Minha assinatura', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        Text('${subscription.planName} · ${formatPrice(subscription.priceCents)}/mês'),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(width: 6),
-            Text(label, key: const Key('subscription-status'), style: TextStyle(color: color)),
-          ],
-        ),
-        if (end != null)
-          Text('Próxima cobrança: ${end.day.toString().padLeft(2, '0')}/${end.month.toString().padLeft(2, '0')}/${end.year}',
-              style: Theme.of(context).textTheme.bodySmall),
-        if (subscription.status == SubscriptionStatus.pastDue)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Text(
-              'Seus treinos e mensagens ficam bloqueados até a regularização do pagamento.',
-              key: Key('overdue-notice'),
+        Container(
+          key: const Key('plan-card'),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF1B2410), AppColors.surface],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: pastDue ? AppColors.ember.withValues(alpha: 0.5) : AppColors.mix(AppColors.volt, 0.35, AppColors.borderSubtle),
             ),
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const LabelText('Meu plano', color: AppColors.volt),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                      const SizedBox(width: 6),
+                      Text(label,
+                          key: const Key('subscription-status'),
+                          style: AppText.body(size: 12.5, weight: FontWeight.w700, color: color)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(subscription.planName, style: AppText.display(30)),
+                        if (end != null)
+                          Text('${pastDue ? 'Venceu em' : 'Renova em'} ${_date(end)}',
+                              style: AppText.body(size: 13.5, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(formatPrice(subscription.priceCents), key: const Key('plan-price'), style: AppText.display(30, color: AppColors.volt)),
+                      Text('por mês', style: AppText.body(size: 12, color: AppColors.textMuted)),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        if (pastDue) ...[
+          const SizedBox(height: 10),
+          const InfoAlert(
+            key: Key('overdue-notice'),
+            kind: AlertKind.warn,
+            icon: LucideIcons.lock,
+            text: 'Seus treinos e mensagens ficam bloqueados até a regularização do pagamento.',
+          ),
+        ],
         if (subscription.status == SubscriptionStatus.pending)
           TextButton(
             onPressed: () => ref.invalidate(mySubscriptionProvider),
@@ -101,6 +156,7 @@ class _Current extends ConsumerWidget {
         TextButton(
           key: const Key('cancel-subscription'),
           onPressed: () => _cancel(context, ref),
+          style: TextButton.styleFrom(foregroundColor: AppColors.textMuted),
           child: const Text('Cancelar assinatura'),
         ),
       ],
@@ -128,36 +184,54 @@ class _ChoosePlan extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plans = ref.watch(availablePlansProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Assine um plano', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        plans.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(availablePlansProvider)),
-          data: (items) => items.isEmpty
-              ? const Text('Seu personal ainda não publicou planos.', key: Key('no-plans'))
-              : Column(
-                  children: [
-                    for (final plan in items)
-                      ListTile(
-                        key: Key('plan-${plan.id}'),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(plan.name),
-                        subtitle: Text('${formatPrice(plan.priceCents)}/mês'
-                            '${plan.description == null || plan.description!.isEmpty ? '' : '\n${plan.description}'}'),
-                        trailing: FilledButton(
-                          key: Key('subscribe-${plan.id}'),
-                          onPressed: () => _subscribe(context, ref, plan),
-                          child: const Text('Assinar'),
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const LabelText('Assine um plano', color: AppColors.volt),
+          const SizedBox(height: 10),
+          plans.when(
+            loading: () => const SkeletonBox(height: 60),
+            error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(availablePlansProvider)),
+            data: (items) => items.isEmpty
+                ? Text('Seu personal ainda não publicou planos.',
+                    key: const Key('no-plans'), style: AppText.body(color: AppColors.textSecondary))
+                : Column(
+                    children: [
+                      for (final plan in items)
+                        Padding(
+                          key: Key('plan-${plan.id}'),
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(plan.name, style: AppText.body(size: 16, weight: FontWeight.w600)),
+                                    Text('${formatPrice(plan.priceCents)}/mês',
+                                        style: AppText.body(size: 14, color: AppColors.textSecondary)),
+                                    if (plan.description != null && plan.description!.isNotEmpty)
+                                      Text(plan.description!, style: AppText.body(size: 13, color: AppColors.textMuted)),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              PillButton(
+                                key: Key('subscribe-${plan.id}'),
+                                label: 'Assinar',
+                                height: 44,
+                                expand: false,
+                                onPressed: () => _subscribe(context, ref, plan),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                  ],
-                ),
-        ),
-      ],
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../../core/utils/async_widgets.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../billing/presentation/overdue_view.dart';
 import '../../home/application/home_tab_provider.dart';
 import '../../sessions/application/session_providers.dart';
 import '../../sessions/domain/training_stats.dart';
@@ -37,7 +38,9 @@ class MyWorkoutsPage extends ConsumerWidget {
       bottom: false,
       child: workouts.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(myWorkoutsProvider)),
+        error: (error, _) => isPaymentRequired(error)
+            ? const OverdueView()
+            : ErrorRetry(error: error, onRetry: () => ref.invalidate(myWorkoutsProvider)),
         data: (items) => RefreshIndicator(
           onRefresh: () => _refresh(ref),
           child: ListView(

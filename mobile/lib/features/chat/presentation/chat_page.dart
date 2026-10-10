@@ -10,6 +10,7 @@ import '../../../core/utils/async_widgets.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/skeleton.dart';
+import '../../billing/presentation/overdue_view.dart';
 import '../application/chat_providers.dart';
 import '../domain/chat.dart';
 
@@ -43,7 +44,9 @@ class ChatPage extends ConsumerWidget {
       bottom: false,
       child: summary.when(
         loading: () => const SkeletonList(heights: [64, 60, 80, 60]),
-        error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(chatSummaryProvider)),
+        error: (error, _) => isPaymentRequired(error)
+            ? const OverdueView()
+            : ErrorRetry(error: error, onRetry: () => ref.invalidate(chatSummaryProvider)),
         data: (conversation) => conversation == null
             ? const EmptyState(
                 icon: LucideIcons.messageCircle,

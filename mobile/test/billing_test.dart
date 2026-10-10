@@ -113,7 +113,7 @@ void main() {
     await tester.pumpWidget(_app(repo));
     await tester.pumpAndSettle();
 
-    expect(find.text('Em dia'), findsOneWidget);
+    expect(find.text('Ativo'), findsOneWidget);
     expect(find.byKey(const Key('overdue-notice')), findsNothing);
 
     await tester.tap(find.byKey(const Key('cancel-subscription')));
