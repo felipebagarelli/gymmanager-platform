@@ -6,6 +6,7 @@ import '../../../core/errors/app_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/async_widgets.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../chat/application/chat_providers.dart';
@@ -21,13 +22,73 @@ final overdueProvider = Provider<bool>(
   (ref) => ref.watch(mySubscriptionProvider).value?.status == SubscriptionStatus.pastDue,
 );
 
+/// Botão que abre a página de pagamento da cobrança em aberto. Quem confirma o pagamento é o
+/// servidor (webhook); ao voltar ao app a assinatura é consultada de novo.
+class RegularizeButton extends ConsumerStatefulWidget {
+  const RegularizeButton({super.key});
+
+  @override
+  ConsumerState<RegularizeButton> createState() => _RegularizeButtonState();
+}
+
+class _RegularizeButtonState extends ConsumerState<RegularizeButton> {
+  bool _busy = false;
+
+  Future<void> _regularize() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final url = await ref.read(billingRepositoryProvider).regularize();
+      final opened = await ref.read(urlOpenerProvider)(url);
+      if (!opened) {
+        messenger.showSnackBar(const SnackBar(content: Text('Não foi possível abrir a página de pagamento.')));
+      }
+    } catch (error) {
+      messenger.showSnackBar(SnackBar(content: Text(messageOf(error))));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PillButton(
+      key: const Key('regularize-payment'),
+      label: _busy ? 'Abrindo…' : 'Regularizar pagamento',
+      icon: LucideIcons.creditCard,
+      onPressed: _busy ? null : _regularize,
+    );
+  }
+}
+
 /// Tela de bloqueio no lugar de Treinos e Mensagens enquanto a mensalidade está em atraso.
 /// Histórico e Perfil continuam acessíveis pela barra de abas.
-class OverdueView extends ConsumerWidget {
+class OverdueView extends ConsumerStatefulWidget {
   const OverdueView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OverdueView> createState() => _OverdueViewState();
+}
+
+class _OverdueViewState extends ConsumerState<OverdueView> {
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    // voltando do navegador (pagamento), consulta a assinatura de novo
+    _lifecycle = AppLifecycleListener(onResume: () => ref.invalidate(mySubscriptionProvider));
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final trainer = ref.watch(chatSummaryProvider).value?.trainerName ?? 'seu personal';
     final subscription = ref.watch(mySubscriptionProvider).value;
     final dueDate = subscription?.currentPeriodEnd?.toLocal();
@@ -104,6 +165,8 @@ class OverdueView extends ConsumerWidget {
                   ),
                 ],
                 const Spacer(),
+                const RegularizeButton(),
+                const SizedBox(height: 10),
                 PillButton(
                   key: const Key('overdue-history'),
                   label: 'Ver histórico',

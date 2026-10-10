@@ -128,6 +128,56 @@ class SubscriptionServiceTest {
         assertThatThrownBy(() -> service.subscribe(3L, EMAIL)).isInstanceOf(ConflictException.class);
     }
 
+    private Subscription pastDue() {
+        return Subscription.builder().id(5L).status(SubscriptionStatus.PAST_DUE)
+                .stripeSubscriptionId("sub_1").trainer(trainer).plan(plan).student(student).build();
+    }
+
+    @Test
+    void regularize_pastDue_returnsTheProviderLinkOfTheOpenCharge() {
+        when(subscriptionRepository.findFirstByStudentIdOrderByIdDesc(1L)).thenReturn(Optional.of(pastDue()));
+        when(provider.createRegularizationLink("acct_1", "sub_1")).thenReturn(Optional.of("https://pay/invoice"));
+
+        var response = service.regularize(EMAIL);
+
+        assertThat(response.url()).isEqualTo("https://pay/invoice");
+    }
+
+    @Test
+    void regularize_whenNotPastDue_conflictsWithoutCallingProvider() {
+        Subscription active = pastDue();
+        active.setStatus(SubscriptionStatus.ACTIVE);
+        when(subscriptionRepository.findFirstByStudentIdOrderByIdDesc(1L)).thenReturn(Optional.of(active));
+
+        assertThatThrownBy(() -> service.regularize(EMAIL)).isInstanceOf(ConflictException.class);
+        verify(provider, never()).createRegularizationLink(any(), any());
+    }
+
+    @Test
+    void regularize_withoutAnySubscription_conflicts() {
+        assertThatThrownBy(() -> service.regularize(EMAIL)).isInstanceOf(ConflictException.class);
+    }
+
+    @Test
+    void regularize_withoutExternalId_conflictsWithoutCallingProvider() {
+        Subscription noExternal = pastDue();
+        noExternal.setStripeSubscriptionId(null);
+        when(subscriptionRepository.findFirstByStudentIdOrderByIdDesc(1L)).thenReturn(Optional.of(noExternal));
+
+        assertThatThrownBy(() -> service.regularize(EMAIL)).isInstanceOf(ConflictException.class);
+        verify(provider, never()).createRegularizationLink(any(), any());
+    }
+
+    @Test
+    void regularize_whenProviderHasNoOpenCharge_conflicts() {
+        when(subscriptionRepository.findFirstByStudentIdOrderByIdDesc(1L)).thenReturn(Optional.of(pastDue()));
+        when(provider.createRegularizationLink("acct_1", "sub_1")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.regularize(EMAIL))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Ainda não há cobrança em aberto");
+    }
+
     @Test
     void cancel_callsProviderAndMarksCanceled() {
         Subscription active = Subscription.builder().id(5L).status(SubscriptionStatus.ACTIVE)

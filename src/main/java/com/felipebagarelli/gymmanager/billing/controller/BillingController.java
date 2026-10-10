@@ -90,6 +90,12 @@ public class BillingController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
+    /** Link para pagar a cobranca em aberto de quem esta com a mensalidade em atraso. */
+    @PostMapping("/api/v1/subscriptions/me/regularize")
+    public UrlResponse regularize(@AuthenticationPrincipal Jwt jwt) {
+        return subscriptionService.regularize(jwt.getSubject());
+    }
+
     @PostMapping("/api/v1/subscriptions/me/cancel")
     public SubscriptionResponse cancel(@AuthenticationPrincipal Jwt jwt) {
         return subscriptionService.cancel(jwt.getSubject());

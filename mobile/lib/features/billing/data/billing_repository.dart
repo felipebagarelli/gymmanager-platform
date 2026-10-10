@@ -29,6 +29,12 @@ class BillingRepository {
         return response.data!['url'] as String;
       });
 
+  /// Devolve a URL para pagar a cobranca em aberto de quem esta com a mensalidade em atraso.
+  Future<String> regularize() => _guard(() async {
+        final response = await _dio.post<Map<String, dynamic>>('/api/v1/subscriptions/me/regularize');
+        return response.data!['url'] as String;
+      });
+
   Future<void> cancel() => _guard(() => _dio.post<void>('/api/v1/subscriptions/me/cancel'));
 
   Future<T> _guard<T>(Future<T> Function() request) async {

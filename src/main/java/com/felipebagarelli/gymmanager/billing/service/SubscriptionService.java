@@ -123,6 +123,27 @@ public class SubscriptionService {
         return new UrlResponse(session.url());
     }
 
+    /**
+     * Link para o aluno em atraso quitar a cobranca em aberto. So vale para assinatura PAST_DUE; quem
+     * confirma o pagamento e o webhook do provedor (o retorno do navegador nunca e usado como prova).
+     */
+    public UrlResponse regularize(String studentEmail) {
+        Subscription subscription = subscriptionRepository
+                .findFirstByStudentIdOrderByIdDesc(studentOf(studentEmail).getId())
+                .filter(s -> s.getStatus() == SubscriptionStatus.PAST_DUE)
+                .orElseThrow(() -> new ConflictException("Sua mensalidade não está em atraso."));
+        if (subscription.getStripeSubscriptionId() == null) {
+            throw new ConflictException("Não há cobrança em aberto para esta assinatura.");
+        }
+        String accountId = accountRepository.findByTrainerId(subscription.getTrainer().getId())
+                .map(TrainerPayoutAccount::getStripeAccountId)
+                .orElseThrow(() -> new ConflictException("Conta de recebimento do personal não encontrada."));
+        String url = paymentProvider.createRegularizationLink(accountId, subscription.getStripeSubscriptionId())
+                .orElseThrow(() -> new ConflictException(
+                        "Ainda não há cobrança em aberto para pagar. Tente novamente em instantes."));
+        return new UrlResponse(url);
+    }
+
     public Optional<SubscriptionResponse> mine(String studentEmail) {
         return subscriptionRepository.findFirstByStudentIdOrderByIdDesc(studentOf(studentEmail).getId())
                 .map(this::toResponse);

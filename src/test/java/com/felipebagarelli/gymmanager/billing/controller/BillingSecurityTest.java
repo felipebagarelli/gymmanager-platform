@@ -4,6 +4,7 @@ import com.felipebagarelli.gymmanager.auth.config.JwtConfig;
 import com.felipebagarelli.gymmanager.auth.entity.Role;
 import com.felipebagarelli.gymmanager.auth.entity.User;
 import com.felipebagarelli.gymmanager.auth.service.JwtService;
+import com.felipebagarelli.gymmanager.billing.dto.BillingDtos.UrlResponse;
 import com.felipebagarelli.gymmanager.billing.provider.InvalidWebhookException;
 import com.felipebagarelli.gymmanager.billing.service.BillingWebhookService;
 import com.felipebagarelli.gymmanager.billing.service.PayoutAccountService;
@@ -69,6 +70,16 @@ class BillingSecurityTest {
         mockMvc.perform(get("/api/v1/plans/available").header("Authorization", bearer(Role.TRAINER))).andExpect(status().isForbidden());
         mockMvc.perform(post("/api/v1/subscriptions").header("Authorization", bearer(Role.TRAINER))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"planId\":1}")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void regularize_isStudentOnly() throws Exception {
+        when(subscriptionService.regularize(anyString())).thenReturn(new UrlResponse("https://pay/invoice"));
+        mockMvc.perform(post("/api/v1/subscriptions/me/regularize").header("Authorization", bearer(Role.STUDENT)))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/subscriptions/me/regularize").header("Authorization", bearer(Role.TRAINER)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/subscriptions/me/regularize")).andExpect(status().isUnauthorized());
     }
 
     @Test

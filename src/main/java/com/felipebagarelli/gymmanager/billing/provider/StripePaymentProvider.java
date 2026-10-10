@@ -4,13 +4,19 @@ import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Account;
 import com.stripe.model.AccountLink;
+import com.stripe.model.Invoice;
+import com.stripe.model.InvoiceCollection;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.RequestOptions;
 import com.stripe.net.Webhook;
 import com.stripe.param.AccountCreateParams;
 import com.stripe.param.AccountLinkCreateParams;
+import com.stripe.param.InvoiceListParams;
 import com.stripe.param.checkout.SessionCreateParams;
+import java.util.Objects;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,6 +129,21 @@ public class StripePaymentProvider implements PaymentProvider {
     public void cancelSubscription(String accountId, String externalSubscriptionId) {
         try {
             Subscription.retrieve(externalSubscriptionId, onAccount(accountId)).cancel();
+        } catch (StripeException e) {
+            throw failure(e);
+        }
+    }
+
+    /** Pagina hospedada da Stripe da fatura em aberto: pagando ali, o webhook invoice.paid reativa a assinatura. */
+    @Override
+    public Optional<String> createRegularizationLink(String accountId, String externalSubscriptionId) {
+        try {
+            InvoiceCollection open = Invoice.list(InvoiceListParams.builder()
+                    .setSubscription(externalSubscriptionId)
+                    .setStatus(InvoiceListParams.Status.OPEN)
+                    .setLimit(1L)
+                    .build(), onAccount(accountId));
+            return open.getData().stream().map(Invoice::getHostedInvoiceUrl).filter(Objects::nonNull).findFirst();
         } catch (StripeException e) {
             throw failure(e);
         }

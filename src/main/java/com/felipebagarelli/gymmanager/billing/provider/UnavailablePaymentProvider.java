@@ -1,5 +1,7 @@
 package com.felipebagarelli.gymmanager.billing.provider;
 
+import java.util.Optional;
+
 /** Usado quando nao ha chave da Stripe configurada: tudo responde 503, o app segue de pe. */
 public class UnavailablePaymentProvider implements PaymentProvider {
 
@@ -31,6 +33,11 @@ public class UnavailablePaymentProvider implements PaymentProvider {
 
     @Override
     public void cancelSubscription(String accountId, String externalSubscriptionId) {
+        throw unavailable();
+    }
+
+    @Override
+    public Optional<String> createRegularizationLink(String accountId, String externalSubscriptionId) {
         throw unavailable();
     }
 

@@ -31,9 +31,22 @@ class _FakeBilling extends BillingRepository {
   _FakeBilling(this.subscription) : super(Dio());
 
   final Subscription? subscription;
+  AppException? regularizeError;
+  int fetches = 0;
+  int regularizeCalls = 0;
 
   @override
-  Future<Subscription?> mySubscription() async => subscription;
+  Future<Subscription?> mySubscription() async {
+    fetches++;
+    return subscription;
+  }
+
+  @override
+  Future<String> regularize() async {
+    regularizeCalls++;
+    if (regularizeError != null) throw regularizeError!;
+    return 'https://pay.example/invoice';
+  }
 
   @override
   Future<List<Plan>> availablePlans() async => const [];
@@ -90,6 +103,8 @@ Widget _app({
   int tab = HomeTab.workouts,
   List<WorkoutSession> sessions = const [],
   WorkoutRepository? workouts,
+  _FakeBilling? billing,
+  List<String>? opened,
 }) {
   final List<Override> overrides = [
     tokenStorageProvider.overrideWithValue(
@@ -101,7 +116,11 @@ Widget _app({
     chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
     chatPollIntervalProvider.overrideWithValue(const Duration(hours: 1)),
     chatSummaryIntervalProvider.overrideWithValue(const Duration(hours: 1)),
-    billingRepositoryProvider.overrideWithValue(_FakeBilling(subscription)),
+    billingRepositoryProvider.overrideWithValue(billing ?? _FakeBilling(subscription)),
+    urlOpenerProvider.overrideWithValue((url) async {
+      opened?.add(url);
+      return true;
+    }),
     clockProvider.overrideWithValue(() => _now),
     homeTabProvider.overrideWith(() => _FixedTab(tab)),
   ];
@@ -248,6 +267,62 @@ void main() {
       expect(find.byKey(const Key('profile-name')), findsOneWidget);
       expect(_text(tester, 'subscription-status'), 'Em atraso');
       expect(find.byKey(const Key('overdue-notice')), findsOneWidget);
+      await _close(tester);
+    });
+
+    testWidgets('"Regularizar pagamento" abre a página de pagamento da cobrança em aberto', (tester) async {
+      final billing = _FakeBilling(_pastDue);
+      final opened = <String>[];
+      await _pump(tester, _app(billing: billing, opened: opened));
+
+      await tester.tap(find.byKey(const Key('regularize-payment')));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(billing.regularizeCalls, 1);
+      expect(opened, ['https://pay.example/invoice']);
+      await _close(tester);
+    });
+
+    testWidgets('erro do servidor ao regularizar aparece como mensagem', (tester) async {
+      final billing = _FakeBilling(_pastDue)
+        ..regularizeError = AppException('Ainda não há cobrança em aberto para pagar. Tente novamente em instantes.', statusCode: 409);
+      final opened = <String>[];
+      await _pump(tester, _app(billing: billing, opened: opened));
+
+      await tester.tap(find.byKey(const Key('regularize-payment')));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.textContaining('Ainda não há cobrança em aberto'), findsOneWidget);
+      expect(opened, isEmpty);
+      await _close(tester);
+    });
+
+    testWidgets('ao voltar do navegador (app retomado) a assinatura é consultada de novo', (tester) async {
+      final billing = _FakeBilling(_pastDue);
+      await _pump(tester, _app(billing: billing));
+      final before = billing.fetches;
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(billing.fetches, greaterThan(before));
+      await _close(tester);
+    });
+
+    testWidgets('no Perfil, a assinatura em atraso também oferece "Regularizar pagamento"', (tester) async {
+      final billing = _FakeBilling(_pastDue);
+      final opened = <String>[];
+      await _pump(tester, _app(tab: HomeTab.profile, billing: billing, opened: opened));
+
+      await tester.tap(find.byKey(const Key('regularize-payment')));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(opened, ['https://pay.example/invoice']);
       await _close(tester);
     });
 

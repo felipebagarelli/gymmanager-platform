@@ -10,6 +10,7 @@ import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../application/billing_providers.dart';
 import '../domain/billing.dart';
+import 'overdue_view.dart';
 
 String _date(DateTime value) {
   final d = value.toLocal();
@@ -147,6 +148,8 @@ class _Current extends ConsumerWidget {
             icon: LucideIcons.lock,
             text: 'Seus treinos e mensagens ficam bloqueados até a regularização do pagamento.',
           ),
+          const SizedBox(height: 10),
+          const RegularizeButton(),
         ],
         if (subscription.status == SubscriptionStatus.pending)
           TextButton(
