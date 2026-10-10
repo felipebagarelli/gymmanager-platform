@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 import '../../../core/errors/app_exception.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text.dart';
 import '../application/auth_controller.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -61,13 +65,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(Icons.fitness_center, size: 56, color: theme.colorScheme.primary),
+                    const Icon(LucideIcons.dumbbell, size: 56, color: AppColors.volt),
                     const SizedBox(height: 12),
-                    Text('GymManager',
-                        textAlign: TextAlign.center, style: theme.textTheme.headlineMedium),
+                    Text('GYMMANAGER',
+                        textAlign: TextAlign.center, style: AppText.display(44, weight: FontWeight.w800)),
                     const SizedBox(height: 4),
                     Text('Entre para ver e registrar seus treinos',
-                        textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                        textAlign: TextAlign.center, style: AppText.body(color: AppColors.textSecondary)),
                     const SizedBox(height: 32),
                     TextFormField(
                       key: const Key('email'),

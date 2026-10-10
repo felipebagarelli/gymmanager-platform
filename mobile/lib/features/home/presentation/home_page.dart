@@ -7,55 +7,37 @@ import '../../chat/presentation/chat_page.dart';
 import '../../profile/presentation/profile_page.dart';
 import '../../sessions/presentation/history_page.dart';
 import '../../workouts/presentation/my_workouts_page.dart';
+import '../application/home_tab_provider.dart';
+import 'app_tab_bar.dart';
 
-class HomePage extends ConsumerStatefulWidget {
+/// Casca das 5 abas principais. As telas de fluxo (detalhe do treino, execução,
+/// descanso, concluído, bloqueio) são rotas separadas e, por isso, ficam sem tab bar.
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  ConsumerState<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends ConsumerState<HomePage> {
-  int _index = 0;
-
-  static const _titles = ['Meus treinos', 'Histórico', 'Mensagens', 'Assistente', 'Perfil'];
-  static const _chatIndex = 2;
-  static const _assistantIndex = 3;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final index = ref.watch(homeTabProvider);
     final unread = ref.watch(chatSummaryProvider).value?.unreadCount ?? 0;
 
     return Scaffold(
-      appBar: AppBar(title: Text(_titles[_index])),
-      // o chat so e construido quando aberto: e ali que ha polling e marcacao de leitura
+      // TODO(redesign): cada aba passa a desenhar o próprio cabeçalho; remover o AppBar ao fim.
+      appBar: AppBar(title: Text(appTabs[index].label)),
+      // chat e assistente só são construídos quando abertos (polling / chamadas sob demanda)
       body: IndexedStack(
-        index: _index,
+        index: index,
         children: [
           const MyWorkoutsPage(),
           const HistoryPage(),
-          _index == _chatIndex ? const ChatPage() : const SizedBox.shrink(),
-          _index == _assistantIndex ? const AssistantPage() : const SizedBox.shrink(),
+          index == HomeTab.messages ? const ChatPage() : const SizedBox.shrink(),
+          index == HomeTab.assistant ? const AssistantPage() : const SizedBox.shrink(),
           const ProfilePage(),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: [
-          const NavigationDestination(icon: Icon(Icons.fitness_center), label: 'Treinos'),
-          const NavigationDestination(icon: Icon(Icons.history), label: 'Histórico'),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: unread > 0,
-              label: Text('$unread', key: const Key('chat-unread')),
-              child: const Icon(Icons.chat_bubble_outline),
-            ),
-            label: 'Mensagens',
-          ),
-          const NavigationDestination(icon: Icon(Icons.smart_toy_outlined), label: 'Assistente'),
-          const NavigationDestination(icon: Icon(Icons.person), label: 'Perfil'),
-        ],
+      bottomNavigationBar: AppTabBar(
+        index: index,
+        unreadMessages: unread,
+        onSelected: ref.read(homeTabProvider.notifier).select,
       ),
     );
   }

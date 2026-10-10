@@ -11,7 +11,7 @@ class GymManagerApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'GymManager',
-      theme: AppTheme.light(),
+      theme: AppTheme.dark(),
       routerConfig: ref.watch(routerProvider),
     );
   }
