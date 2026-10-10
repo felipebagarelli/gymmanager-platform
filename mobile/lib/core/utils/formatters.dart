@@ -43,3 +43,25 @@ String formatNumber(double value) {
   final text = value == value.roundToDouble() ? value.toStringAsFixed(0) : value.toString();
   return text.replaceAll('.', ',');
 }
+
+/// "240 kg" ou, a partir de 1000 kg, "1,2 t".
+String formatVolume(double kg) {
+  if (kg >= 1000) return '${formatNumber((kg / 100).round() / 10)} t';
+  return '${formatNumber((kg * 10).round() / 10)} kg';
+}
+
+/// "Outubro 2026".
+String formatMonthYear(DateTime value) {
+  final d = value.toLocal();
+  final name = _months[d.month - 1];
+  return '${name[0].toUpperCase()}${name.substring(1)} ${d.year}';
+}
+
+/// "OUT" (3 letras, caixa alta).
+String formatShortMonth(DateTime value) => _months[value.toLocal().month - 1].substring(0, 3).toUpperCase();
+
+/// "10/10"
+String formatDayMonth(DateTime value) {
+  final d = value.toLocal();
+  return '${d.day}/${d.month}';
+}

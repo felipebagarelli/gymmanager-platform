@@ -97,6 +97,10 @@ void main() {
   });
 
   testWidgets('tela mostra os cards de progresso', (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(_app(sessions: [
       _finished(1, workoutId: 10, startedAt: DateTime(2026, 9, 1), perf: const [
         Performance(id: 1, workoutExerciseId: 100, setNumber: 1, reps: 10, loadKg: 40),
@@ -105,7 +109,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('progress-Supino')), findsOneWidget);
-    expect(find.textContaining('Melhor: 40 kg'), findsOneWidget);
+    expect(tester.widget<Text>(find.byKey(const Key('record-value'))).data, '40 kg');
   });
 
   testWidgets('sem historico, mostra o estado vazio', (tester) async {

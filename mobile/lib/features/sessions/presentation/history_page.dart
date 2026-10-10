@@ -1,135 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../core/utils/async_widgets.dart';
-import '../../../core/utils/formatters.dart';
-import '../../workouts/application/workout_providers.dart';
-import '../application/session_providers.dart';
-import '../domain/workout_session.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../home/application/home_tab_provider.dart';
 import 'evolution_page.dart';
+import 'history_sessions_tab.dart';
 
-/// Abas: sessões executadas e evolução de carga por exercício.
-class HistoryPage extends StatelessWidget {
+/// Histórico: abas "Sessões" (calendário e lista) e "Evolução" (cargas e volume).
+class HistoryPage extends ConsumerWidget {
   const HistoryPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tab = ref.watch(historySubTabProvider);
+    return SafeArea(
+      bottom: false,
       child: Column(
         children: [
-          const TabBar(
-            tabs: [
-              Tab(text: 'Sessões', icon: Icon(Icons.history)),
-              Tab(text: 'Evolução', icon: Icon(Icons.trending_up)),
-            ],
-          ),
-          const Expanded(
-            child: TabBarView(
-              children: [_SessionsTab(), EvolutionPage()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SessionsTab extends ConsumerWidget {
-  const _SessionsTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final history = ref.watch(historyProvider);
-
-    return history.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(historyProvider)),
-      data: (sessions) {
-        if (sessions.isEmpty) {
-          return const EmptyState(
-            icon: Icons.history,
-            message: 'Você ainda não executou nenhum treino.',
-          );
-        }
-        return RefreshIndicator(
-          onRefresh: () async => ref.refresh(historyProvider.future),
-          child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            itemCount: sessions.length,
-            itemBuilder: (context, index) => _SessionTile(session: sessions[index]),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SessionTile extends ConsumerWidget {
-  const _SessionTile({required this.session});
-
-  final WorkoutSession session;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final workoutName = ref
-            .watch(myWorkoutsProvider)
-            .value
-            ?.where((w) => w.id == session.workoutId)
-            .firstOrNull
-            ?.name ??
-        'Treino #${session.workoutId}';
-    final finished = session.finishedAt;
-
-    return Card(
-      child: ExpansionTile(
-        key: Key('session-${session.id}'),
-        title: Text(workoutName),
-        subtitle: Text([
-          formatDateTime(session.startedAt),
-          finished == null ? 'Em andamento' : formatDuration(session.startedAt, finished),
-        ].join(' · ')),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (session.performances.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 8),
-              child: Text('Nenhuma série registrada.'),
-            )
-          else
-            _Sets(session: session),
-        ],
-      ),
-    );
-  }
-}
-
-class _Sets extends ConsumerWidget {
-  const _Sets({required this.session});
-
-  final WorkoutSession session;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final plan = ref.watch(workoutPlanProvider(session.workoutId));
-    final names = <int, String>{
-      for (final row in plan.value ?? const []) row.item.id: row.exerciseName,
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final performance in session.performances)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
-            child: Text(
-              '${names[performance.workoutExerciseId] ?? 'Exercício'} · '
-              'série ${performance.setNumber}: ${performance.reps} rep · ${formatLoad(performance.loadKg)}',
+            padding: const EdgeInsets.fromLTRB(kScreenPadding, 12, kScreenPadding, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('HISTÓRICO', style: AppText.display(36).copyWith(letterSpacing: 0.7)),
             ),
           ),
-      ],
+          Padding(
+            padding: const EdgeInsets.fromLTRB(kScreenPadding, 12, kScreenPadding, 0),
+            child: _Segments(index: tab, onChanged: ref.read(historySubTabProvider.notifier).select),
+          ),
+          Expanded(
+            child: IndexedStack(
+              index: tab,
+              children: const [SessionsTab(), EvolutionPage()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Segments extends StatelessWidget {
+  const _Segments({required this.index, required this.onChanged});
+
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  static const _items = [('Sessões', LucideIcons.history), ('Evolução', LucideIcons.trendingUp)];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < _items.length; i++)
+            Expanded(
+              child: Semantics(
+                button: true,
+                selected: i == index,
+                label: _items[i].$1,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  key: Key('history-tab-$i'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onChanged(i),
+                  child: Container(
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: i == index ? AppColors.elevated : Colors.transparent,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_items[i].$2, size: 17, color: i == index ? AppColors.volt : AppColors.textMuted),
+                        const SizedBox(width: 8),
+                        Text(_items[i].$1,
+                            style: AppText.body(
+                              size: 14.5,
+                              weight: FontWeight.w600,
+                              color: i == index ? AppColors.textPrimary : AppColors.textMuted,
+                            )),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
