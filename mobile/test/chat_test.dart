@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gymmanager_mobile/core/errors/app_exception.dart';
 import 'package:gymmanager_mobile/core/providers.dart';
 import 'package:gymmanager_mobile/core/storage/token_storage.dart';
+import 'package:gymmanager_mobile/core/theme/app_colors.dart';
 import 'package:gymmanager_mobile/features/auth/application/auth_controller.dart';
 import 'package:gymmanager_mobile/features/chat/application/chat_providers.dart';
 import 'package:gymmanager_mobile/features/chat/domain/chat.dart';
@@ -24,6 +25,7 @@ List<Override> overridesFor(FakeChatRepository chat) => [
       chatRepositoryProvider.overrideWithValue(chat),
       chatPollIntervalProvider.overrideWithValue(const Duration(milliseconds: 40)),
       chatSummaryIntervalProvider.overrideWithValue(const Duration(hours: 1)),
+      clockProvider.overrideWithValue(() => DateTime(2026, 9, 20, 9)),
     ];
 
 Future<ProviderContainer> containerFor(FakeChatRepository chat) async {
@@ -170,10 +172,12 @@ void main() {
       await tester.pumpWidget(app(chat));
       await load(tester);
 
-      expect(find.text('Conversa com João Personal'), findsOneWidget);
+      expect(find.text('João Personal'), findsOneWidget);
+      expect(find.text('Personal'), findsOneWidget);
       expect(find.text('Como foi o treino?'), findsOneWidget);
 
       await tester.enterText(find.byKey(const Key('chat-input')), '  Foi ótimo!  ');
+      await tester.pump();
       await tester.tap(find.byKey(const Key('chat-send')));
       await load(tester);
 
@@ -196,6 +200,53 @@ void main() {
       await closeApp(tester);
     });
 
+    testWidgets('separa as mensagens por dia (Ontem/Hoje) e mostra só a hora na bolha', (tester) async {
+      final chat = FakeChatRepository(initial: [
+        ChatMessage(id: 1, senderRole: ChatSender.trainer, body: 'Oi!', createdAt: DateTime(2026, 9, 18, 20, 5)),
+        ChatMessage(id: 2, senderRole: ChatSender.student, body: 'Bom dia', createdAt: DateTime(2026, 9, 19, 7, 30)),
+        ChatMessage(id: 3, senderRole: ChatSender.trainer, body: 'Vamos treinar', createdAt: DateTime(2026, 9, 20, 8, 15)),
+      ]);
+      await tester.pumpWidget(app(chat));
+      await load(tester);
+
+      expect(find.text('SEXTA · 18 DE SETEMBRO'), findsOneWidget);
+      expect(find.text('ONTEM'), findsOneWidget);
+      expect(find.text('HOJE'), findsOneWidget);
+      expect(find.text('20:05'), findsOneWidget);
+      expect(find.text('07:30'), findsOneWidget);
+      await closeApp(tester);
+    });
+
+    testWidgets('bolha do aluno em volt com texto escuro; a do personal na cor de superfície', (tester) async {
+      final chat = FakeChatRepository(initial: [
+        msg(1, ChatSender.trainer, 'Como foi?'),
+        msg(2, ChatSender.student, 'Ótimo'),
+      ]);
+      await tester.pumpWidget(app(chat));
+      await load(tester);
+
+      Color bubbleColor(String key) =>
+          (tester.widget<Container>(find.byKey(Key(key))).decoration! as BoxDecoration).color!;
+      expect(bubbleColor('bubble-2'), AppColors.volt);
+      expect(bubbleColor('bubble-1'), AppColors.surface);
+      expect(tester.widget<Text>(find.text('Ótimo')).style!.color, AppColors.onVolt);
+      await closeApp(tester);
+    });
+
+    testWidgets('botão de enviar fica desabilitado enquanto o campo está vazio', (tester) async {
+      final chat = FakeChatRepository();
+      await tester.pumpWidget(app(chat));
+      await load(tester);
+
+      double sendOpacity() => tester.widget<Opacity>(find.descendant(of: find.byKey(const Key('chat-send')), matching: find.byType(Opacity))).opacity;
+      expect(sendOpacity(), lessThan(1));
+
+      await tester.enterText(find.byKey(const Key('chat-input')), 'oi');
+      await tester.pump();
+      expect(sendOpacity(), 1);
+      await closeApp(tester);
+    });
+
     testWidgets('conversa encerrada esconde o campo e mostra o aviso', (tester) async {
       final chat = FakeChatRepository(initial: [msg(1, ChatSender.trainer, 'Até logo')], canSend: false);
       await tester.pumpWidget(app(chat));
@@ -214,6 +265,7 @@ void main() {
       await load(tester);
 
       await tester.enterText(find.byKey(const Key('chat-input')), 'oi');
+      await tester.pump();
       await tester.tap(find.byKey(const Key('chat-send')));
       await load(tester);
 
