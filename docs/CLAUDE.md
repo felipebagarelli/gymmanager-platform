@@ -7,13 +7,14 @@ Este arquivo contém as regras operacionais para o Claude Code. A especificaçã
 Evoluir o GymManager atual para uma plataforma de personal trainers e alunos, preservando o que já funciona e evoluindo gradualmente para:
 
 - painel Web React/TypeScript para personais e administração;
-- aplicativo Flutter/Dart para alunos em Android e iOS;
+- aplicativo Flutter/Dart em Android e iOS, **um só app para aluno e personal** (o papel define o modo);
 - API Java/Spring Boot;
 - PostgreSQL;
 - autenticação e autorização;
 - treinos e execução;
 - chat personal/aluno;
-- assistente de IA contextualizado;
+- assistente de IA contextualizado, que no futuro propõe treinos com confirmação do usuário;
+- cadastro aberto (aluno independente, com plano da plataforma) e, depois, hub de personais;
 - assinaturas, pagamentos, comissão e repasse;
 - notificações;
 - testes, Docker, CI/CD e cloud.
@@ -65,6 +66,8 @@ Papéis iniciais:
 
 Um personal só acessa alunos vinculados a ele. Não confiar apenas no ID enviado pela URL.
 
+Planejado (Fase C do `docs/ROADMAP.md`): cadastro aberto de alunos. Um aluno pode existir sem personal (aluno independente).
+
 ## 5. Segurança
 
 Planejamento:
@@ -102,7 +105,9 @@ O plano representa o planejado; a sessão representa o executado.
 
 A IA deve ser um módulo isolado e substituível.
 
-Não permitir que a IA altere automaticamente dados de negócio na primeira versão.
+Hoje a IA é somente leitura: explica, sugere e analisa foto de aparelho. Isso vale até a Fase D do `docs/ROADMAP.md`.
+
+Decisão de 13/10/2026: a IA poderá **propor** criação e ajuste de treino, mas **nunca grava sem confirmação explícita do dono do treino**. Treinos criados por personal não são alterados pela IA. Limites (catálogo fechado, volume, progressão) ficam no backend. Triagem de saúde, avisos, termos aceitos, auditoria e LGPD são pré-requisitos (`docs/ARQUITETURA-E-SISTEMA.md`, seções 23 e 47).
 
 A IA pode explicar e sugerir, mas deve respeitar os limites definidos no documento de arquitetura.
 
@@ -110,7 +115,10 @@ Nunca enviar para a IA dados de outros usuários ou secrets.
 
 ## 8. Billing
 
-O sistema terá modelo de assinatura com comissão da plataforma.
+O sistema terá dois modelos de assinatura:
+
+- plano do personal, com comissão da plataforma e repasse (implementado, Stripe Connect);
+- plano da plataforma para o aluno independente, sem comissão e sem repasse (planejado, Fase C; decidir antes gateway atual × compras dentro do app das lojas).
 
 Abstrair o provedor:
 
@@ -133,6 +141,8 @@ Não implementar cobrança real sem sandbox e validação do fluxo.
 
 Criar `mobile/` separado do `frontend/`.
 
+O app é único para aluno e personal: o papel do usuário autenticado define a navegação. As telas do personal ficam em features próprias, reaproveitando o núcleo (`core/`), sem duplicar regras de negócio, que continuam no backend.
+
 Arquitetura sugerida:
 
 ```text
@@ -153,7 +163,7 @@ Não colocar requests HTTP diretamente em widgets.
 
 ## 10. Web
 
-Continuar usando React + TypeScript para o painel do personal/admin.
+Continuar usando React + TypeScript para o painel do personal/admin. O personal também terá o modo personal no app; manter os dois com as mesmas funções.
 
 Preservar React Router e componentes existentes.
 
@@ -221,6 +231,7 @@ Não executar toda uma migração de produto de uma vez.
 - Não colocar API keys/secrets no código.
 - Não expor passwordHash.
 - Não deixar IA acessar dados indiscriminadamente.
+- Não deixar a IA gravar dados sem confirmação explícita do usuário dono do dado.
 - Não permitir que frontend decida autorização.
 - Não criar pagamento real sem sandbox/testes.
 - Não inventar regras de negócio silenciosamente.
@@ -246,5 +257,9 @@ Uma feature importante deve, quando aplicável, possuir:
 Antes de tomar decisões de arquitetura, consultar:
 
 `docs/ARQUITETURA-E-SISTEMA.md`
+
+Plano em fases, status atual e decisões pendentes:
+
+`docs/ROADMAP.md`
 
 Se a documentação não definir uma decisão, não inventar uma arquitetura complexa. Apresentar opções e pedir confirmação antes de implementar mudanças estruturais.

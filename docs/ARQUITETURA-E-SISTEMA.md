@@ -2,7 +2,7 @@
 
 > Documento de referência do produto e do desenvolvimento.
 >
-> **Status:** arquitetura inicial / em definição  
+> **Status:** em evolução. App do aluno, API, chat, IA (somente leitura) e cobrança implementados; expansão decidida em 13/10/2026 (seção 47 e `docs/ROADMAP.md`).  
 > **Objetivo:** transformar o atual GymManager, que começou como projeto de CRUD e estudo, em uma plataforma de gestão para personal trainers e alunos, com aplicativo mobile, painel web, IA, assinaturas e pagamentos.
 
 ---
@@ -24,10 +24,17 @@ A proposta não é apenas oferecer um gerenciador de treinos. A plataforma deve 
 
 A plataforma terá dois produtos de interface principais:
 
-1. **Painel Web do Personal** — React + TypeScript.
-2. **Aplicativo Mobile do Aluno** — Flutter + Dart, Android e iOS.
+1. **Painel Web do Personal** — React + TypeScript (personal no computador e administração da plataforma).
+2. **Aplicativo Mobile** — Flutter + Dart, Android e iOS. **Um único app para aluno e personal**: o login decide o modo (decisão de 13/10/2026).
 
 Ambos consumirão a mesma API REST em Java/Spring Boot.
+
+Expansão decidida em 13/10/2026 (detalhes na seção 47):
+
+- o personal administra alunos, treinos, conversas e planos também pelo app;
+- **cadastro aberto**: qualquer pessoa pode usar o app sozinha (**aluno independente**), pagando um **plano da plataforma**;
+- a IA pode **propor** treinos e ajustes, gravados somente com **confirmação explícita** do usuário;
+- no futuro, um **hub de personais**: o aluno busca e contrata um personal dentro do app.
 
 ---
 
@@ -69,7 +76,7 @@ Criar uma aplicação nova em:
 - Android;
 - iOS.
 
-O aplicativo mobile será focado principalmente na experiência do aluno.
+O aplicativo mobile atende **aluno e personal no mesmo app** (o papel do usuário define a navegação). A experiência do aluno foi a primeira a ser construída; o modo personal está planejado (Fase B do `docs/ROADMAP.md`).
 
 O Flutter possui uma orientação oficial de arquitetura que enfatiza separação de responsabilidades entre UI e camada de dados; essa separação será usada como referência e adaptada ao produto.
 
@@ -85,7 +92,7 @@ O Flutter possui uma orientação oficial de arquitetura que enfatiza separaçã
                  ┌─────────────┴─────────────┐
                  │                           │
          React Web                     Flutter Mobile
-       Personal/Admin                    Aluno
+       Personal/Admin              Aluno e Personal
 ```
 
 O frontend web e o aplicativo mobile **não acessam o banco diretamente**.
@@ -303,6 +310,8 @@ Exemplos:
 - informações relevantes fornecidas pelo próprio usuário.
 
 Dados sensíveis devem ser tratados com controle de acesso reforçado.
+
+**Aluno independente (planejado, Fase C):** um `StudentProfile` pode existir **sem vínculo ativo com personal**. Ele se cadastra pelo app, usa o plano da plataforma e recebe treinos propostos pela IA (com confirmação). Ao contratar um personal pelo hub, passa a ter um `TrainerStudent` ativo, sem perder o histórico.
 
 ## 6.4 TrainerStudent
 
@@ -539,9 +548,9 @@ Isso permite gerar evolução no futuro.
 
 ---
 
-# 11. Produto do Personal — Web
+# 11. Produto do Personal — Web e App
 
-O painel web será a ferramenta principal do personal.
+O personal usa o **painel web** e, a partir da Fase B, o **mesmo app mobile** em modo personal, com paridade de funções (alunos, treinos, conversas, planos e cobrança). As funções abaixo valem para os dois.
 
 ## Dashboard
 
@@ -597,7 +606,7 @@ Funcionalidades:
 
 # 12. Aplicativo do Aluno — Flutter
 
-A experiência mobile é centrada no uso durante o dia a dia do aluno.
+A experiência mobile é centrada no uso durante o dia a dia do aluno. O mesmo app terá o modo personal (seção 11) e, para o aluno independente, onboarding, questionário de saúde, plano da plataforma e treinos propostos pela IA (seção 47).
 
 ## Telas iniciais
 
@@ -846,6 +855,10 @@ Plano Premium
 R$ 149,90 / mês
 ```
 
+## Plano da plataforma (planejado, Fase C)
+
+O aluno independente (sem personal) assina um **plano do próprio aplicativo**, cobrado diretamente pela plataforma: sem conta conectada do personal, sem comissão e sem repasse. Preço, período grátis e limites ainda serão definidos. Antes de implementar, decidir se a cobrança será pelo gateway atual ou pelas compras dentro do app das lojas (ver `docs/ROADMAP.md`, decisões pendentes).
+
 ## Comissão
 
 A plataforma possui uma comissão configurável.
@@ -1021,6 +1034,20 @@ WorkoutPlan atualizado
 ```
 
 Isso é preferível a dar autonomia total desde a primeira versão.
+
+### Evolução decidida em 13/10/2026: IA que propõe, com confirmação
+
+A versão atual (somente leitura, perguntas e foto do aparelho) continua valendo até a Fase D do `docs/ROADMAP.md`. A partir dela:
+
+- a IA pode **propor** a criação de um treino ou um ajuste (progressão, troca de exercício);
+- a proposta é um objeto estruturado e **não altera nada** até ser aceita;
+- só o **dono do treino** confirma: o aluno independente nos próprios treinos; nos treinos criados por um personal, quem decide é o personal (a IA apenas sugere);
+- o aceite grava pela API normal de treinos, com as mesmas validações e autorizações;
+- a geração é restrita por regras **no backend**: catálogo fechado de exercícios, limites de volume e progressão, nada para dor, reabilitação ou condições médicas;
+- toda proposta e todo aceite ou recusa ficam registrados (auditoria);
+- triagem de saúde, avisos, termos aceitos e LGPD são pré-requisitos (seção 47).
+
+A IA **nunca** grava dados sem confirmação, não altera preço, assinatura, pagamento, acesso ou permissões, e não acessa dados de terceiros.
 
 ---
 
@@ -1269,7 +1296,7 @@ Antes da operação comercial, realizar revisão jurídica específica de LGPD, 
 
 ## Relacionamento personal/aluno
 
-1. Um aluno deve estar vinculado a um personal para receber determinados serviços.
+1. Um aluno deve estar vinculado a um personal para receber os serviços do personal (treinos do personal, chat, plano do personal). O aluno independente usa o app sem personal, com o plano da plataforma (seção 47).
 2. Um personal não pode acessar aluno de outro personal sem permissão administrativa apropriada.
 3. Um aluno só acessa seus próprios dados.
 4. O histórico do vínculo deve ser preservado quando necessário.
@@ -1285,7 +1312,7 @@ Antes da operação comercial, realizar revisão jurídica específica de LGPD, 
 ## IA
 
 1. IA responde somente dentro do contexto autorizado.
-2. IA não modifica dados de negócio automaticamente na primeira versão.
+2. IA não modifica dados de negócio sem confirmação explícita do usuário dono do dado. Até a Fase D ela é somente leitura; a partir dela, propõe e o usuário confirma (seção 23).
 3. IA não substitui avaliação profissional ou médica.
 4. Toda função de IA deve ter limites de custo e acesso.
 
@@ -1348,6 +1375,16 @@ O produto é grande. Para não transformar o desenvolvimento em um projeto infin
 - comissão;
 - relatório financeiro básico.
 
+## Expansão (decidida em 13/10/2026)
+
+Ver `docs/ROADMAP.md` (fases A a E) e a seção 47:
+
+- app do personal (mesmo app);
+- cadastro aberto e aluno independente;
+- plano da plataforma;
+- IA que propõe treinos com confirmação;
+- hub de personais.
+
 ## Pós-MVP
 
 - automações;
@@ -1374,11 +1411,13 @@ Não implementar inicialmente:
 - Kubernetes;
 - Kafka sem caso real;
 - dezenas de integrações simultâneas;
-- IA autônoma alterando treinos;
+- IA autônoma alterando treinos (a IA pode propor; gravar exige confirmação do usuário, seção 23);
 - diagnóstico médico;
 - processamento próprio de cartão.
 
 Isso reduz risco e acelera validação do produto.
+
+O **hub de personais** (buscar e contratar personal dentro do app) não é um marketplace genérico: está planejado na Fase E do `docs/ROADMAP.md`.
 
 ---
 
@@ -1663,6 +1702,11 @@ Para IA, adicionar ainda:
 | Mensageria | Adicionar só quando houver necessidade |
 | Kubernetes | Pós-MVP / se houver necessidade real |
 | Microsserviços | Não no início |
+| App mobile | Um só app para aluno e personal (modo pelo papel) |
+| Cadastro | Aberto para alunos (aluno independente), a partir da Fase C |
+| Cobrança | Plano do personal (Connect + comissão) e plano da plataforma (aluno independente) |
+| IA | Propõe criação/ajuste de treino; grava só com confirmação do dono do treino (Fase D) |
+| Hub de personais | Planejado (Fase E) |
 
 ---
 
@@ -1699,6 +1743,17 @@ Plataforma
   └── Repasse Personal
 ```
 
+Com a expansão, o app também atende quem ainda não tem personal:
+
+```text
+Aluno independente
+  │
+  ├── Plano da plataforma
+  ├── Treino proposto pela IA (com confirmação)
+  │
+  └── Hub de personais ──► contrata um personal ──► fluxo acima
+```
+
 O valor do produto estará na combinação de:
 
 **gestão + acompanhamento + comunicação + IA + recorrência financeira.**
@@ -1727,7 +1782,83 @@ A arquitetura deve tornar esse relacionamento seguro, simples, observável e esc
 
 ---
 
-# 47. Referências técnicas oficiais
+# 47. Expansão: app do personal, aluno independente, IA com confirmação e hub
+
+Decisões de 13/10/2026. Plano em fases, status e decisões pendentes: `docs/ROADMAP.md`. Nada desta seção está implementado ainda.
+
+## 47.1 Um único app, dois modos
+
+- O papel do usuário autenticado (`STUDENT` ou `TRAINER`) define a navegação do app.
+- O personal tem paridade com o painel web: alunos, treinos (montar e atribuir), conversas, planos e cobrança.
+- A autorização continua no backend: o modo do app é só apresentação; o personal acessa apenas os próprios alunos.
+- O painel web segue existindo (personal no computador e administração).
+
+## 47.2 Cadastro aberto e aluno independente
+
+- Endpoint público de cadastro de aluno (conceito: `register-student`), com verificação de e-mail e recuperação de senha.
+- Aceite de termos de uso e política de privacidade registrado (versão e data). Consentimento específico para dados de saúde.
+- Onboarding: objetivo, nível, dias por semana, tempo por treino e equipamento disponível.
+- Aluno independente = `StudentProfile` sem vínculo ativo com personal. Recursos dependentes de personal (chat, plano do personal) ficam indisponíveis ou viram a entrada do hub.
+- Idade mínima a definir; menores exigem consentimento dos responsáveis.
+
+## 47.3 Plano da plataforma
+
+- Assinatura cobrada pela plataforma, sem conta conectada, sem comissão e sem repasse.
+- Os mesmos princípios de cobrança: confirmação só por evento validado do provedor, idempotência, estados internos independentes do provedor.
+- Decidir antes de implementar: gateway atual × compras dentro do app das lojas; preço, período grátis e limites de uso (inclusive da IA).
+
+## 47.4 Triagem de saúde (pré-requisito da IA de treino)
+
+- Questionário de prontidão para atividade física (tipo PAR-Q), refeito periodicamente.
+- Resposta de risco bloqueia a geração de treino pela IA e orienta procurar avaliação profissional/médica.
+- Respostas são dados de saúde: acesso restrito, mínimo necessário enviado à IA, exclusão pelo app.
+
+## 47.5 IA que propõe treinos (com confirmação)
+
+Fluxo:
+
+```text
+Aluno pede treino ──► Backend valida triagem, plano e limites
+                          │
+                          ▼
+                  IA gera PROPOSTA estruturada
+                  (só exercícios do catálogo)
+                          │
+                          ▼
+            Backend valida limites (volume, séries,
+            repetições, descanso, progressão)
+                          │
+                          ▼
+                  Prévia no app ──► Recusar / pedir outra
+                          │
+                    "Usar este treino"
+                          │
+                          ▼
+            Treino criado pela API normal + registro do aceite
+```
+
+Regras:
+
+- a proposta não altera nenhum dado até o aceite;
+- quem confirma é o dono do treino; treinos criados por um personal não são alterados pela IA;
+- os limites ficam no backend, não só nas instruções do modelo;
+- a IA não monta treino para dor, lesão, reabilitação, gestação ou condição médica: orienta procurar profissional;
+- avisos fixos: a IA não substitui personal, médico ou fisioterapeuta;
+- auditoria de propostas, aceites e recusas; limites de custo por plano;
+- testes de segurança: tentativas de burlar limites, pedidos médicos, dados de terceiros e injeção de instruções.
+
+Conceitos novos (nomes a confirmar na implementação): proposta de treino da IA (estado: proposta, aceita, recusada, expirada), triagem de saúde, aceite de termos. Hoje todo treino pertence a um personal; definir o dono do treino do aluno independente é uma decisão pendente.
+
+## 47.6 Hub de personais (futuro)
+
+- Perfil público do personal (o que é público é decidido pelo próprio personal), busca e filtros.
+- Contratar = assinar o plano do personal pelo app, criando o vínculo ativo.
+- O aluno independente mantém o histórico e os treinos anteriores; os novos treinos passam a ser do personal.
+- Comissão, cancelamento, reembolso, avaliações e moderação a definir antes da implementação.
+
+---
+
+# 48. Referências técnicas oficiais
 
 Estas referências foram consultadas para orientar os pontos técnicos do documento que dependem da documentação atual das tecnologias.
 

@@ -105,6 +105,12 @@ React + TypeScript
 
 ---
 
+## Documentação do projeto
+
+- [`docs/ARQUITETURA-E-SISTEMA.md`](docs/ARQUITETURA-E-SISTEMA.md): produto, arquitetura e regras de negócio (fonte de verdade).
+- [`docs/ROADMAP.md`](docs/ROADMAP.md): onde estamos, fases seguintes e decisões pendentes.
+- [`docs/DEPLOY.md`](docs/DEPLOY.md): como publicar backend, painel e app.
+
 ## Funcionalidades
 
 ### Alunos
