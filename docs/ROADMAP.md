@@ -23,7 +23,7 @@ Este documento é a base para seguirmos: o que já existe, para onde vamos, em q
 
 ## 2. Onde estamos (13/10/2026)
 
-**Backend (Spring Boot + PostgreSQL, Flyway V1 a V6)**
+**Backend (Spring Boot + PostgreSQL, Flyway V1 a V7)**
 - Autenticação JWT; papéis `TRAINER` e `STUDENT` (há `PLATFORM_ADMIN` previsto, sem telas).
 - Personal, aluno e vínculo; exercícios; treinos e atribuição; sessões e séries, com "Como foi?" (`effort`) e meta semanal (`weeklyGoal`, V5).
 - Chat personal/aluno (só texto).
@@ -83,7 +83,8 @@ Objetivo: o personal faz pelo celular tudo o que faz no painel web. O backend j�
   - [ ] B2.1. Evolução do aluno no perfil (calendário e gráficos do Histórico, reaproveitados).
   - [ ] B2.2. Reativar aluno desativado (não existe endpoint) e pausar vínculo (`PAUSED` existe no modelo, sem endpoint).
 - [x] B3. Mensagens: lista de conversas com todos os alunos (prévia, horário, não lidas, conversa encerrada), contador na aba, a conversa (mesma tela do aluno, do lado do personal) e atalho "Enviar mensagem" no perfil do aluno. Sem mudança no backend. *(15/10/2026)*
-- [ ] B4. Treinos: biblioteca de exercícios, montar treino no celular (fluxo pensado para tela pequena), duplicar, ordenar, atribuir.
+- [x] B4. Treinos: lista de treinos (exercícios e alunos de cada um), novo treino já abrindo o editor, editor no celular (adicionar da biblioteca ou criar exercício na hora, séries/repetições/descanso/carga/observação, arrastar para ordenar, retirar), renomear, duplicar, excluir, atribuir a vários alunos e retirar; biblioteca de exercícios (catálogo + os do personal); "Atribuir" no perfil do aluno. *(15/10/2026)*
+  - Backend (V7): exercício passou a ter dono (`exercises.trainer_id`; os que já existiam viraram catálogo comum, só leitura). Antes qualquer personal editava ou apagava exercícios de todos. Exercício em uso não pode ser excluído (409). Retirar do treino um exercício que já tem séries registradas só o marca como retirado (`workout_exercises.removed_at`), sem quebrar o histórico. Novos: `GET /workouts/{id}/assignments`, `POST /workouts/{id}/duplicate`, `PUT /workout-exercises/workout/{id}/order`. Respostas ganharam `exerciseCount`/`studentCount` (treino), `exerciseName`/`muscleGroup` (plano), `trainerId` (exercício) e `studentName` (atribuição).
 - [ ] B5. Planos e cobrança: criar planos, ver assinaturas e pagamentos, cadastro de recebimento no Stripe (abre no navegador).
 - [ ] B6. Painel web: incluir o que falta (meta semanal, "Como foi?", aluno em atraso), para os dois produtos ficarem iguais.
 
@@ -165,3 +166,30 @@ O detalhamento de cada regra está em `docs/ARQUITETURA-E-SISTEMA.md`, seção 4
 3. Implementar só a etapa autorizada, com testes.
 4. Rodar build e testes (backend e app); conferir no emulador quando houver tela.
 5. Revisar o diff, commitar e marcar a etapa aqui.
+6. Anotar na seção 8 o que ficou de fora da etapa (melhorias e limitações conhecidas).
+
+---
+
+## 8. O que falta: melhorias anotadas por etapa
+
+Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer um deles, mover para a etapa em que entrou.
+
+### B2 — Alunos
+- B2.1 e B2.2 (acima): evolução do aluno no perfil; reativar aluno e pausar vínculo (precisam de endpoint).
+- Reenviar acesso / redefinir a senha provisória do aluno (hoje a senha só é definida no cadastro).
+
+### B3 — Mensagens
+- Anexo de foto no chat (o backend só tem texto).
+- Notificação push de mensagem nova (hoje o app consulta de tempos em tempos e só enquanto está aberto).
+- Busca e filtro na lista de conversas (por nome, só não lidas) quando houver muitos alunos.
+
+### B4 — Treinos
+- **Arquivar treino:** hoje só dá para excluir treino que nunca foi atribuído; os antigos ficam na lista para sempre.
+- **Catálogo comum:** é só leitura e não tem tela de manutenção (administração da plataforma). Falta um catálogo inicial padronizado (nomes, grupos, equipamento) carregado por migração.
+- **Exercício mais completo:** descrição/instruções, vídeo ou imagem, equipamento, exercício por tempo (ex.: prancha 30 s; hoje repetição é número inteiro obrigatório).
+- **Plano mais rico:** faixa de repetições ("8–12"), séries diferentes entre si (pirâmide, drop-set), bi-set/supersérie, cadência.
+- **Organização:** descrição/objetivo do treino, divisão por dias da semana (A/B/C), validade e data de troca do treino.
+- Aviso ao aluno (push) quando recebe treino novo ou o treino muda.
+- Se o personal retirar um exercício durante uma sessão em andamento do aluno, o servidor ainda aceita séries dele naquela sessão (avaliar se deve bloquear).
+- A lista de treinos faz 2 contagens por treino (bom para o volume atual; trocar por consulta agregada se crescer).
+- Painel web (entra no B6): mostrar catálogo × exercícios do personal (editar catálogo agora responde 403), usar duplicar e reordenar, e o nome do exercício que já vem no plano.

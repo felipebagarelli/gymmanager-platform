@@ -8,6 +8,9 @@ import java.util.List;
 
 @Repository
 public interface WorkoutExercisesRepository extends JpaRepository<WorkoutExercises, Long> {
-    List<WorkoutExercises> findByWorkoutIdOrderByPositionAscIdAsc(Long workoutId);
+    /** Plano atual do treino (sem os exercicios retirados). */
+    List<WorkoutExercises> findByWorkoutIdAndRemovedAtIsNullOrderByPositionAscIdAsc(Long workoutId);
+    long countByWorkoutIdAndRemovedAtIsNull(Long workoutId);
+    boolean existsByExerciseId(Long exerciseId);
     void deleteByWorkoutId(Long workoutId);
 }

@@ -14,5 +14,7 @@ public interface WorkoutAssignmentRepository extends JpaRepository<WorkoutAssign
     Optional<WorkoutAssignment> findByWorkoutIdAndStudentIdAndStatus(Long workoutId, Long studentId, WorkoutAssignmentStatus status);
     Optional<WorkoutAssignment> findByWorkoutIdAndStudentUserEmailAndStatus(Long workoutId, String email, WorkoutAssignmentStatus status);
     boolean existsByWorkoutId(Long workoutId);
+    List<WorkoutAssignment> findByWorkoutIdAndStatusOrderByStudentNameAsc(Long workoutId, WorkoutAssignmentStatus status);
+    long countByWorkoutIdAndStatus(Long workoutId, WorkoutAssignmentStatus status);
     boolean existsByWorkoutIdAndStudentUserEmail(Long workoutId, String email);
 }

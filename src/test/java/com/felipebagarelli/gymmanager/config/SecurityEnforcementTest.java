@@ -5,8 +5,12 @@ import com.felipebagarelli.gymmanager.auth.entity.Role;
 import com.felipebagarelli.gymmanager.auth.entity.User;
 import com.felipebagarelli.gymmanager.auth.service.JwtService;
 import com.felipebagarelli.gymmanager.controller.ExerciseController;
+import com.felipebagarelli.gymmanager.controller.WorkoutController;
+import com.felipebagarelli.gymmanager.controller.WorkoutExercisesController;
 import com.felipebagarelli.gymmanager.exception.GlobalExceptionHandler;
 import com.felipebagarelli.gymmanager.service.ExerciseService;
+import com.felipebagarelli.gymmanager.service.WorkoutExerciseService;
+import com.felipebagarelli.gymmanager.service.WorkoutService;
 import com.felipebagarelli.gymmanager.student.controller.StudentController;
 import com.felipebagarelli.gymmanager.student.dto.request.CreateStudentRequest;
 import com.felipebagarelli.gymmanager.student.service.StudentService;
@@ -30,9 +34,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {ExerciseController.class, StudentController.class})
+@WebMvcTest(controllers = {ExerciseController.class, StudentController.class, WorkoutController.class, WorkoutExercisesController.class})
 @Import({SecurityConfig.class, CorsConfig.class, JwtConfig.class, JwtService.class, GlobalExceptionHandler.class})
 @TestPropertySource(properties = {"jwt.secret=test-secret-used-only-in-security-enforcement-tests-1234567890", "app.cors.allowed-origins=http://localhost:5173"})
 class SecurityEnforcementTest {
@@ -49,6 +54,12 @@ class SecurityEnforcementTest {
     @MockitoBean
     private StudentService studentService;
 
+    @MockitoBean
+    private WorkoutService workoutService;
+
+    @MockitoBean
+    private WorkoutExerciseService workoutExerciseService;
+
     private String tokenFor(Role role) {
         User user = User.builder().id(1L).email("user@example.com").role(role).active(true).build();
         return jwtService.generateToken(user);
@@ -62,7 +73,7 @@ class SecurityEnforcementTest {
 
     @Test
     void legacyEndpoint_withAnyAuthenticatedRole_returns200() throws Exception {
-        when(exerciseService.allExercises()).thenReturn(List.of());
+        when(exerciseService.allExercises(anyString())).thenReturn(List.of());
 
         mockMvc.perform(get("/exercises")
                         .header("Authorization", "Bearer " + tokenFor(Role.STUDENT)))
@@ -76,6 +87,35 @@ class SecurityEnforcementTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Supino\",\"muscleGroup\":\"Peito\"}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void workoutManagement_withStudentRoleToken_returns403() throws Exception {
+        String student = "Bearer " + tokenFor(Role.STUDENT);
+        mockMvc.perform(post("/workouts/1/duplicate").header("Authorization", student))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/workouts/1/assignments").header("Authorization", student))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/workout-exercises/workout/1/order")
+                        .header("Authorization", student)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"workoutExerciseIds\":[1,2]}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void workoutManagement_withTrainerRoleToken_isAllowed() throws Exception {
+        String trainer = "Bearer " + tokenFor(Role.TRAINER);
+        when(workoutService.activeAssignments(anyLong(), anyString())).thenReturn(List.of());
+        when(workoutExerciseService.reorder(anyLong(), any(), anyString())).thenReturn(List.of());
+
+        mockMvc.perform(get("/workouts/1/assignments").header("Authorization", trainer))
+                .andExpect(status().isOk());
+        mockMvc.perform(put("/workout-exercises/workout/1/order")
+                        .header("Authorization", trainer)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"workoutExerciseIds\":[1,2]}"))
+                .andExpect(status().isOk());
     }
 
     @Test

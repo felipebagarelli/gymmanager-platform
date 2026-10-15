@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface ExercisePerformanceRepository extends JpaRepository<ExercisePerformance, Long> {
     List<ExercisePerformance> findBySessionIdOrderByIdAsc(Long sessionId);
+    boolean existsByWorkoutExerciseId(Long workoutExerciseId);
 }

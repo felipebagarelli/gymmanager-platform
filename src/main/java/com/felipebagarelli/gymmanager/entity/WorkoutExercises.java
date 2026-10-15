@@ -4,6 +4,8 @@ package com.felipebagarelli.gymmanager.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "WorkoutExercises")
 @NoArgsConstructor
@@ -25,5 +27,8 @@ public class WorkoutExercises {
     private Integer restSeconds;
     private Double targetLoad;
     private String notes;
+
+    /** Retirado do treino depois de ja ter series registradas (some do plano, o historico continua). */
+    private LocalDateTime removedAt;
 
 }

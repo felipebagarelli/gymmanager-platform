@@ -18,6 +18,7 @@ import '../../../sessions/domain/workout_session.dart';
 import '../../../sessions/presentation/session_detail_sheet.dart';
 import '../../../workouts/domain/workout.dart';
 import '../../messages/presentation/trainer_messages_page.dart';
+import '../../workouts/presentation/workout_pickers.dart';
 import '../application/students_providers.dart';
 import '../domain/managed_student.dart';
 import 'student_badges.dart';
@@ -115,7 +116,7 @@ class StudentDetailPage extends ConsumerWidget {
               const SizedBox(height: 14),
               _Info(student: s),
               const SizedBox(height: 20),
-              const SectionTitle('Treinos'),
+              _WorkoutsTitle(studentId: s.id, active: s.active),
               const SizedBox(height: 8),
               _Workouts(studentId: s.id),
               const SizedBox(height: 20),
@@ -228,6 +229,24 @@ class _Info extends StatelessWidget {
   }
 }
 
+/// Título "Treinos" com o atalho para atribuir um treino (só para aluno ativo).
+class _WorkoutsTitle extends ConsumerWidget {
+  const _WorkoutsTitle({required this.studentId, required this.active});
+
+  final int studentId;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final assigned = ref.watch(studentWorkoutsProvider(studentId)).value ?? const <Workout>[];
+    return SectionTitle(
+      'Treinos',
+      action: active ? 'Atribuir' : null,
+      onAction: () => showAssignWorkout(context, studentId: studentId, alreadyAssigned: {for (final w in assigned) w.id}),
+    );
+  }
+}
+
 class _Workouts extends ConsumerWidget {
   const _Workouts({required this.studentId});
 
@@ -247,13 +266,16 @@ class _Workouts extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: AppCard(
+                      key: Key('student-workout-${w.id}'),
                       radius: 16,
                       padding: const EdgeInsets.all(12),
+                      onTap: () => context.push('/trainer/workouts/${w.id}'),
                       child: Row(
                         children: [
                           const Icon(LucideIcons.dumbbell, size: 20, color: AppColors.volt),
                           const SizedBox(width: 12),
                           Expanded(child: Text(w.name, style: AppText.body(size: 15.5, weight: FontWeight.w600))),
+                          const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.textMuted),
                         ],
                       ),
                     ),

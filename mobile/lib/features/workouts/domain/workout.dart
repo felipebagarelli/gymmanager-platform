@@ -1,24 +1,41 @@
 class Workout {
-  const Workout({required this.id, required this.name});
+  const Workout({required this.id, required this.name, this.exerciseCount, this.studentCount});
 
   final int id;
   final String name;
 
-  factory Workout.fromJson(Map<String, dynamic> json) =>
-      Workout(id: (json['id'] as num).toInt(), name: json['name'] as String);
+  /// Exercícios no plano atual.
+  final int? exerciseCount;
+
+  /// Alunos com o treino ativo (só vem para o personal dono do treino).
+  final int? studentCount;
+
+  factory Workout.fromJson(Map<String, dynamic> json) => Workout(
+        id: (json['id'] as num).toInt(),
+        name: json['name'] as String,
+        exerciseCount: (json['exerciseCount'] as num?)?.toInt(),
+        studentCount: (json['studentCount'] as num?)?.toInt(),
+      );
 }
 
 class Exercise {
-  const Exercise({required this.id, required this.name, this.muscleGroup});
+  const Exercise({required this.id, required this.name, this.muscleGroup, this.trainerId});
 
   final int id;
   final String name;
   final String? muscleGroup;
 
+  /// Dono do exercício; null = catálogo comum (ninguém altera).
+  final int? trainerId;
+
+  /// Exercício criado pelo personal (pode editar e excluir).
+  bool get custom => trainerId != null;
+
   factory Exercise.fromJson(Map<String, dynamic> json) => Exercise(
         id: (json['id'] as num).toInt(),
         name: json['name'] as String,
         muscleGroup: json['muscleGroup'] as String?,
+        trainerId: (json['trainerId'] as num?)?.toInt(),
       );
 }
 
@@ -33,10 +50,16 @@ class PlanItem {
     this.restSeconds,
     this.targetLoad,
     this.notes,
+    this.exerciseName,
+    this.muscleGroup,
   });
 
   final int id;
   final int exerciseId;
+
+  /// Nome e grupo do exercício (o servidor já manda junto).
+  final String? exerciseName;
+  final String? muscleGroup;
   final int sets;
   final int reps;
   final int? position;
@@ -53,6 +76,8 @@ class PlanItem {
         restSeconds: (json['restSeconds'] as num?)?.toInt(),
         targetLoad: (json['targetLoad'] as num?)?.toDouble(),
         notes: json['notes'] as String?,
+        exerciseName: json['exerciseName'] as String?,
+        muscleGroup: json['muscleGroup'] as String?,
       );
 }
 

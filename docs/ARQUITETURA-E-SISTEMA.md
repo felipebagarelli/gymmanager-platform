@@ -471,6 +471,18 @@ weight
 
 na entidade global do exercício quando esses dados pertencem ao treino ou à execução.
 
+### Dono do exercício (implementado em 15/10/2026, migração V7)
+
+- `trainer_id` nulo = **catálogo comum**: todos enxergam, ninguém altera pela API.
+- `trainer_id` preenchido = exercício **do personal**: só ele edita ou exclui; os alunos dele enxergam (para ver o plano).
+- O personal monta treinos com o catálogo e com os exercícios dele, nunca com os de outro personal.
+- Exercício em uso em algum treino (inclusive retirado, por causa do histórico) não pode ser excluído: 409.
+
+### Retirar exercício do treino sem perder o histórico
+
+`workout_exercises.removed_at`: se o aluno já registrou séries do exercício, retirá-lo do treino só marca a data; ele some do plano,
+mas as séries antigas continuam apontando para ele. Sem séries, é apagado de vez.
+
 ---
 
 # 10. Treinos: separar planejamento de execução

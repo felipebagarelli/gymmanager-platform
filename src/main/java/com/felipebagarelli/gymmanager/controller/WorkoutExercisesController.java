@@ -1,6 +1,7 @@
 package com.felipebagarelli.gymmanager.controller;
 
 import com.felipebagarelli.gymmanager.dto.request.CreateWorkoutExerciseRequest;
+import com.felipebagarelli.gymmanager.dto.request.ReorderWorkoutExercisesRequest;
 import com.felipebagarelli.gymmanager.dto.response.WorkoutExercisesResponse;
 import com.felipebagarelli.gymmanager.service.WorkoutExerciseService;
 import jakarta.validation.Valid;
@@ -28,6 +29,11 @@ public class WorkoutExercisesController {
     @GetMapping("/workout/{id}")
     public List<WorkoutExercisesResponse> allWorkoutExercises(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
         return workoutExerciseService.allWorkoutExercises(id, jwt.getSubject());
+    }
+
+    @PutMapping("/workout/{id}/order")
+    public List<WorkoutExercisesResponse> reorder(@PathVariable Long id, @RequestBody @Valid ReorderWorkoutExercisesRequest request, @AuthenticationPrincipal Jwt jwt) {
+        return workoutExerciseService.reorder(id, request.workoutExerciseIds(), jwt.getSubject());
     }
 
     @DeleteMapping("/{id}")

@@ -9,5 +9,7 @@ public record WorkoutExercisesResponse(
         Integer position,
         Integer restSeconds,
         Double targetLoad,
-        String notes) {
+        String notes,
+        String exerciseName,
+        String muscleGroup) {
 }

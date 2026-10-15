@@ -8,6 +8,8 @@ import '../../features/auth/domain/app_user.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/trainer/messages/presentation/trainer_conversation_page.dart';
 import '../../features/trainer/presentation/trainer_home_page.dart';
+import '../../features/trainer/workouts/presentation/exercise_library_page.dart';
+import '../../features/trainer/workouts/presentation/workout_editor_page.dart';
 import '../../features/trainer/students/presentation/student_detail_page.dart';
 import '../../features/trainer/students/presentation/student_form_page.dart';
 import '../../features/sessions/presentation/completion_page.dart';
@@ -70,6 +72,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // modo personal
+      GoRoute(path: '/trainer/exercises', builder: (context, state) => const ExerciseLibraryPage()),
+      GoRoute(
+        path: '/trainer/workouts/:id',
+        builder: (context, state) => WorkoutEditorPage(workoutId: int.parse(state.pathParameters['id']!)),
+      ),
       GoRoute(
         path: '/trainer/messages/:id',
         builder: (context, state) => TrainerConversationPage(conversationId: int.parse(state.pathParameters['id']!)),

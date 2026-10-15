@@ -10,6 +10,7 @@ public record WorkoutAssignmentResponse(
         Long studentId,
         WorkoutAssignmentStatus status,
         LocalDateTime startedAt,
-        LocalDateTime endedAt
+        LocalDateTime endedAt,
+        String studentName
 ) {
 }

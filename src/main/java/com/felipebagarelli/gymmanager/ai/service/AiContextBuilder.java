@@ -110,7 +110,7 @@ public class AiContextBuilder {
         for (WorkoutAssignment assignment : assignments.stream().limit(MAX_WORKOUTS).toList()) {
             out.append("- ").append(clean(assignment.getWorkout().getName())).append('\n');
             List<WorkoutExercises> plan = workoutExercisesRepository
-                    .findByWorkoutIdOrderByPositionAscIdAsc(assignment.getWorkout().getId());
+                    .findByWorkoutIdAndRemovedAtIsNullOrderByPositionAscIdAsc(assignment.getWorkout().getId());
             for (WorkoutExercises item : plan.stream().limit(MAX_EXERCISES_PER_WORKOUT).toList()) {
                 out.append("    * ").append(clean(item.getExercise().getName()))
                         .append(": ").append(item.getSets()).append("x").append(item.getReps());

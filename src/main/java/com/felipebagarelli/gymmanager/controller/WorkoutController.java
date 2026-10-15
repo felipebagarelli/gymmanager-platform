@@ -58,6 +58,16 @@ public class WorkoutController {
         return workoutService.assignToStudent(id, request.studentId(), jwt.getSubject());
     }
 
+    @GetMapping("/{id}/assignments")
+    public List<WorkoutAssignmentResponse> activeAssignments(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt){
+        return workoutService.activeAssignments(id, jwt.getSubject());
+    }
+
+    @PostMapping("/{id}/duplicate")
+    public WorkoutResponse duplicate(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt){
+        return workoutService.duplicate(id, jwt.getSubject());
+    }
+
     @DeleteMapping("/{id}/assignments/{studentId}")
     public void endAssignment(@PathVariable Long id, @PathVariable Long studentId, @AuthenticationPrincipal Jwt jwt){
         workoutService.endAssignment(id, studentId, jwt.getSubject());

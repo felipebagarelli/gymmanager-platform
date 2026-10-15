@@ -1,6 +1,7 @@
 package com.felipebagarelli.gymmanager.entity;
 
 
+import com.felipebagarelli.gymmanager.trainer.entity.TrainerProfile;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,5 +18,10 @@ public class Exercises {
     private Long id;
     private String name;
     private String muscleGroup;
+
+    /** Dono do exercicio; null = catalogo comum (ninguem altera pela API). */
+    @ManyToOne
+    @JoinColumn(name = "trainer_id")
+    private TrainerProfile trainer;
 
 }
