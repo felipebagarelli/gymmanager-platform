@@ -48,22 +48,24 @@ Este documento é a base para seguirmos: o que já existe, para onde vamos, em q
 
 A ordem evita dependências quebradas. Fases podem ser antecipadas por decisão explícita.
 
+**Decisão de 15/10/2026:** o lançamento (Fase A) fica **por último**; seguimos primeiro com o app do personal (Fase B).
+
 ```text
-FASE A  Lançamento do app do aluno (o que já existe)
-   ↓
-FASE B  App do personal (mesmo app, modo personal)
+FASE B  App do personal (mesmo app, modo personal)      ← em andamento
    ↓
 FASE C  Cadastro aberto + aluno independente + plano da plataforma
    ↓
 FASE D  IA que propõe treinos com confirmação
    ↓
 FASE E  Hub de personais (buscar e contratar dentro do app)
+   ↓
+FASE A  Lançamento (lojas, servidor, documentos legais)
 ```
 
-B e C são independentes entre si e podem ser trocadas de ordem. D depende de C (é o aluno independente que mais precisa dela). E depende de B e C.
+B e C são independentes entre si e podem ser trocadas de ordem. D depende de C (é o aluno independente que mais precisa dela). E depende de B e C. A pode ser antecipada a qualquer momento (por exemplo, um teste fechado na Google Play), mas fica por último por decisão do produto.
 
-### Fase A — Lançamento do que já existe
-Objetivo: colocar o app do aluno nas mãos de usuários reais (teste fechado).
+### Fase A — Lançamento (por último)
+Objetivo: colocar o app nas mãos de usuários reais (começando por teste fechado).
 - [ ] Enviar o repositório ao GitHub (branch + PR do redesenho).
 - [ ] Subir o backend em um servidor (seguir `docs/DEPLOY.md`): domínio, HTTPS, banco, backup testado.
 - [ ] Validar Stripe em modo teste ponta a ponta (inclui atraso e regularização).
@@ -75,7 +77,7 @@ Objetivo: colocar o app do aluno nas mãos de usuários reais (teste fechado).
 
 ### Fase B — App do personal (modo personal no mesmo app)
 Objetivo: o personal faz pelo celular tudo o que faz no painel web. O backend já tem quase todos os endpoints.
-- [ ] B1. Login multipapel: o app aceita `TRAINER` e abre a navegação do personal (Alunos, Treinos, Mensagens, Planos, Perfil).
+- [x] B1. Login multipapel: o app aceita `TRAINER` e abre a navegação do personal (Alunos, Treinos, Mensagens, Planos, Perfil). Perfil do personal pronto; as demais abas mostram "em construção" até as etapas seguintes. *(15/10/2026)*
 - [ ] B2. Alunos: lista, busca, perfil, vínculo, sessões e evolução do aluno, "Como foi?" das séries, meta semanal, situação da mensalidade.
 - [ ] B3. Mensagens: lista de conversas com todos os alunos e não lidas.
 - [ ] B4. Treinos: biblioteca de exercícios, montar treino no celular (fluxo pensado para tela pequena), duplicar, ordenar, atribuir.
