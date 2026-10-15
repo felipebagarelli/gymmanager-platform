@@ -85,7 +85,7 @@ Objetivo: o personal faz pelo celular tudo o que faz no painel web. O backend j�
 - [x] B3. Mensagens: lista de conversas com todos os alunos (prévia, horário, não lidas, conversa encerrada), contador na aba, a conversa (mesma tela do aluno, do lado do personal) e atalho "Enviar mensagem" no perfil do aluno. Sem mudança no backend. *(15/10/2026)*
 - [x] B4. Treinos: lista de treinos (exercícios e alunos de cada um), novo treino já abrindo o editor, editor no celular (adicionar da biblioteca ou criar exercício na hora, séries/repetições/descanso/carga/observação, arrastar para ordenar, retirar), renomear, duplicar, excluir, atribuir a vários alunos e retirar; biblioteca de exercícios (catálogo + os do personal); "Atribuir" no perfil do aluno. *(15/10/2026)*
   - Backend (V7): exercício passou a ter dono (`exercises.trainer_id`; os que já existiam viraram catálogo comum, só leitura). Antes qualquer personal editava ou apagava exercícios de todos. Exercício em uso não pode ser excluído (409). Retirar do treino um exercício que já tem séries registradas só o marca como retirado (`workout_exercises.removed_at`), sem quebrar o histórico. Novos: `GET /workouts/{id}/assignments`, `POST /workouts/{id}/duplicate`, `PUT /workout-exercises/workout/{id}/order`. Respostas ganharam `exerciseCount`/`studentCount` (treino), `exerciseName`/`muscleGroup` (plano), `trainerId` (exercício) e `studentName` (atribuição).
-- [ ] B5. Planos e cobrança: criar planos, ver assinaturas e pagamentos, cadastro de recebimento no Stripe (abre no navegador).
+- [x] B5. Planos e cobrança: situação do recebimento (configurar/continuar o cadastro no Stripe pelo navegador, conferido de novo ao voltar para o app), receita mensal em dia e contagem de assinaturas em dia/em atraso/canceladas, planos (criar, editar valor e descrição, desativar para novos alunos) com número de assinantes, e lista de assinaturas por aluno com filtro e atalho para o perfil. Sem mudança no backend. Com isso as 5 abas do personal estão prontas. *(15/10/2026)*
 - [ ] B6. Painel web: incluir o que falta (meta semanal, "Como foi?", aluno em atraso), para os dois produtos ficarem iguais.
 
 ### Fase C — Cadastro aberto e aluno independente
@@ -193,3 +193,14 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - Se o personal retirar um exercício durante uma sessão em andamento do aluno, o servidor ainda aceita séries dele naquela sessão (avaliar se deve bloquear).
 - A lista de treinos faz 2 contagens por treino (bom para o volume atual; trocar por consulta agregada se crescer).
 - Painel web (entra no B6): mostrar catálogo × exercícios do personal (editar catálogo agora responde 403), usar duplicar e reordenar, e o nome do exercício que já vem no plano.
+
+### B5 — Planos e cobrança
+- **Histórico de pagamentos:** o backend guarda só a assinatura (situação e fim do período), não cada cobrança. Falta registrar as faturas pelo webhook (paga, falhou, valor, data) e mostrar por aluno e por mês.
+- **Valor líquido:** a receita mostrada é bruta; falta descontar a taxa do Stripe e a comissão da plataforma.
+- **Volta do cadastro no Stripe:** o retorno aponta para o painel web (`/pagamentos`). No app falta um link de volta direto (deep link); hoje a situação é conferida quando o personal volta para o app.
+- **Acesso ao painel do Stripe** (saldo, saques) pelo app: link de login do Stripe Express.
+- O personal não consegue cancelar a assinatura de um aluno, dar desconto/isenção ou fazer cobrança avulsa.
+- **Aluno em atraso:** atalho "cobrar" (mensagem pronta no chat) e lembrete automático antes do vencimento.
+- Só existe plano mensal: faltam trimestral/anual e período de teste.
+- Formas de pagamento: hoje só cartão (avaliar boleto/Pix no Stripe Brasil).
+- Relatório mensal / exportar (CSV) para o personal.

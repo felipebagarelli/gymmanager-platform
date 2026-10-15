@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../../core/theme/app_text.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/async_widgets.dart';
 import '../../home/presentation/app_tab_bar.dart';
 import '../application/trainer_tab_provider.dart';
 import '../../chat/application/chat_providers.dart';
 import '../messages/presentation/trainer_messages_page.dart';
 import '../students/presentation/students_page.dart';
+import '../plans/presentation/trainer_plans_page.dart';
 import '../workouts/presentation/trainer_workouts_page.dart';
 import 'trainer_profile_page.dart';
 
@@ -36,11 +33,10 @@ class _TrainerHomePageState extends ConsumerState<TrainerHomePage> {
       body: IndexedStack(
         index: index,
         children: [
-          // TODO(fase-b): B5 planos substitui este aviso
           tab(TrainerTab.students, const StudentsPage()),
           tab(TrainerTab.workouts, const TrainerWorkoutsPage()),
           tab(TrainerTab.messages, const TrainerMessagesPage()),
-          tab(TrainerTab.plans, const _NextStage(title: 'Planos', icon: LucideIcons.wallet)),
+          tab(TrainerTab.plans, const TrainerPlansPage()),
           tab(TrainerTab.profile, const TrainerProfilePage()),
         ],
       ),
@@ -51,36 +47,6 @@ class _TrainerHomePageState extends ConsumerState<TrainerHomePage> {
         // a lista de conversas é consultada de tempos em tempos enquanto o personal está no app
         unreadMessages: ref.watch(trainerUnreadProvider),
         onSelected: ref.read(trainerTabProvider.notifier).select,
-      ),
-    );
-  }
-}
-
-/// Aba ainda em construção no modo personal (só aparece no desenvolvimento, antes do lançamento).
-class _NextStage extends StatelessWidget {
-  const _NextStage({required this.title, required this.icon});
-
-  final String title;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(kScreenPadding, 12, kScreenPadding, 0),
-            child: Text(title.toUpperCase(), style: AppText.display(36).copyWith(letterSpacing: 0.7)),
-          ),
-          Expanded(
-            child: EmptyState(
-              icon: icon,
-              message: 'Em construção no app.\nPor enquanto, use o painel web para esta parte.',
-            ),
-          ),
-        ],
       ),
     );
   }
