@@ -3,6 +3,7 @@ package com.felipebagarelli.gymmanager.student.dto.response;
 import com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record StudentProfileResponse(
         Long id,
@@ -15,6 +16,8 @@ public record StudentProfileResponse(
         Double weight,
         boolean active,
         TrainerStudentStatus status,
-        Integer weeklyGoal
+        Integer weeklyGoal,
+        /** Início do último treino finalizado (null se nunca treinou). */
+        LocalDateTime lastWorkoutAt
 ) {
 }

@@ -39,8 +39,8 @@ public class StudentController {
     }
 
     @GetMapping("/api/v1/students/{id}")
-    public StudentProfileResponse getStudentById(@PathVariable Long id) {
-        return studentService.getById(id);
+    public StudentProfileResponse getStudentById(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        return studentService.getById(id, jwt.getSubject());
     }
 
     @PutMapping("/api/v1/students/{id}")

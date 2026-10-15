@@ -5,6 +5,8 @@ import com.felipebagarelli.gymmanager.auth.entity.User;
 import com.felipebagarelli.gymmanager.auth.repository.UserRepository;
 import com.felipebagarelli.gymmanager.exception.EmailAlreadyInUseException;
 import com.felipebagarelli.gymmanager.exception.ResourceNotFoundException;
+import com.felipebagarelli.gymmanager.session.entity.WorkoutSession;
+import com.felipebagarelli.gymmanager.session.repository.WorkoutSessionRepository;
 import com.felipebagarelli.gymmanager.student.dto.request.CreateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.response.StudentProfileResponse;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class StudentService {
@@ -31,17 +34,20 @@ public class StudentService {
     private final TrainerProfileRepository trainerProfileRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WorkoutSessionRepository sessionRepository;
 
     public StudentService(StudentProfileRepository studentProfileRepository,
                            TrainerStudentRepository trainerStudentRepository,
                            TrainerProfileRepository trainerProfileRepository,
                            UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           WorkoutSessionRepository sessionRepository) {
         this.studentProfileRepository = studentProfileRepository;
         this.trainerStudentRepository = trainerStudentRepository;
         this.trainerProfileRepository = trainerProfileRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.sessionRepository = sessionRepository;
     }
 
     private StudentProfileResponse toResponse(StudentProfile student, TrainerStudentStatus status) {
@@ -56,7 +62,10 @@ public class StudentService {
                 student.getWeight(),
                 student.isActive(),
                 status,
-                student.getWeeklyGoal()
+                student.getWeeklyGoal(),
+                sessionRepository.findFirstByAssignmentStudentIdAndFinishedAtIsNotNullOrderByStartedAtDesc(student.getId())
+                        .map(WorkoutSession::getStartedAt)
+                        .orElse(null)
         );
     }
 
@@ -127,15 +136,23 @@ public class StudentService {
                 .toList();
     }
 
-    public StudentProfileResponse getById(Long id) {
+    /**
+     * Perfil de um aluno: só o personal dono do vínculo ou o próprio aluno.
+     * Qualquer outro usuário recebe 403 (não basta conhecer o id).
+     */
+    public StudentProfileResponse getById(Long id, String authenticatedEmail) {
         StudentProfile student = studentProfileRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado!"));
+        Optional<TrainerStudent> link = trainerStudentRepository.findByStudentId(id);
 
-        TrainerStudentStatus status = trainerStudentRepository.findByStudentId(id)
-                .map(TrainerStudent::getStatus)
-                .orElse(null);
+        boolean ownTrainer = link.map(l -> l.getTrainer().getUser().getEmail().equalsIgnoreCase(authenticatedEmail))
+                .orElse(false);
+        boolean self = student.getUser().getEmail().equalsIgnoreCase(authenticatedEmail);
+        if (!ownTrainer && !self) {
+            throw new AccessDeniedException("Você não tem permissão para acessar os dados deste aluno.");
+        }
 
-        return toResponse(student, status);
+        return toResponse(student, link.map(TrainerStudent::getStatus).orElse(null));
     }
 
     @Transactional
@@ -152,6 +169,8 @@ public class StudentService {
         // aditivo: quem não envia a meta (ex.: painel atual) não apaga a que já existe
         if (request.weeklyGoal() != null) {
             student.setWeeklyGoal(request.weeklyGoal());
+        } else if (Boolean.TRUE.equals(request.clearWeeklyGoal())) {
+            student.setWeeklyGoal(null);
         }
         studentProfileRepository.save(student);
 

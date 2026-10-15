@@ -77,3 +77,33 @@ String formatShortDate(DateTime value) {
   final d = value.toLocal();
   return '${d.day.toString().padLeft(2, '0')} ${formatShortMonth(d).toLowerCase()}';
 }
+
+/// "hoje", "ontem", "há 3 dias" (até 30 dias) ou "05/10/2026".
+String formatSince(DateTime value, DateTime now) {
+  final day = DateTime(value.toLocal().year, value.toLocal().month, value.toLocal().day);
+  final today = DateTime(now.year, now.month, now.day);
+  final days = today.difference(day).inDays;
+  if (days <= 0) return 'hoje';
+  if (days == 1) return 'ontem';
+  if (days <= 30) return 'há $days dias';
+  return formatBirthDate(value);
+}
+
+/// "05/10/2026".
+String formatBirthDate(DateTime value) {
+  final d = value.toLocal();
+  return '${formatDayMonthPadded(d)}/${d.year.toString().padLeft(4, '0')}';
+}
+
+/// Lê "05/10/1990" (ou "5/10/1990"); null se não for uma data válida.
+DateTime? parseBirthDate(String text) {
+  final match = RegExp(r'^\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*$').firstMatch(text);
+  if (match == null) return null;
+  final day = int.parse(match.group(1)!);
+  final month = int.parse(match.group(2)!);
+  final year = int.parse(match.group(3)!);
+  final date = DateTime(year, month, day);
+  // DateTime aceita 31/02 e "rola" para março: confere que é a mesma data
+  if (date.year != year || date.month != month || date.day != day) return null;
+  return date;
+}

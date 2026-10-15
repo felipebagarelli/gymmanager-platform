@@ -85,4 +85,14 @@ void main() {
     expect(find.byType(HomePage), findsOneWidget);
     expect(find.byType(TrainerHomePage), findsNothing);
   });
+
+  testWidgets('aluno não entra nas telas do personal', (tester) async {
+    await _pump(tester, _app(_session('STUDENT')));
+    final container = ProviderScope.containerOf(tester.element(find.byType(HomePage)));
+
+    container.read(routerProvider).go('/trainer/students/2');
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(HomePage), findsOneWidget);
+  });
 }

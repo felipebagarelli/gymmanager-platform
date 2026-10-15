@@ -7,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/async_widgets.dart';
 import '../../home/presentation/app_tab_bar.dart';
 import '../application/trainer_tab_provider.dart';
+import '../students/presentation/students_page.dart';
 import 'trainer_profile_page.dart';
 
 /// Casca do modo personal: as 5 abas do personal no mesmo app do aluno.
@@ -32,8 +33,8 @@ class _TrainerHomePageState extends ConsumerState<TrainerHomePage> {
       body: IndexedStack(
         index: index,
         children: [
-          // TODO(fase-b): B2 alunos, B4 treinos, B3 mensagens e B5 planos substituem estes avisos
-          tab(TrainerTab.students, const _NextStage(title: 'Alunos', icon: LucideIcons.users)),
+          // TODO(fase-b): B4 treinos, B3 mensagens e B5 planos substituem estes avisos
+          tab(TrainerTab.students, const StudentsPage()),
           tab(TrainerTab.workouts, const _NextStage(title: 'Treinos', icon: LucideIcons.dumbbell)),
           tab(TrainerTab.messages, const _NextStage(title: 'Mensagens', icon: LucideIcons.messageSquare)),
           tab(TrainerTab.plans, const _NextStage(title: 'Planos', icon: LucideIcons.wallet)),

@@ -7,6 +7,8 @@ import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/domain/app_user.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/trainer/presentation/trainer_home_page.dart';
+import '../../features/trainer/students/presentation/student_detail_page.dart';
+import '../../features/trainer/students/presentation/student_form_page.dart';
 import '../../features/sessions/presentation/completion_page.dart';
 import '../../features/sessions/presentation/execute_workout_page.dart';
 import '../../features/workouts/presentation/workout_detail_page.dart';
@@ -30,8 +32,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final user = auth.value;
       if (user == null) return location == '/login' ? null : '/login';
       if (location == '/login' || location == '/splash') return '/';
-      // as telas de execução de treino são do aluno
+      // cada papel só navega pelas próprias telas
       if (user is TrainerUser && location.startsWith('/workouts')) return '/';
+      if (user is StudentUser && location.startsWith('/trainer')) return '/';
       return null;
     },
     routes: [
@@ -62,6 +65,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'done',
             builder: (context, state) =>
                 CompletionPage(workoutId: int.parse(state.pathParameters['id']!)),
+          ),
+        ],
+      ),
+      // modo personal
+      GoRoute(path: '/trainer/students/new', builder: (context, state) => const StudentFormPage()),
+      GoRoute(
+        path: '/trainer/students/:id',
+        builder: (context, state) => StudentDetailPage(studentId: int.parse(state.pathParameters['id']!)),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) => StudentFormPage(studentId: int.parse(state.pathParameters['id']!)),
           ),
         ],
       ),

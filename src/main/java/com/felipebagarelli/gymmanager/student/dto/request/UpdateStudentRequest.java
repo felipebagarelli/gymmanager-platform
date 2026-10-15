@@ -14,6 +14,8 @@ public record UpdateStudentRequest(
         String goal,
         @Positive Double height,
         @Positive Double weight,
-        @Min(1) @Max(14) Integer weeklyGoal
+        @Min(1) @Max(14) Integer weeklyGoal,
+        /** true para remover a meta; sem isso, a falta de weeklyGoal mantém a meta atual. */
+        Boolean clearWeeklyGoal
 ) {
 }

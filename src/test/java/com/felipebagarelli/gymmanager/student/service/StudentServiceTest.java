@@ -7,6 +7,8 @@ import com.felipebagarelli.gymmanager.exception.EmailAlreadyInUseException;
 import com.felipebagarelli.gymmanager.exception.ResourceNotFoundException;
 import com.felipebagarelli.gymmanager.student.dto.request.CreateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.response.StudentProfileResponse;
+import com.felipebagarelli.gymmanager.session.entity.WorkoutSession;
+import com.felipebagarelli.gymmanager.session.repository.WorkoutSessionRepository;
 import com.felipebagarelli.gymmanager.student.entity.StudentProfile;
 import com.felipebagarelli.gymmanager.student.entity.TrainerStudent;
 import com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus;
@@ -24,6 +26,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,6 +52,8 @@ class StudentServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+    @Mock
+    private WorkoutSessionRepository sessionRepository;
 
     @InjectMocks
     private StudentService studentService;
@@ -170,7 +175,7 @@ class StudentServiceTest {
     void getById_throwsResourceNotFoundException_whenStudentNotFound() {
         when(studentProfileRepository.findById(2L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> studentService.getById(2L))
+        assertThatThrownBy(() -> studentService.getById(2L, "trainer@example.com"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -187,7 +192,7 @@ class StudentServiceTest {
         when(studentProfileRepository.findById(2L)).thenReturn(Optional.of(student));
         when(trainerStudentRepository.findByStudentId(2L)).thenReturn(Optional.of(link));
 
-        StudentProfileResponse response = studentService.getById(2L);
+        StudentProfileResponse response = studentService.getById(2L, "trainer@example.com");
 
         assertThat(response.name()).isEqualTo("Maria Aluna");
         assertThat(response.status()).isEqualTo(TrainerStudentStatus.PAUSED);
@@ -233,7 +238,7 @@ class StudentServiceTest {
 
         StudentProfileResponse response = studentService.updateById(2L,
                 new com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest(
-                        "Maria Aluna", null, null, null, null, null, 4), "trainer@example.com");
+                        "Maria Aluna", null, null, null, null, null, 4, null), "trainer@example.com");
 
         assertThat(response.weeklyGoal()).isEqualTo(4);
         assertThat(link.getStudent().getWeeklyGoal()).isEqualTo(4);
@@ -245,8 +250,82 @@ class StudentServiceTest {
 
         StudentProfileResponse response = studentService.updateById(2L,
                 new com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest(
-                        "Maria Aluna", null, null, null, null, null, null), "trainer@example.com");
+                        "Maria Aluna", null, null, null, null, null, null, null), "trainer@example.com");
 
         assertThat(response.weeklyGoal()).isEqualTo(3);
+    }
+
+    private StudentProfile studentWithLinkTo(TrainerProfile owner) {
+        User user = User.builder().email("aluno@example.com").role(Role.STUDENT).build();
+        StudentProfile student = StudentProfile.builder().id(2L).user(user).name("Maria Aluna").build();
+        TrainerStudent link = TrainerStudent.builder().trainer(owner).student(student).status(TrainerStudentStatus.ACTIVE).build();
+        when(studentProfileRepository.findById(2L)).thenReturn(Optional.of(student));
+        when(trainerStudentRepository.findByStudentId(2L)).thenReturn(Optional.of(link));
+        return student;
+    }
+
+    @Test
+    void getById_allowsTheStudentThemselves() {
+        studentWithLinkTo(trainer());
+
+        assertThat(studentService.getById(2L, "aluno@example.com").name()).isEqualTo("Maria Aluna");
+    }
+
+    @Test
+    void getById_deniesAnotherTrainer() {
+        studentWithLinkTo(trainer());
+
+        assertThatThrownBy(() -> studentService.getById(2L, "outro.personal@example.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void getById_deniesAnotherStudent() {
+        studentWithLinkTo(trainer());
+
+        assertThatThrownBy(() -> studentService.getById(2L, "outro.aluno@example.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void getById_deniesEveryoneButTheStudent_whenThereIsNoTrainerLink() {
+        User user = User.builder().email("aluno@example.com").role(Role.STUDENT).build();
+        StudentProfile student = StudentProfile.builder().id(2L).user(user).name("Maria Aluna").build();
+        when(studentProfileRepository.findById(2L)).thenReturn(Optional.of(student));
+        when(trainerStudentRepository.findByStudentId(2L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> studentService.getById(2L, "trainer@example.com")).isInstanceOf(AccessDeniedException.class);
+        assertThat(studentService.getById(2L, "aluno@example.com").status()).isNull();
+    }
+
+    @Test
+    void responses_includeTheLastFinishedWorkout() {
+        studentWithLinkTo(trainer());
+        LocalDateTime last = LocalDateTime.of(2026, 10, 14, 7, 30);
+        when(sessionRepository.findFirstByAssignmentStudentIdAndFinishedAtIsNotNullOrderByStartedAtDesc(2L))
+                .thenReturn(Optional.of(WorkoutSession.builder().id(9L).startedAt(last).build()));
+
+        assertThat(studentService.getById(2L, "trainer@example.com").lastWorkoutAt()).isEqualTo(last);
+    }
+
+    @Test
+    void responses_haveNoLastWorkout_whenTheStudentNeverFinishedOne() {
+        studentWithLinkTo(trainer());
+        when(sessionRepository.findFirstByAssignmentStudentIdAndFinishedAtIsNotNullOrderByStartedAtDesc(2L))
+                .thenReturn(Optional.empty());
+
+        assertThat(studentService.getById(2L, "trainer@example.com").lastWorkoutAt()).isNull();
+    }
+
+    @Test
+    void updateById_clearsWeeklyGoal_onlyWhenAskedExplicitly() {
+        TrainerStudent link = linkWithGoal(3);
+
+        StudentProfileResponse response = studentService.updateById(2L,
+                new com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest(
+                        "Maria Aluna", null, null, null, null, null, null, true), "trainer@example.com");
+
+        assertThat(response.weeklyGoal()).isNull();
+        assertThat(link.getStudent().getWeeklyGoal()).isNull();
     }
 }

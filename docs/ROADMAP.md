@@ -78,7 +78,10 @@ Objetivo: colocar o app nas mãos de usuários reais (começando por teste fecha
 ### Fase B — App do personal (modo personal no mesmo app)
 Objetivo: o personal faz pelo celular tudo o que faz no painel web. O backend já tem quase todos os endpoints.
 - [x] B1. Login multipapel: o app aceita `TRAINER` e abre a navegação do personal (Alunos, Treinos, Mensagens, Planos, Perfil). Perfil do personal pronto; as demais abas mostram "em construção" até as etapas seguintes. *(15/10/2026)*
-- [ ] B2. Alunos: lista, busca, perfil, vínculo, sessões e evolução do aluno, "Como foi?" das séries, meta semanal, situação da mensalidade.
+- [x] B2. Alunos: lista com busca e filtros (ativos, em atraso, inativos), último treino, situação da mensalidade; perfil com dados, números da semana e meta, treinos atribuídos e sessões com o "Como foi?"; cadastrar, editar (inclui meta semanal) e desativar. *(15/10/2026)*
+  - Backend: `GET /api/v1/students/{id}` passou a exigir o personal dono do vínculo ou o próprio aluno (antes qualquer usuário logado lia qualquer aluno); resposta ganhou `lastWorkoutAt`; edição aceita `clearWeeklyGoal`.
+  - [ ] B2.1. Evolução do aluno no perfil (calendário e gráficos do Histórico, reaproveitados).
+  - [ ] B2.2. Reativar aluno desativado (não existe endpoint) e pausar vínculo (`PAUSED` existe no modelo, sem endpoint).
 - [ ] B3. Mensagens: lista de conversas com todos os alunos e não lidas.
 - [ ] B4. Treinos: biblioteca de exercícios, montar treino no celular (fluxo pensado para tela pequena), duplicar, ordenar, atribuir.
 - [ ] B5. Planos e cobrança: criar planos, ver assinaturas e pagamentos, cadastro de recebimento no Stripe (abre no navegador).
