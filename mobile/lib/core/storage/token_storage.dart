@@ -1,10 +1,14 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class StoredSession {
-  const StoredSession({required this.token, required this.expiresAt});
+  const StoredSession({required this.token, required this.expiresAt, this.role});
 
   final String token;
   final DateTime expiresAt;
+
+  /// Papel do usuário (STUDENT ou TRAINER). Null em sessões guardadas antes do modo personal:
+  /// nesse caso o app trata como aluno, que era o único papel aceito.
+  final String? role;
 
   bool get isExpired => !expiresAt.isAfter(DateTime.now());
 }
@@ -23,6 +27,7 @@ class SecureTokenStorage implements TokenStorage {
 
   static const _tokenKey = 'auth_token';
   static const _expiresKey = 'auth_expires_at';
+  static const _roleKey = 'auth_role';
 
   final FlutterSecureStorage _storage;
 
@@ -33,7 +38,7 @@ class SecureTokenStorage implements TokenStorage {
     if (token == null || expires == null) return null;
     final expiresAt = DateTime.tryParse(expires);
     if (expiresAt == null) return null;
-    return StoredSession(token: token, expiresAt: expiresAt);
+    return StoredSession(token: token, expiresAt: expiresAt, role: await _storage.read(key: _roleKey));
   }
 
   @override
@@ -43,11 +48,18 @@ class SecureTokenStorage implements TokenStorage {
       key: _expiresKey,
       value: session.expiresAt.toIso8601String(),
     );
+    final role = session.role;
+    if (role == null) {
+      await _storage.delete(key: _roleKey);
+    } else {
+      await _storage.write(key: _roleKey, value: role);
+    }
   }
 
   @override
   Future<void> clear() async {
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _expiresKey);
+    await _storage.delete(key: _roleKey);
   }
 }

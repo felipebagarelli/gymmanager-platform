@@ -11,7 +11,7 @@ final workoutRepositoryProvider =
 
 /// Treinos ativamente atribuidos ao aluno logado.
 final myWorkoutsProvider = FutureProvider<List<Workout>>((ref) async {
-  final profile = ref.watch(authControllerProvider).value;
+  final profile = ref.watch(currentStudentProvider);
   if (profile == null) return const [];
   return ref.watch(workoutRepositoryProvider).myWorkouts(profile.id);
 });

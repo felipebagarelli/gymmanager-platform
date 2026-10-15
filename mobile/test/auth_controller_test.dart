@@ -4,6 +4,7 @@ import 'package:gymmanager_mobile/core/errors/app_exception.dart';
 import 'package:gymmanager_mobile/core/providers.dart';
 import 'package:gymmanager_mobile/core/storage/token_storage.dart';
 import 'package:gymmanager_mobile/features/auth/application/auth_controller.dart';
+import 'package:gymmanager_mobile/features/auth/domain/app_user.dart';
 
 import 'support/fakes.dart';
 
@@ -58,23 +59,69 @@ void main() {
 
     await container.read(authControllerProvider.notifier).login('aluno@example.com', 'senha');
 
-    expect(container.read(authControllerProvider).value?.id, 2);
+    expect(container.read(authControllerProvider).value, isA<StudentUser>());
+    expect(container.read(currentStudentProvider)?.id, 2);
+    expect(container.read(currentTrainerProvider), isNull);
     expect(storage.session?.token, 'jwt-token');
+    expect(storage.session?.role, 'STUDENT');
     expect(storage.session!.isExpired, isFalse);
   });
 
-  test('login de TRAINER e recusado e nenhum token e guardado', () async {
+  test('login de personal guarda o token com o papel e expõe o perfil do personal', () async {
     final storage = InMemoryTokenStorage();
-    final container = makeContainer(storage, FakeAuthRepository(role: 'TRAINER'));
+    final repository = FakeAuthRepository(role: 'TRAINER');
+    final container = makeContainer(storage, repository);
+    await container.read(authControllerProvider.future);
+
+    await container.read(authControllerProvider.notifier).login('joao@example.com', 'senha');
+
+    expect(container.read(authControllerProvider).value, isA<TrainerUser>());
+    expect(container.read(currentTrainerProvider)?.displayName, 'João Personal');
+    expect(container.read(currentStudentProvider), isNull);
+    expect(storage.session?.role, 'TRAINER');
+    expect(repository.trainerMeCalls, 1);
+    expect(repository.studentMeCalls, 0);
+  });
+
+  test('conta de administração é recusada no app e nenhum token é guardado', () async {
+    final storage = InMemoryTokenStorage();
+    final container = makeContainer(storage, FakeAuthRepository(role: 'PLATFORM_ADMIN'));
     await container.read(authControllerProvider.future);
 
     await expectLater(
-      container.read(authControllerProvider.notifier).login('t@example.com', 'senha'),
-      throwsA(isA<AppException>().having((e) => e.message, 'message', contains('exclusivo para alunos'))),
+      container.read(authControllerProvider.notifier).login('admin@example.com', 'senha'),
+      throwsA(isA<AppException>().having((e) => e.message, 'message', contains('painel web'))),
     );
 
     expect(storage.session, isNull);
     expect(container.read(authControllerProvider).value, isNull);
+  });
+
+  test('sessão guardada de personal é restaurada como personal', () async {
+    final storage = InMemoryTokenStorage(
+      StoredSession(token: 't', expiresAt: DateTime.now().add(const Duration(hours: 1)), role: 'TRAINER'),
+    );
+    final repository = FakeAuthRepository();
+    final container = makeContainer(storage, repository);
+
+    final user = await container.read(authControllerProvider.future);
+
+    expect(user, isA<TrainerUser>());
+    expect(user?.name, 'João Personal');
+    expect(repository.studentMeCalls, 0);
+  });
+
+  test('sessão antiga, guardada sem papel, é restaurada como aluno', () async {
+    final storage = InMemoryTokenStorage(
+      StoredSession(token: 't', expiresAt: DateTime.now().add(const Duration(hours: 1))),
+    );
+    final repository = FakeAuthRepository();
+    final container = makeContainer(storage, repository);
+
+    final user = await container.read(authControllerProvider.future);
+
+    expect(user, isA<StudentUser>());
+    expect(repository.trainerMeCalls, 0);
   });
 
   test('erro de credenciais do servidor e propagado', () async {

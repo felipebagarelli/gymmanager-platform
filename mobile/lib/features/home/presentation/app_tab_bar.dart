@@ -11,7 +11,7 @@ class TabSpec {
   final IconData icon;
 }
 
-/// As 5 abas principais, na ordem da tab bar.
+/// As 5 abas do aluno, na ordem da tab bar.
 const appTabs = [
   TabSpec('Treinos', LucideIcons.dumbbell),
   TabSpec('Histórico', LucideIcons.history),
@@ -22,11 +22,24 @@ const appTabs = [
 
 /// Tab bar do app: indicador volt no topo da aba ativa, ícone + rótulo.
 class AppTabBar extends StatelessWidget {
-  const AppTabBar({super.key, required this.index, required this.onSelected, this.unreadMessages = 0});
+  const AppTabBar({
+    super.key,
+    required this.index,
+    required this.onSelected,
+    this.unreadMessages = 0,
+    this.tabs = appTabs,
+    this.messagesIndex = 2,
+  });
 
   final int index;
   final ValueChanged<int> onSelected;
   final int unreadMessages;
+
+  /// Abas exibidas (o aluno e o personal têm conjuntos diferentes).
+  final List<TabSpec> tabs;
+
+  /// Aba que mostra o contador de mensagens não lidas.
+  final int messagesIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +54,12 @@ class AppTabBar extends StatelessWidget {
           height: 78,
           child: Row(
             children: [
-              for (var i = 0; i < appTabs.length; i++)
+              for (var i = 0; i < tabs.length; i++)
                 Expanded(
                   child: _TabItem(
-                    spec: appTabs[i],
+                    spec: tabs[i],
                     selected: i == index,
-                    badge: i == 2 ? unreadMessages : 0,
+                    badge: i == messagesIndex ? unreadMessages : 0,
                     onTap: () => onSelected(i),
                   ),
                 ),

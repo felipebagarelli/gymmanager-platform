@@ -22,7 +22,7 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(authControllerProvider).value;
+    final profile = ref.watch(currentStudentProvider);
     if (profile == null) return const SizedBox.shrink();
     final trainer = ref.watch(chatSummaryProvider).value?.trainerName;
 

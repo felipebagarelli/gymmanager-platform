@@ -18,7 +18,7 @@ final assistantUsageProvider = FutureProvider.autoDispose<AiUsage>((ref) {
 class AssistantController extends AsyncNotifier<List<AiMessage>> {
   @override
   Future<List<AiMessage>> build() async {
-    final profile = ref.watch(authControllerProvider).value;
+    final profile = ref.watch(currentStudentProvider);
     if (profile == null) return const [];
     return ref.read(assistantRepositoryProvider).history();
   }

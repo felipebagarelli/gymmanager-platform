@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/presentation/login_page.dart';
+import '../../features/auth/domain/app_user.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/trainer/presentation/trainer_home_page.dart';
 import '../../features/sessions/presentation/completion_page.dart';
 import '../../features/sessions/presentation/execute_workout_page.dart';
 import '../../features/workouts/presentation/workout_detail_page.dart';
@@ -25,9 +27,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return location == '/splash' ? null : '/splash';
       }
 
-      final loggedIn = auth.value != null;
-      if (!loggedIn) return location == '/login' ? null : '/login';
+      final user = auth.value;
+      if (user == null) return location == '/login' ? null : '/login';
       if (location == '/login' || location == '/splash') return '/';
+      // as telas de execução de treino são do aluno
+      if (user is TrainerUser && location.startsWith('/workouts')) return '/';
       return null;
     },
     routes: [
@@ -37,7 +41,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
-      GoRoute(path: '/', builder: (context, state) => const HomePage()),
+      GoRoute(
+        path: '/',
+        // o mesmo app atende os dois papéis: o usuário logado define o modo
+        builder: (context, state) => ref.read(authControllerProvider).value is TrainerUser
+            ? const TrainerHomePage()
+            : const HomePage(),
+      ),
       GoRoute(
         path: '/workouts/:id',
         builder: (context, state) =>

@@ -19,7 +19,7 @@ final chatSummaryIntervalProvider = Provider<Duration>((ref) => const Duration(s
 class ChatSummaryController extends AsyncNotifier<ConversationSummary?> {
   @override
   Future<ConversationSummary?> build() async {
-    final profile = ref.watch(authControllerProvider).value;
+    final profile = ref.watch(currentStudentProvider);
     if (profile == null) return null;
 
     final timer = Timer(ref.watch(chatSummaryIntervalProvider), ref.invalidateSelf);

@@ -12,7 +12,7 @@ final sessionRepositoryProvider =
 
 /// Historico de sessoes do aluno logado (mais recentes primeiro).
 final historyProvider = FutureProvider<List<WorkoutSession>>((ref) async {
-  final profile = ref.watch(authControllerProvider).value;
+  final profile = ref.watch(currentStudentProvider);
   if (profile == null) return const [];
   return ref.watch(sessionRepositoryProvider).history(profile.id);
 });

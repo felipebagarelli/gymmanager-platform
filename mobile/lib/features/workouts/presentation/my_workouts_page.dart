@@ -72,7 +72,7 @@ class _Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final name = ref.watch(authControllerProvider).value?.name ?? '';
+    final name = ref.watch(currentStudentProvider)?.name ?? '';
     final firstName = name.trim().split(RegExp(r'\s+')).first;
 
     return Row(
@@ -117,7 +117,7 @@ class _Content extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(trainingStatsProvider);
     final history = ref.watch(historyProvider).value ?? const [];
-    final goal = ref.watch(authControllerProvider).value?.weeklyGoal;
+    final goal = ref.watch(currentStudentProvider)?.weeklyGoal;
 
     final todaySession = stats?.todaySession;
     final suggestedId = suggestedWorkoutId([for (final w in workouts) w.id], history);

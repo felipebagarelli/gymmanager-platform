@@ -58,14 +58,27 @@ void main() {
     expect(find.text('E-mail ou senha inválidos.'), findsOneWidget);
   });
 
-  testWidgets('conta de personal mostra que o app e so para alunos', (tester) async {
-    await tester.pumpWidget(buildPage(FakeAuthRepository(role: 'TRAINER')));
+  testWidgets('conta de administração mostra que deve usar o painel web', (tester) async {
+    await tester.pumpWidget(buildPage(FakeAuthRepository(role: 'PLATFORM_ADMIN')));
 
-    await tester.enterText(find.byKey(const Key('email')), 'trainer@example.com');
+    await tester.enterText(find.byKey(const Key('email')), 'admin@example.com');
     await tester.enterText(find.byKey(const Key('password')), 'senha');
     await tester.tap(find.byKey(const Key('login-button')));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('exclusivo para alunos'), findsOneWidget);
+    expect(find.textContaining('Use o painel web'), findsOneWidget);
+  });
+
+  testWidgets('conta de personal entra normalmente (sem erro na tela de login)', (tester) async {
+    final repository = FakeAuthRepository(role: 'TRAINER');
+    await tester.pumpWidget(buildPage(repository));
+
+    await tester.enterText(find.byKey(const Key('email')), 'joao@example.com');
+    await tester.enterText(find.byKey(const Key('password')), 'senha');
+    await tester.tap(find.byKey(const Key('login-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('login-error')), findsNothing);
+    expect(repository.trainerMeCalls, 1);
   });
 }

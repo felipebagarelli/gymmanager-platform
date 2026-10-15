@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/student_profile.dart';
+import '../domain/trainer_profile.dart';
 
 class LoginResult {
   const LoginResult({
@@ -42,6 +43,15 @@ class AuthRepository {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/api/v1/students/me');
       return StudentProfile.fromJson(response.data!);
+    } on DioException catch (error) {
+      throw AppException.fromDio(error);
+    }
+  }
+
+  Future<TrainerProfile> trainerMe() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/api/v1/trainers/me');
+      return TrainerProfile.fromJson(response.data!);
     } on DioException catch (error) {
       throw AppException.fromDio(error);
     }
