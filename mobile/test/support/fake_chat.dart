@@ -11,11 +11,14 @@ ChatMessage msg(int id, ChatSender sender, String body) => ChatMessage(
     );
 
 class FakeChatRepository extends ChatRepository {
-  FakeChatRepository({List<ChatMessage>? initial, this.canSend = true, this.unread = 0})
+  FakeChatRepository({List<ChatMessage>? initial, this.canSend = true, this.unread = 0, this.sender = ChatSender.student})
       : messagesStore = [...?initial],
         super(Dio());
 
   final List<ChatMessage> messagesStore;
+
+  /// Quem envia pelo app nos testes (o aluno, ou o personal no modo personal).
+  final ChatSender sender;
   bool canSend;
   int unread;
   AppException? sendError;
@@ -47,7 +50,7 @@ class FakeChatRepository extends ChatRepository {
   @override
   Future<ChatMessage> send(int conversationId, String body) async {
     if (sendError != null) throw sendError!;
-    final message = msg(_nextId++, ChatSender.student, body);
+    final message = msg(_nextId++, sender, body);
     messagesStore.add(message);
     return message;
   }
@@ -56,5 +59,57 @@ class FakeChatRepository extends ChatRepository {
   Future<void> markRead(int conversationId) async {
     markReadCalls++;
     unread = 0;
+  }
+}
+
+/// Conversas do personal: uma por aluno, cada uma com as suas mensagens.
+class FakeTrainerChatRepository extends FakeChatRepository {
+  FakeTrainerChatRepository(this.summaries, {Map<int, List<ChatMessage>>? messages})
+      : store = {for (final e in (messages ?? const {}).entries) e.key: [...e.value]},
+        super(sender: ChatSender.trainer);
+
+  List<ConversationSummary> summaries;
+  final Map<int, List<ChatMessage>> store;
+  final List<int> markedRead = [];
+  int conversationsCalls = 0;
+  int _next = 2000;
+
+  @override
+  Future<List<ConversationSummary>> conversations() async {
+    conversationsCalls++;
+    return [...summaries];
+  }
+
+  @override
+  Future<List<ChatMessage>> messages(int conversationId, {int? after}) async => [
+        for (final m in store[conversationId] ?? const <ChatMessage>[])
+          if (after == null || m.id > after) m,
+      ];
+
+  @override
+  Future<ChatMessage> send(int conversationId, String body) async {
+    if (sendError != null) throw sendError!;
+    final message = msg(_next++, ChatSender.trainer, body);
+    (store[conversationId] ??= []).add(message);
+    return message;
+  }
+
+  @override
+  Future<void> markRead(int conversationId) async {
+    markedRead.add(conversationId);
+    summaries = [
+      for (final c in summaries)
+        c.id == conversationId
+            ? ConversationSummary(
+                id: c.id,
+                trainerName: c.trainerName,
+                unreadCount: 0,
+                canSend: c.canSend,
+                lastMessage: c.lastMessage,
+                studentId: c.studentId,
+                studentName: c.studentName,
+              )
+            : c,
+    ];
   }
 }

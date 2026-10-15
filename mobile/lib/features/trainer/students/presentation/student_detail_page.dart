@@ -17,6 +17,7 @@ import '../../../sessions/domain/training_stats.dart';
 import '../../../sessions/domain/workout_session.dart';
 import '../../../sessions/presentation/session_detail_sheet.dart';
 import '../../../workouts/domain/workout.dart';
+import '../../messages/presentation/trainer_messages_page.dart';
 import '../application/students_providers.dart';
 import '../domain/managed_student.dart';
 import 'student_badges.dart';
@@ -69,11 +70,22 @@ class StudentDetailPage extends ConsumerWidget {
                     tooltip: 'Voltar',
                     onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   ),
-                  CircleIconButton(
-                    key: const Key('edit-student'),
-                    icon: LucideIcons.pencil,
-                    tooltip: 'Editar aluno',
-                    onPressed: () => context.push('/trainer/students/${s.id}/edit'),
+                  Row(
+                    children: [
+                      CircleIconButton(
+                        key: const Key('message-student'),
+                        icon: LucideIcons.messageSquare,
+                        tooltip: 'Enviar mensagem',
+                        onPressed: () => openConversationWith(context, ref, s.id),
+                      ),
+                      const SizedBox(width: 8),
+                      CircleIconButton(
+                        key: const Key('edit-student'),
+                        icon: LucideIcons.pencil,
+                        tooltip: 'Editar aluno',
+                        onPressed: () => context.push('/trainer/students/${s.id}/edit'),
+                      ),
+                    ],
                   ),
                 ],
               ),

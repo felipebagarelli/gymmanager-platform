@@ -28,4 +28,11 @@ void main() {
     expect(formatVolume(1400), '1,4 t');
     expect(formatVolume(999.96), '1000 kg');
   });
+
+  test('formatChatTime: hora hoje, "Ontem" e dia/mês antes disso', () {
+    final now = DateTime(2026, 10, 15, 20);
+    expect(formatChatTime(DateTime(2026, 10, 15, 7, 5), now), '07:05');
+    expect(formatChatTime(DateTime(2026, 10, 14, 23, 59), now), 'Ontem');
+    expect(formatChatTime(DateTime(2026, 10, 5, 9), now), '05/10');
+  });
 }

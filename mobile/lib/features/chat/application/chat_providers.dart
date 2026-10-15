@@ -33,6 +33,26 @@ class ChatSummaryController extends AsyncNotifier<ConversationSummary?> {
 final chatSummaryProvider =
     AsyncNotifierProvider<ChatSummaryController, ConversationSummary?>(ChatSummaryController.new);
 
+/// Conversas do personal (uma por aluno), da mais recente para a mais antiga. Se re-consulta
+/// sozinho enquanto estiver sendo observado (contador de não lidas na tab bar e lista).
+class TrainerConversationsController extends AsyncNotifier<List<ConversationSummary>> {
+  @override
+  Future<List<ConversationSummary>> build() async {
+    if (ref.watch(currentTrainerProvider) == null) return const [];
+    final timer = Timer(ref.watch(chatSummaryIntervalProvider), ref.invalidateSelf);
+    ref.onDispose(timer.cancel);
+    return ref.read(chatRepositoryProvider).conversations();
+  }
+}
+
+final trainerConversationsProvider =
+    AsyncNotifierProvider<TrainerConversationsController, List<ConversationSummary>>(TrainerConversationsController.new);
+
+/// Total de mensagens não lidas do personal (badge da aba Mensagens).
+final trainerUnreadProvider = Provider<int>(
+  (ref) => (ref.watch(trainerConversationsProvider).value ?? const []).fold(0, (sum, c) => sum + c.unreadCount),
+);
+
 /// Mensagens da conversa aberta. So existe enquanto a tela esta aberta (autoDispose):
 /// e nesse periodo que faz polling e marca as mensagens como lidas.
 class ChatMessagesController extends AsyncNotifier<List<ChatMessage>> {
@@ -58,7 +78,7 @@ class ChatMessagesController extends AsyncNotifier<List<ChatMessage>> {
   Future<void> _markRead() async {
     try {
       await _repository.markRead(conversationId);
-      if (!_disposed) ref.invalidate(chatSummaryProvider);
+      if (!_disposed) _refreshSummaries();
     } catch (_) {
       // best-effort: a proxima leitura tenta de novo
     }
@@ -79,7 +99,8 @@ class ChatMessagesController extends AsyncNotifier<List<ChatMessage>> {
       final incoming = await _repository.messages(conversationId, after: lastId);
       if (_disposed || incoming.isEmpty) return;
       state = AsyncData(_merge(state.value ?? current, incoming));
-      if (incoming.any((message) => message.senderRole == ChatSender.trainer)) {
+      // só marca como lida quando chega mensagem do outro lado
+      if (incoming.any((message) => message.senderRole != _viewer)) {
         await _markRead();
       }
     } catch (_) {
@@ -93,7 +114,15 @@ class ChatMessagesController extends AsyncNotifier<List<ChatMessage>> {
   Future<void> send(String body) async {
     final message = await _repository.send(conversationId, body);
     state = AsyncData(_merge(state.value ?? const [], [message]));
+    _refreshSummaries();
+  }
+
+  /// Quem está lendo: o personal ou o aluno (a mesma conversa serve aos dois).
+  ChatSender get _viewer => ref.read(currentTrainerProvider) != null ? ChatSender.trainer : ChatSender.student;
+
+  void _refreshSummaries() {
     ref.invalidate(chatSummaryProvider);
+    ref.invalidate(trainerConversationsProvider);
   }
 }
 

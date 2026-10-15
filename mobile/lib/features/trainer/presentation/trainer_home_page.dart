@@ -7,6 +7,8 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/async_widgets.dart';
 import '../../home/presentation/app_tab_bar.dart';
 import '../application/trainer_tab_provider.dart';
+import '../../chat/application/chat_providers.dart';
+import '../messages/presentation/trainer_messages_page.dart';
 import '../students/presentation/students_page.dart';
 import 'trainer_profile_page.dart';
 
@@ -33,10 +35,10 @@ class _TrainerHomePageState extends ConsumerState<TrainerHomePage> {
       body: IndexedStack(
         index: index,
         children: [
-          // TODO(fase-b): B4 treinos, B3 mensagens e B5 planos substituem estes avisos
+          // TODO(fase-b): B4 treinos e B5 planos substituem estes avisos
           tab(TrainerTab.students, const StudentsPage()),
           tab(TrainerTab.workouts, const _NextStage(title: 'Treinos', icon: LucideIcons.dumbbell)),
-          tab(TrainerTab.messages, const _NextStage(title: 'Mensagens', icon: LucideIcons.messageSquare)),
+          tab(TrainerTab.messages, const TrainerMessagesPage()),
           tab(TrainerTab.plans, const _NextStage(title: 'Planos', icon: LucideIcons.wallet)),
           tab(TrainerTab.profile, const TrainerProfilePage()),
         ],
@@ -45,6 +47,8 @@ class _TrainerHomePageState extends ConsumerState<TrainerHomePage> {
         index: index,
         tabs: trainerTabs,
         messagesIndex: TrainerTab.messages,
+        // a lista de conversas é consultada de tempos em tempos enquanto o personal está no app
+        unreadMessages: ref.watch(trainerUnreadProvider),
         onSelected: ref.read(trainerTabProvider.notifier).select,
       ),
     );

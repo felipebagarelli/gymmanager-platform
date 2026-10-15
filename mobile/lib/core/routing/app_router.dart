@@ -6,6 +6,7 @@ import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/domain/app_user.dart';
 import '../../features/home/presentation/home_page.dart';
+import '../../features/trainer/messages/presentation/trainer_conversation_page.dart';
 import '../../features/trainer/presentation/trainer_home_page.dart';
 import '../../features/trainer/students/presentation/student_detail_page.dart';
 import '../../features/trainer/students/presentation/student_form_page.dart';
@@ -69,6 +70,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // modo personal
+      GoRoute(
+        path: '/trainer/messages/:id',
+        builder: (context, state) => TrainerConversationPage(conversationId: int.parse(state.pathParameters['id']!)),
+      ),
       GoRoute(path: '/trainer/students/new', builder: (context, state) => const StudentFormPage()),
       GoRoute(
         path: '/trainer/students/:id',

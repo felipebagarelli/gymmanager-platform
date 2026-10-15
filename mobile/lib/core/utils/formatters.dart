@@ -107,3 +107,14 @@ DateTime? parseBirthDate(String text) {
   if (date.year != year || date.month != month || date.day != day) return null;
   return date;
 }
+
+/// Hora de uma mensagem na lista de conversas: "14:05" (hoje), "Ontem" ou "05/10".
+String formatChatTime(DateTime value, DateTime now) {
+  final local = value.toLocal();
+  final day = DateTime(local.year, local.month, local.day);
+  final today = DateTime(now.year, now.month, now.day);
+  final days = today.difference(day).inDays;
+  if (days <= 0) return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  if (days == 1) return 'Ontem';
+  return formatDayMonthPadded(local);
+}

@@ -82,7 +82,7 @@ Objetivo: o personal faz pelo celular tudo o que faz no painel web. O backend j�
   - Backend: `GET /api/v1/students/{id}` passou a exigir o personal dono do vínculo ou o próprio aluno (antes qualquer usuário logado lia qualquer aluno); resposta ganhou `lastWorkoutAt`; edição aceita `clearWeeklyGoal`.
   - [ ] B2.1. Evolução do aluno no perfil (calendário e gráficos do Histórico, reaproveitados).
   - [ ] B2.2. Reativar aluno desativado (não existe endpoint) e pausar vínculo (`PAUSED` existe no modelo, sem endpoint).
-- [ ] B3. Mensagens: lista de conversas com todos os alunos e não lidas.
+- [x] B3. Mensagens: lista de conversas com todos os alunos (prévia, horário, não lidas, conversa encerrada), contador na aba, a conversa (mesma tela do aluno, do lado do personal) e atalho "Enviar mensagem" no perfil do aluno. Sem mudança no backend. *(15/10/2026)*
 - [ ] B4. Treinos: biblioteca de exercícios, montar treino no celular (fluxo pensado para tela pequena), duplicar, ordenar, atribuir.
 - [ ] B5. Planos e cobrança: criar planos, ver assinaturas e pagamentos, cadastro de recebimento no Stripe (abre no navegador).
 - [ ] B6. Painel web: incluir o que falta (meta semanal, "Como foi?", aluno em atraso), para os dois produtos ficarem iguais.

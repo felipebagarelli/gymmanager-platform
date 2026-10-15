@@ -30,10 +30,16 @@ class ConversationSummary {
     required this.unreadCount,
     required this.canSend,
     this.lastMessage,
+    this.studentId,
+    this.studentName = 'Aluno',
   });
 
   final int id;
   final String trainerName;
+
+  /// Aluno da conversa (o personal tem uma conversa por aluno).
+  final int? studentId;
+  final String studentName;
   final int unreadCount;
   final bool canSend;
   final ChatMessage? lastMessage;
@@ -41,6 +47,8 @@ class ConversationSummary {
   factory ConversationSummary.fromJson(Map<String, dynamic> json) => ConversationSummary(
         id: (json['id'] as num).toInt(),
         trainerName: json['trainerName'] as String? ?? 'Personal',
+        studentId: (json['studentId'] as num?)?.toInt(),
+        studentName: json['studentName'] as String? ?? 'Aluno',
         unreadCount: (json['unreadCount'] as num).toInt(),
         canSend: json['canSend'] as bool,
         lastMessage: json['lastMessage'] == null

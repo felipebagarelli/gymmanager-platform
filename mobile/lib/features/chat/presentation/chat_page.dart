@@ -10,6 +10,7 @@ import '../../../core/utils/async_widgets.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/composer_widgets.dart';
+import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../billing/presentation/overdue_view.dart';
 import '../application/chat_providers.dart';
@@ -53,22 +54,42 @@ class ChatPage extends ConsumerWidget {
                 icon: LucideIcons.messageCircle,
                 message: 'Você ainda não tem um personal vinculado para conversar.',
               )
-            : _Conversation(conversation: conversation),
+            : ConversationView(
+                conversation: conversation,
+                viewer: ChatSender.student,
+                otherName: conversation.trainerName,
+                otherSubtitle: 'Personal',
+              ),
       ),
     );
   }
 }
 
-class _Conversation extends ConsumerStatefulWidget {
-  const _Conversation({required this.conversation});
+/// Uma conversa (cabeçalho, mensagens e campo de envio). Serve ao aluno e ao personal:
+/// [viewer] diz de que lado está quem lê, e [otherName] é a outra pessoa.
+class ConversationView extends ConsumerStatefulWidget {
+  const ConversationView({
+    super.key,
+    required this.conversation,
+    required this.viewer,
+    required this.otherName,
+    required this.otherSubtitle,
+    this.onBack,
+  });
 
   final ConversationSummary conversation;
+  final ChatSender viewer;
+  final String otherName;
+  final String otherSubtitle;
+
+  /// Mostra o botão de voltar no cabeçalho (conversa aberta a partir de uma lista).
+  final VoidCallback? onBack;
 
   @override
-  ConsumerState<_Conversation> createState() => _ConversationState();
+  ConsumerState<ConversationView> createState() => _ConversationViewState();
 }
 
-class _ConversationState extends ConsumerState<_Conversation> {
+class _ConversationViewState extends ConsumerState<ConversationView> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
   bool _sending = false;
@@ -110,7 +131,7 @@ class _ConversationState extends ConsumerState<_Conversation> {
 
     return Column(
       children: [
-        _Header(name: conversation.trainerName),
+        _Header(name: widget.otherName, subtitle: widget.otherSubtitle, onBack: widget.onBack),
         Expanded(
           child: messages.when(
             loading: () => const SkeletonList(heights: [60, 80, 60, 80]),
@@ -136,7 +157,7 @@ class _ConversationState extends ConsumerState<_Conversation> {
                   for (var i = 0; i < items.length; i++) ...[
                     if (i == 0 || _day(items[i].createdAt) != _day(items[i - 1].createdAt))
                       _DaySeparator(label: _dayLabel(items[i].createdAt, now)),
-                    _Bubble(message: items[i], trainerName: conversation.trainerName),
+                    _Bubble(message: items[i], viewer: widget.viewer, otherName: widget.otherName),
                   ],
                 ],
               );
@@ -147,7 +168,7 @@ class _ConversationState extends ConsumerState<_Conversation> {
           _Composer(
             controller: _controller,
             sending: _sending,
-            hint: 'Escreva para ${conversation.trainerName.split(' ').first}',
+            hint: 'Escreva para ${widget.otherName.split(' ').first}',
             onSend: _send,
           )
         else
@@ -158,9 +179,11 @@ class _ConversationState extends ConsumerState<_Conversation> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.name});
+  const _Header({required this.name, required this.subtitle, this.onBack});
 
   final String name;
+  final String subtitle;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +193,10 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(kScreenPadding, 12, kScreenPadding, 10),
       child: Row(
         children: [
+          if (onBack != null) ...[
+            CircleIconButton(key: const Key('chat-back'), icon: LucideIcons.arrowLeft, tooltip: 'Voltar', onPressed: onBack),
+            const SizedBox(width: 12),
+          ],
           ExcludeSemantics(
             child: Container(
               width: 42,
@@ -192,7 +219,7 @@ class _Header extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.body(size: 17, weight: FontWeight.w600)),
-                Text('Personal', style: AppText.body(size: 12.5, color: AppColors.textSecondary)),
+                Text(subtitle, style: AppText.body(size: 12.5, color: AppColors.textSecondary)),
               ],
             ),
           ),
@@ -217,14 +244,15 @@ class _DaySeparator extends StatelessWidget {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.message, required this.trainerName});
+  const _Bubble({required this.message, required this.viewer, required this.otherName});
 
   final ChatMessage message;
-  final String trainerName;
+  final ChatSender viewer;
+  final String otherName;
 
   @override
   Widget build(BuildContext context) {
-    final mine = message.senderRole == ChatSender.student;
+    final mine = message.senderRole == viewer;
     final textColor = mine ? AppColors.onVolt : AppColors.textPrimary;
     const radius = Radius.circular(18);
     const tail = Radius.circular(6);
@@ -232,7 +260,7 @@ class _Bubble extends StatelessWidget {
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: Semantics(
-        label: '${mine ? 'Você' : trainerName}, ${_time(message.createdAt)}: ${message.body}',
+        label: '${mine ? 'Você' : otherName}, ${_time(message.createdAt)}: ${message.body}',
         excludeSemantics: true,
         child: Container(
           key: Key('bubble-${message.id}'),
