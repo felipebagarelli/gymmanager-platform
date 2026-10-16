@@ -148,12 +148,12 @@ O detalhamento de cada regra está em `docs/ARQUITETURA-E-SISTEMA.md`, seção 4
 
 | # | Decisão | Fase | Observação |
 |---|---|---|---|
-| 1 | Preço, período grátis e limites do plano da plataforma | C | Ex.: grátis com 1 treino gerado/mês × só assinatura |
-| 2 | Cobrança do plano da plataforma: Stripe ou compras dentro do app (Apple/Google) | C | As lojas costumam exigir o sistema de pagamento delas para assinaturas digitais usadas no app. Pesquisar antes de implementar |
+| 1 | Preço, período grátis e limites do plano da plataforma | C | **Pesquisado em 16/10/2026, aguardando escolha.** Apps para personal no Brasil cobram do personal de ~R$ 10 a R$ 150/mês (MFIT, Treino Mestre, Nexur, O Personal Digital); apps de treino com IA lá fora vão de US$ 3 a 16/mês (Hevy, Freeletics, Fitbod). Proposta: plano grátis (registrar treinos + 1 treino gerado) e pago perto de R$ 19,90/mês ou R$ 149,90/ano, com 7 dias de teste |
+| 2 | Cobrança do plano da plataforma: Stripe ou compras dentro do app (Apple/Google) | C | **Decidido (16/10/2026): começar tudo pelo Stripe; integrar as lojas depois.** Atenção: no Brasil a Apple passou a aceitar pagamento externo (acordo com o CADE, iOS 26.5, 18/06/2026), mas cobra comissão também nesse caso e a opção da Apple aparece ao lado; menores de 18 exigem "parental gate". O Google está mudando as regras (taxas do Brasil não divulgadas). Conferir as regras das duas lojas antes de publicar |
 | 3 | Aluno **com** personal pode pedir treino à IA? | D | Proposta: não. A IA só sugere, e o personal aprova; os treinos do personal não são alterados pela IA |
 | 4 | Quem é o "dono" do treino gerado pela IA | D | Hoje todo treino pertence a um personal; o modelo de dados precisa de um dono para o aluno independente |
-| 5 | Verificação de e-mail e recuperação de senha | C | Exige envio de e-mail (não existe hoje) |
-| 6 | Idade mínima de uso | C | Impacta LGPD e lojas |
+| 5 | Verificação de e-mail e recuperação de senha | C | **Decidido (16/10/2026): fluxo padrão** (link/código por e-mail, com validade e uso único). Envio por serviço de e-mail transacional (ex.: Brevo, Resend ou Amazon SES) atrás de uma porta `EmailSender`, como o `PaymentProvider`. Exige domínio próprio com SPF/DKIM/DMARC |
+| 6 | Idade mínima de uso | C | **Decidido (16/10/2026): a partir de 12 anos, com aceite de termos.** De 12 a 17: consentimento e vínculo de um responsável (LGPD art. 14 e ECA Digital, Lei 15.211/2025, em vigor desde 17/03/2026, que veda autodeclaração de idade e prevê conta vinculada ao responsável até 16 anos). Pagamento e treino por IA de menor só com aprovação do responsável. Validar com advogado antes do lançamento |
 | 7 | Comissão da plataforma no hub e regras de cancelamento/reembolso | E | |
 | 8 | O que do perfil do personal é público e como funcionam avaliações | E | |
 
