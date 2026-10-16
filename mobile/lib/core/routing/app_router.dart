@@ -12,6 +12,7 @@ import '../../features/trainer/workouts/presentation/exercise_library_page.dart'
 import '../../features/trainer/workouts/presentation/workout_editor_page.dart';
 import '../../features/trainer/students/presentation/student_detail_page.dart';
 import '../../features/trainer/students/presentation/student_form_page.dart';
+import '../../features/trainer/students/presentation/student_progress_page.dart';
 import '../../features/sessions/presentation/completion_page.dart';
 import '../../features/sessions/presentation/execute_workout_page.dart';
 import '../../features/workouts/presentation/workout_detail_page.dart';
@@ -89,6 +90,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'edit',
             builder: (context, state) => StudentFormPage(studentId: int.parse(state.pathParameters['id']!)),
+          ),
+          GoRoute(
+            path: 'progress',
+            builder: (context, state) => StudentProgressPage(
+              studentId: int.parse(state.pathParameters['id']!),
+              initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '') ?? 0,
+            ),
           ),
         ],
       ),

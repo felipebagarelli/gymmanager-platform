@@ -1,6 +1,7 @@
 package com.felipebagarelli.gymmanager.student.controller;
 
 import com.felipebagarelli.gymmanager.student.dto.request.CreateStudentRequest;
+import com.felipebagarelli.gymmanager.student.dto.request.UpdateLinkStatusRequest;
 import com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.response.StudentProfileResponse;
 import com.felipebagarelli.gymmanager.student.service.StudentService;
@@ -48,6 +49,18 @@ public class StudentController {
                                                  @RequestBody @Valid UpdateStudentRequest request,
                                                  @AuthenticationPrincipal Jwt jwt) {
         return studentService.updateById(id, request, jwt.getSubject());
+    }
+
+    @PostMapping("/api/v1/students/{id}/reactivate")
+    public StudentProfileResponse reactivateStudent(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
+        return studentService.reactivate(id, jwt.getSubject());
+    }
+
+    @PutMapping("/api/v1/students/{id}/link-status")
+    public StudentProfileResponse updateLinkStatus(@PathVariable Long id,
+                                                   @RequestBody @Valid UpdateLinkStatusRequest request,
+                                                   @AuthenticationPrincipal Jwt jwt) {
+        return studentService.updateLinkStatus(id, request.status(), jwt.getSubject());
     }
 
     @DeleteMapping("/api/v1/students/{id}")

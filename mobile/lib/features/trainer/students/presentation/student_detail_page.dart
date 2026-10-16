@@ -17,6 +17,7 @@ import '../../../sessions/domain/training_stats.dart';
 import '../../../sessions/domain/workout_session.dart';
 import '../../../sessions/presentation/session_detail_sheet.dart';
 import '../../../workouts/domain/workout.dart';
+import '../../../chat/application/chat_providers.dart';
 import '../../messages/presentation/trainer_messages_page.dart';
 import '../../workouts/presentation/workout_pickers.dart';
 import '../application/students_providers.dart';
@@ -48,6 +49,42 @@ class StudentDetailPage extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
     final ok = await runAction(context, () => ref.read(studentsRepositoryProvider).deactivate(student.id));
     if (ok) refreshStudent(ref, student.id);
+  }
+
+  Future<void> _reactivate(BuildContext context, WidgetRef ref, ManagedStudent student) async {
+    final ok = await runAction(context, () => ref.read(studentsRepositoryProvider).reactivate(student.id));
+    if (ok) refreshStudent(ref, student.id);
+  }
+
+  Future<void> _setPaused(BuildContext context, WidgetRef ref, ManagedStudent student, bool paused) async {
+    if (paused) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Pausar acompanhamento?'),
+          content: Text(
+            'Durante a pausa, o chat com ${student.name.split(' ').first} fica fechado e ele não assina planos novos. '
+            'Os treinos e o histórico continuam.\n\n'
+            'A mensalidade no Stripe não é pausada: se precisar, cancele ou ajuste a cobrança por lá.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Voltar')),
+            FilledButton(
+              key: const Key('confirm-pause'),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Pausar'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+    }
+    final ok = await runAction(context, () => ref.read(studentsRepositoryProvider).setPaused(student.id, paused));
+    if (ok) {
+      refreshStudent(ref, student.id);
+      // o chat abre ou fecha junto com a pausa
+      ref.invalidate(trainerConversationsProvider);
+    }
   }
 
   @override
@@ -115,16 +152,58 @@ class StudentDetailPage extends ConsumerWidget {
               _Numbers(student: s),
               const SizedBox(height: 14),
               _Info(student: s),
+              const SizedBox(height: 12),
+              AppCard(
+                key: const Key('open-progress'),
+                radius: 18,
+                padding: const EdgeInsets.all(14),
+                onTap: () => context.push('/trainer/students/${s.id}/progress?tab=1'),
+                child: Row(
+                  children: [
+                    const Icon(LucideIcons.trendingUp, size: 22, color: AppColors.volt),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Evolução', style: AppText.body(size: 15.5, weight: FontWeight.w600)),
+                          Text('Cargas por exercício, volume semanal e recordes',
+                              style: AppText.body(size: 13, color: AppColors.textMuted)),
+                        ],
+                      ),
+                    ),
+                    const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.textMuted),
+                  ],
+                ),
+              ),
               const SizedBox(height: 20),
               _WorkoutsTitle(studentId: s.id, active: s.active),
               const SizedBox(height: 8),
               _Workouts(studentId: s.id),
               const SizedBox(height: 20),
-              const SectionTitle('Sessões recentes'),
+              SectionTitle('Sessões recentes',
+                  action: 'Calendário', onAction: () => context.push('/trainer/students/${s.id}/progress')),
               const SizedBox(height: 8),
               _Sessions(studentId: s.id),
-              if (s.active) ...[
-                const SizedBox(height: 24),
+              const SizedBox(height: 24),
+              if (!s.active)
+                PillButton(
+                  key: const Key('reactivate-student'),
+                  label: 'Reativar aluno',
+                  icon: LucideIcons.userCheck,
+                  height: 50,
+                  onPressed: () => _reactivate(context, ref, s),
+                )
+              else ...[
+                PillButton(
+                  key: Key(s.paused ? 'resume-student' : 'pause-student'),
+                  label: s.paused ? 'Retomar acompanhamento' : 'Pausar acompanhamento',
+                  icon: s.paused ? LucideIcons.play : LucideIcons.pause,
+                  style: s.paused ? PillStyle.volt : PillStyle.ghost,
+                  height: 46,
+                  onPressed: () => _setPaused(context, ref, s, !s.paused),
+                ),
+                const SizedBox(height: 10),
                 PillButton(
                   key: const Key('deactivate-student'),
                   label: 'Desativar aluno',

@@ -51,6 +51,9 @@ class ManagedStudent {
   final double? weight;
   final LinkStatus? linkStatus;
 
+  /// Acompanhamento em pausa (chat fechado, sem planos novos).
+  bool get paused => linkStatus == LinkStatus.paused;
+
   /// Meta de treinos por semana (null = sem meta).
   final int? weeklyGoal;
 

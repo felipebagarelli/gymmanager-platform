@@ -83,6 +83,34 @@ class FakeStudentsRepository extends StudentsRepository {
 
   @override
   Future<Map<int, TuitionStatus>> tuition() async => tuitionMap;
+
+  ManagedStudent _copy(ManagedStudent s, {bool? active, LinkStatus? link}) => ManagedStudent(
+        id: s.id,
+        email: s.email,
+        name: s.name,
+        active: active ?? s.active,
+        phone: s.phone,
+        goal: s.goal,
+        height: s.height,
+        weight: s.weight,
+        weeklyGoal: s.weeklyGoal,
+        lastWorkoutAt: s.lastWorkoutAt,
+        linkStatus: link ?? s.linkStatus,
+      );
+
+  @override
+  Future<ManagedStudent> reactivate(int studentId) async {
+    calls.add('reactivate:$studentId');
+    final i = students.indexWhere((s) => s.id == studentId);
+    return students[i] = _copy(students[i], active: true);
+  }
+
+  @override
+  Future<ManagedStudent> setPaused(int studentId, bool paused) async {
+    calls.add('setPaused:$studentId:$paused');
+    final i = students.indexWhere((s) => s.id == studentId);
+    return students[i] = _copy(students[i], link: paused ? LinkStatus.paused : LinkStatus.active);
+  }
 }
 
 List<ManagedStudent> _students() => [

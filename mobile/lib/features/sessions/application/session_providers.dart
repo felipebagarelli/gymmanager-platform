@@ -17,6 +17,15 @@ final historyProvider = FutureProvider<List<WorkoutSession>>((ref) async {
   return ref.watch(sessionRepositoryProvider).history(profile.id);
 });
 
+/// Histórico de um aluno visto pelo personal (o servidor confere o vínculo).
+final studentHistoryProvider = FutureProvider.autoDispose.family<List<WorkoutSession>, int>(
+  (ref, studentId) => ref.watch(sessionRepositoryProvider).history(studentId),
+);
+
+/// Histórico de quem a tela mostra: o aluno logado ([studentId] nulo) ou um aluno do personal.
+FutureProvider<List<WorkoutSession>> historyOf(int? studentId) =>
+    studentId == null ? historyProvider : studentHistoryProvider(studentId);
+
 /// Estado da execucao de um treino: a sessao em andamento, ou null se nao
 /// houver (ainda nao iniciada). Os metodos lancam AppException em caso de erro
 /// e mantem o estado anterior, para a tela mostrar a mensagem.

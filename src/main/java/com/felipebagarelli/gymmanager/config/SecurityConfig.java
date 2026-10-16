@@ -40,6 +40,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/trainers/*/students").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/students/*").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/students/*").hasRole("TRAINER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/students/*/reactivate").hasRole("TRAINER")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/students/*/link-status").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.POST, "/workouts", "/workouts/*/assignments", "/workouts/*/duplicate", "/workout-exercises", "/exercises").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.GET, "/workouts/*/assignments").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.PUT, "/workouts/*", "/workout-exercises/*", "/workout-exercises/workout/*/order", "/exercises/*").hasRole("TRAINER")

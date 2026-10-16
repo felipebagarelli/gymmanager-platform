@@ -80,8 +80,8 @@ Objetivo: o personal faz pelo celular tudo o que faz no painel web. O backend j�
 - [x] B1. Login multipapel: o app aceita `TRAINER` e abre a navegação do personal (Alunos, Treinos, Mensagens, Planos, Perfil). Perfil do personal pronto; as demais abas mostram "em construção" até as etapas seguintes. *(15/10/2026)*
 - [x] B2. Alunos: lista com busca e filtros (ativos, em atraso, inativos), último treino, situação da mensalidade; perfil com dados, números da semana e meta, treinos atribuídos e sessões com o "Como foi?"; cadastrar, editar (inclui meta semanal) e desativar. *(15/10/2026)*
   - Backend: `GET /api/v1/students/{id}` passou a exigir o personal dono do vínculo ou o próprio aluno (antes qualquer usuário logado lia qualquer aluno); resposta ganhou `lastWorkoutAt`; edição aceita `clearWeeklyGoal`.
-  - [ ] B2.1. Evolução do aluno no perfil (calendário e gráficos do Histórico, reaproveitados).
-  - [ ] B2.2. Reativar aluno desativado (não existe endpoint) e pausar vínculo (`PAUSED` existe no modelo, sem endpoint).
+  - [x] B2.1. Evolução do aluno no perfil: o personal abre o mesmo Histórico do aluno (calendário, sessões, cargas por exercício, volume semanal e recordes), pelos atalhos "Evolução" e "Calendário". *(16/10/2026)*
+  - [x] B2.2. Reativar aluno desativado e pausar/retomar o acompanhamento (selo e filtro "Em pausa"). Backend: `POST /api/v1/students/{id}/reactivate` e `PUT /api/v1/students/{id}/link-status` (só ACTIVE ↔ PAUSED). Pausado, o chat fecha e o aluno não assina planos novos. *(16/10/2026)*
 - [x] B3. Mensagens: lista de conversas com todos os alunos (prévia, horário, não lidas, conversa encerrada), contador na aba, a conversa (mesma tela do aluno, do lado do personal) e atalho "Enviar mensagem" no perfil do aluno. Sem mudança no backend. *(15/10/2026)*
 - [x] B4. Treinos: lista de treinos (exercícios e alunos de cada um), novo treino já abrindo o editor, editor no celular (adicionar da biblioteca ou criar exercício na hora, séries/repetições/descanso/carga/observação, arrastar para ordenar, retirar), renomear, duplicar, excluir, atribuir a vários alunos e retirar; biblioteca de exercícios (catálogo + os do personal); "Atribuir" no perfil do aluno. *(15/10/2026)*
   - Backend (V7): exercício passou a ter dono (`exercises.trainer_id`; os que já existiam viraram catálogo comum, só leitura). Antes qualquer personal editava ou apagava exercícios de todos. Exercício em uso não pode ser excluído (409). Retirar do treino um exercício que já tem séries registradas só o marca como retirado (`workout_exercises.removed_at`), sem quebrar o histórico. Novos: `GET /workouts/{id}/assignments`, `POST /workouts/{id}/duplicate`, `PUT /workout-exercises/workout/{id}/order`. Respostas ganharam `exerciseCount`/`studentCount` (treino), `exerciseName`/`muscleGroup` (plano), `trainerId` (exercício) e `studentName` (atribuição).
@@ -175,8 +175,11 @@ O detalhamento de cada regra está em `docs/ARQUITETURA-E-SISTEMA.md`, seção 4
 Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer um deles, mover para a etapa em que entrou.
 
 ### B2 — Alunos
-- B2.1 e B2.2 (acima): evolução do aluno no perfil; reativar aluno e pausar vínculo (precisam de endpoint).
 - Reenviar acesso / redefinir a senha provisória do aluno (hoje a senha só é definida no cadastro).
+- **Pausa não pausa a cobrança:** a mensalidade no Stripe continua; avaliar pausar a cobrança junto (`pause_collection` do Stripe) e data de retorno automática.
+- **Desativar só fecha o chat:** o aluno desativado ainda entra no app e vê os treinos. Decidir se deve bloquear o acesso (e o que acontece com a assinatura).
+- Evolução: exercícios retirados do plano somem dos gráficos (o nome vem do plano atual). Dá para buscar o nome pelo item retirado (`GET /workout-exercises/{id}` ainda devolve).
+- Medidas corporais ao longo do tempo (peso, circunferências, fotos de progresso).
 
 ### B3 — Mensagens
 - Anexo de foto no chat (o backend só tem texto).

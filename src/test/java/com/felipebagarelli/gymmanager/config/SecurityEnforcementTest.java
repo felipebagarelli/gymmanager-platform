@@ -119,6 +119,18 @@ class SecurityEnforcementTest {
     }
 
     @Test
+    void reactivateAndPauseStudent_withStudentRoleToken_returns403() throws Exception {
+        String student = "Bearer " + tokenFor(Role.STUDENT);
+        mockMvc.perform(post("/api/v1/students/2/reactivate").header("Authorization", student))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/api/v1/students/2/link-status")
+                        .header("Authorization", student)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PAUSED\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void createStudent_withoutToken_returns401() throws Exception {
         mockMvc.perform(post("/api/v1/trainers/1/students")
                         .contentType(MediaType.APPLICATION_JSON)

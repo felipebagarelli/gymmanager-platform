@@ -43,6 +43,21 @@ class StudentsRepository {
 
   Future<void> deactivate(int studentId) => _guard(() => _dio.delete<void>('/api/v1/students/$studentId'));
 
+  /// Desfaz o "desativar".
+  Future<ManagedStudent> reactivate(int studentId) => _guard(() async {
+        final response = await _dio.post<Map<String, dynamic>>('/api/v1/students/$studentId/reactivate');
+        return ManagedStudent.fromJson(response.data!);
+      });
+
+  /// Pausa (aluno de férias, por exemplo) ou retoma o acompanhamento.
+  Future<ManagedStudent> setPaused(int studentId, bool paused) => _guard(() async {
+        final response = await _dio.put<Map<String, dynamic>>(
+          '/api/v1/students/$studentId/link-status',
+          data: {'status': paused ? LinkStatus.paused.api : LinkStatus.active.api},
+        );
+        return ManagedStudent.fromJson(response.data!);
+      });
+
   /// Situação da mensalidade de cada aluno (a mais recente por aluno).
   Future<Map<int, TuitionStatus>> tuition() => _guard(() async {
         final response = await _dio.get<List<dynamic>>('/api/v1/billing/subscriptions');

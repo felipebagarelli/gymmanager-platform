@@ -29,7 +29,7 @@ class HistoryPage extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(kScreenPadding, 12, kScreenPadding, 0),
-            child: _Segments(index: tab, onChanged: ref.read(historySubTabProvider.notifier).select),
+            child: HistorySegments(index: tab, onChanged: ref.read(historySubTabProvider.notifier).select),
           ),
           Expanded(
             child: IndexedStack(
@@ -43,8 +43,9 @@ class HistoryPage extends ConsumerWidget {
   }
 }
 
-class _Segments extends StatelessWidget {
-  const _Segments({required this.index, required this.onChanged});
+/// Seletor "Sessões" / "Evolução" (também usado na evolução do aluno vista pelo personal).
+class HistorySegments extends StatelessWidget {
+  const HistorySegments({super.key, required this.index, required this.onChanged});
 
   final int index;
   final ValueChanged<int> onChanged;

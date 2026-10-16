@@ -4,6 +4,8 @@ import com.felipebagarelli.gymmanager.auth.entity.Role;
 import com.felipebagarelli.gymmanager.auth.entity.User;
 import com.felipebagarelli.gymmanager.auth.repository.UserRepository;
 import com.felipebagarelli.gymmanager.exception.EmailAlreadyInUseException;
+import com.felipebagarelli.gymmanager.exception.BadRequestException;
+import com.felipebagarelli.gymmanager.exception.ConflictException;
 import com.felipebagarelli.gymmanager.exception.ResourceNotFoundException;
 import com.felipebagarelli.gymmanager.session.entity.WorkoutSession;
 import com.felipebagarelli.gymmanager.session.repository.WorkoutSessionRepository;
@@ -183,6 +185,34 @@ public class StudentService {
         StudentProfile student = link.getStudent();
         student.setActive(false);
         studentProfileRepository.save(student);
+    }
+
+    /** Desfaz o "desativar": o aluno volta a poder usar o chat e a aparecer como ativo. */
+    @Transactional
+    public StudentProfileResponse reactivate(Long id, String authenticatedEmail) {
+        TrainerStudent link = findOwningLink(id, authenticatedEmail);
+        StudentProfile student = link.getStudent();
+        student.setActive(true);
+        studentProfileRepository.save(student);
+        return toResponse(student, link.getStatus());
+    }
+
+    /**
+     * Pausa ou retoma o vinculo (ex.: aluno de ferias). Pausado, o chat fica fechado e o aluno nao
+     * assina planos novos. A cobranca no provedor NAO e pausada: isso continua com o personal.
+     */
+    @Transactional
+    public StudentProfileResponse updateLinkStatus(Long id, TrainerStudentStatus status, String authenticatedEmail) {
+        if (status != TrainerStudentStatus.ACTIVE && status != TrainerStudentStatus.PAUSED) {
+            throw new BadRequestException("Só é possível pausar ou retomar o acompanhamento.");
+        }
+        TrainerStudent link = findOwningLink(id, authenticatedEmail);
+        if (link.getStatus() != TrainerStudentStatus.ACTIVE && link.getStatus() != TrainerStudentStatus.PAUSED) {
+            throw new ConflictException("Este vínculo não pode mais ser alterado.");
+        }
+        link.setStatus(status);
+        trainerStudentRepository.save(link);
+        return toResponse(link.getStudent(), status);
     }
 
     public StudentProfileResponse getMyProfile(String authenticatedEmail) {

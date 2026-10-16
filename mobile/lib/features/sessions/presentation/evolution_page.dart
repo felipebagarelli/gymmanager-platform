@@ -21,7 +21,10 @@ const _barsHeight = 110.0;
 
 /// Aba "Evolução": carga máxima por semana de um exercício, volume semanal e recordes.
 class EvolutionPage extends ConsumerStatefulWidget {
-  const EvolutionPage({super.key});
+  const EvolutionPage({super.key, this.studentId});
+
+  /// Aluno visto pelo personal; nulo = o aluno logado.
+  final int? studentId;
 
   @override
   ConsumerState<EvolutionPage> createState() => _EvolutionPageState();
@@ -34,25 +37,28 @@ class _EvolutionPageState extends ConsumerState<EvolutionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final evolution = ref.watch(evolutionProvider);
+    final provider = evolutionOf(widget.studentId);
+    final evolution = ref.watch(provider);
     return evolution.when(
       loading: () => const SkeletonList(heights: [44, 280, 200, 90]),
-      error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(evolutionProvider)),
+      error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(provider)),
       data: (items) {
         if (items.isEmpty) {
-          return const EmptyState(
+          return EmptyState(
             icon: LucideIcons.trendingUp,
-            message: 'Finalize alguns treinos para acompanhar sua evolução aqui.',
+            message: widget.studentId == null
+                ? 'Finalize alguns treinos para acompanhar sua evolução aqui.'
+                : 'Quando o aluno finalizar treinos, a evolução dele aparece aqui.',
           );
         }
         final selected = items.firstWhere((e) => e.exerciseName == _exercise, orElse: () => items.first);
         final now = ref.watch(clockProvider)();
-        final sessions = ref.watch(historyProvider).value ?? const [];
+        final sessions = ref.watch(historyOf(widget.studentId)).value ?? const [];
         final volumes = weeklyVolume(sessions, now);
         final barIndex = (_bar ?? volumes.length - 1).clamp(0, volumes.length - 1);
 
         return RefreshIndicator(
-          onRefresh: () async => ref.refresh(evolutionProvider.future),
+          onRefresh: () async => ref.refresh(provider.future),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(kScreenPadding, 12, kScreenPadding, 24),

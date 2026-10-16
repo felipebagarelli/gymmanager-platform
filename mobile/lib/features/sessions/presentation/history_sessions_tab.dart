@@ -21,7 +21,13 @@ const _weekLabels = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 
 /// Aba "Sessões": calendário do mês com intensidade, números do mês e lista de sessões.
 class SessionsTab extends ConsumerStatefulWidget {
-  const SessionsTab({super.key});
+  const SessionsTab({super.key, this.studentId, this.workoutNames});
+
+  /// Aluno visto pelo personal; nulo = o aluno logado.
+  final int? studentId;
+
+  /// Nome de cada treino (o personal passa os dele, inclusive os que o aluno já não tem).
+  final Map<int, String>? workoutNames;
 
   @override
   ConsumerState<SessionsTab> createState() => _SessionsTabState();
@@ -32,13 +38,17 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final history = ref.watch(historyProvider);
+    final provider = historyOf(widget.studentId);
+    final history = ref.watch(provider);
     return history.when(
       loading: () => const SkeletonList(),
-      error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(historyProvider)),
+      error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(provider)),
       data: (sessions) {
         if (sessions.isEmpty) {
-          return const EmptyState(icon: LucideIcons.history, message: 'Você ainda não executou nenhum treino.');
+          return EmptyState(
+            icon: LucideIcons.history,
+            message: widget.studentId == null ? 'Você ainda não executou nenhum treino.' : 'O aluno ainda não executou nenhum treino.',
+          );
         }
         final now = ref.watch(clockProvider)();
         final thisMonth = DateTime(now.year, now.month);
@@ -51,7 +61,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
         ]..sort((a, b) => b.startedAt.compareTo(a.startedAt));
 
         return RefreshIndicator(
-          onRefresh: () async => ref.refresh(historyProvider.future),
+          onRefresh: () async => ref.refresh(provider.future),
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(kScreenPadding, 12, kScreenPadding, 24),
@@ -83,7 +93,7 @@ class _SessionsTabState extends ConsumerState<SessionsTab> {
                   ),
                 )
               else
-                for (final session in inMonth) _SessionTile(session: session),
+                for (final session in inMonth) _SessionTile(session: session, workoutNames: widget.workoutNames),
             ],
           ),
         );
@@ -290,13 +300,17 @@ class _Kpi extends StatelessWidget {
 }
 
 class _SessionTile extends ConsumerWidget {
-  const _SessionTile({required this.session});
+  const _SessionTile({required this.session, this.workoutNames});
 
   final WorkoutSession session;
+  final Map<int, String>? workoutNames;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final workoutName = ref.watch(myWorkoutsProvider).value?.where((w) => w.id == session.workoutId).firstOrNull?.name ??
+    final names = workoutNames;
+    final workoutName = (names != null
+            ? names[session.workoutId]
+            : ref.watch(myWorkoutsProvider).value?.where((w) => w.id == session.workoutId).firstOrNull?.name) ??
         'Treino #${session.workoutId}';
     final date = session.startedAt.toLocal();
     final sets = session.performances.length;

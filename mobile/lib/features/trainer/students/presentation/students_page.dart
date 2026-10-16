@@ -19,6 +19,7 @@ enum _Filter {
   all('Todos'),
   active('Ativos'),
   overdue('Em atraso'),
+  paused('Em pausa'),
   inactive('Inativos');
 
   const _Filter(this.label);
@@ -51,7 +52,8 @@ class _StudentsPageState extends ConsumerState<StudentsPage> {
     }
     return switch (_filter) {
       _Filter.all => true,
-      _Filter.active => s.active,
+      _Filter.active => s.active && !s.paused,
+      _Filter.paused => s.active && s.paused,
       _Filter.inactive => !s.active,
       _Filter.overdue => tuition[s.id] == TuitionStatus.overdue,
     };
