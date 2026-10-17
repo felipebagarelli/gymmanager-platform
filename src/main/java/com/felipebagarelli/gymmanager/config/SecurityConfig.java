@@ -37,6 +37,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register-trainer").permitAll()
+                        // cadastro aberto do aluno (Fase C): confirmacao de e-mail, troca de senha e responsavel
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register-student", "/api/v1/auth/verify-email",
+                                "/api/v1/auth/resend-verification", "/api/v1/auth/resend-guardian",
+                                "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/legal").permitAll()
+                        .requestMatchers("/consent/guardian").permitAll()
                         .requestMatchers("/api/v1/trainers/*/students").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/students/*").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/students/*").hasRole("TRAINER")

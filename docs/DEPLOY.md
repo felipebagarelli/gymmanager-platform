@@ -28,6 +28,8 @@ Depois entre no painel; os alunos são criados pelo personal.
 ## 4. Integrações (opcionais, ligam ao definir as variáveis)
 - **IA**: `AI_API_KEY` (Anthropic). Sem chave, o assistente responde "indisponível". Limite por aluno: `AI_DAILY_LIMIT`.
 - **Pagamentos (Stripe Connect)**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PLATFORM_FEE_PERCENT`.
+- **E-mail (cadastro, troca de senha, responsável)**: `MAIL_HOST`, `MAIL_PORT` (587), `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` (ex.: `GymManager <nao-responda@seudominio.com.br>`). Brevo, Resend e Amazon SES funcionam por SMTP. Sem `MAIL_HOST`, os e-mails só aparecem no log (desenvolvimento).
+- **Endereço público e documentos**: `PUBLIC_URL` (endereço HTTPS do backend, usado no link do responsável), `TERMS_VERSION`, `TERMS_URL`, `PRIVACY_URL`. Mudar `TERMS_VERSION` obriga novos cadastros a aceitar a versão nova.
   No painel da Stripe crie o webhook `https://api.seudominio.com/api/v1/billing/webhook` para **eventos de contas conectadas** com:
   `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`, `account.updated`.
   Teste antes com o Stripe CLI e chaves de teste (`sk_test_…`); só então use as chaves reais.

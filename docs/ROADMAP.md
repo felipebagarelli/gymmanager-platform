@@ -90,8 +90,8 @@ Objetivo: o personal faz pelo celular tudo o que faz no painel web. O backend j�
 
 ### Fase C — Cadastro aberto e aluno independente
 Objetivo: qualquer pessoa usa o app sem personal, pagando o plano da plataforma.
-- [ ] C1. Cadastro de aluno pelo app (`register-student`), com verificação de e-mail e recuperação de senha.
-- [ ] C2. Aceite de termos e política de privacidade **registrado** (versão + data). Consentimento específico para dados de saúde (LGPD).
+- [x] C1. Cadastro de aluno pelo app (`POST /api/v1/auth/register-student`), confirmação de e-mail por código de 6 números (30 min, 5 tentativas, só o hash no banco) e "esqueci a senha" por código. Login com conta pendente leva ao passo que falta. E-mail atrás da porta `EmailSender` (SMTP do fornecedor; sem `MAIL_HOST`, só no log). Migração V8. *(16/10/2026)*
+- [x] C2. Aceite registrado em `legal_acceptances` (termos, privacidade e dados de saúde separados; versão, data, IP e aparelho). Idade mínima 12 anos; de 12 a 17, o responsável recebe um link e autoriza numa página do servidor (`/consent/guardian`), e só então a conta entra. *(16/10/2026)*
 - [ ] C3. Onboarding: objetivo, nível, dias por semana, tempo por treino, equipamento disponível.
 - [ ] C4. Questionário de saúde (triagem tipo PAR-Q). Resposta de risco bloqueia a geração de treino por IA e recomenda avaliação profissional/médica.
 - [ ] C5. Plano da plataforma: assinatura cobrada pela plataforma (sem Connect e sem repasse), com período gratuito/limites a definir. Ver decisão pendente sobre compras dentro do app (seção 6).
@@ -148,7 +148,7 @@ O detalhamento de cada regra está em `docs/ARQUITETURA-E-SISTEMA.md`, seção 4
 
 | # | Decisão | Fase | Observação |
 |---|---|---|---|
-| 1 | Preço, período grátis e limites do plano da plataforma | C | **Pesquisado em 16/10/2026, aguardando escolha.** Apps para personal no Brasil cobram do personal de ~R$ 10 a R$ 150/mês (MFIT, Treino Mestre, Nexur, O Personal Digital); apps de treino com IA lá fora vão de US$ 3 a 16/mês (Hevy, Freeletics, Fitbod). Proposta: plano grátis (registrar treinos + 1 treino gerado) e pago perto de R$ 19,90/mês ou R$ 149,90/ano, com 7 dias de teste |
+| 1 | Preço, período grátis e limites do plano da plataforma | C | **Decidido (16/10/2026): grátis (registrar treinos + 1 treino gerado) e pago a R$ 19,90/mês ou R$ 149,90/ano, com 7 dias de teste.** Base da pesquisa: Apps para personal no Brasil cobram do personal de ~R$ 10 a R$ 150/mês (MFIT, Treino Mestre, Nexur, O Personal Digital); apps de treino com IA lá fora vão de US$ 3 a 16/mês (Hevy, Freeletics, Fitbod). Proposta: plano grátis (registrar treinos + 1 treino gerado) e pago perto de R$ 19,90/mês ou R$ 149,90/ano, com 7 dias de teste |
 | 2 | Cobrança do plano da plataforma: Stripe ou compras dentro do app (Apple/Google) | C | **Decidido (16/10/2026): começar tudo pelo Stripe; integrar as lojas depois.** Atenção: no Brasil a Apple passou a aceitar pagamento externo (acordo com o CADE, iOS 26.5, 18/06/2026), mas cobra comissão também nesse caso e a opção da Apple aparece ao lado; menores de 18 exigem "parental gate". O Google está mudando as regras (taxas do Brasil não divulgadas). Conferir as regras das duas lojas antes de publicar |
 | 3 | Aluno **com** personal pode pedir treino à IA? | D | Proposta: não. A IA só sugere, e o personal aprova; os treinos do personal não são alterados pela IA |
 | 4 | Quem é o "dono" do treino gerado pela IA | D | Hoje todo treino pertence a um personal; o modelo de dados precisa de um dono para o aluno independente |
@@ -207,3 +207,14 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - Só existe plano mensal: faltam trimestral/anual e período de teste.
 - Formas de pagamento: hoje só cartão (avaliar boleto/Pix no Stripe Brasil).
 - Relatório mensal / exportar (CSV) para o personal.
+
+### C1/C2 — Cadastro aberto e aceites
+- **Verificação de idade:** hoje a idade é a data de nascimento informada. O ECA Digital veda confiar só na autodeclaração: avaliar o "sinal de idade" das lojas (Apple/Google) ou um provedor de verificação.
+- **Conta do responsável:** hoje ele só autoriza por e-mail. Faltam conta vinculada, controles (aprovar compras, ver uso) e revogar a autorização.
+- **Documentos:** a versão dos termos é "rascunho" e as URLs estão vazias (o app mostra "Documento em preparação"). Escrever Termos e Política de privacidade e validar com advogado (ver Fase A).
+- **E-mail em produção:** domínio próprio, SPF/DKIM/DMARC e `MAIL_HOST` configurado. Em produção, impedir subir sem SMTP (hoje cai para o log).
+- Trocar a senha não encerra as sessões já abertas (o token vale até expirar).
+- Proteção contra cadastro em massa (limite por IP, CAPTCHA). Hoje só há intervalo de 1 minuto entre reenvios por conta.
+- Contas criadas pelo personal ou pelo cadastro de personal do painel entram como já confirmadas (sem código).
+- Página de autorização do responsável é simples (sem a identidade visual do app).
+- O login compara o e-mail exatamente como foi salvo: o cadastro novo salva em minúsculas, mas contas antigas com maiúsculas exigem digitar igual. Padronizar (migrar e-mails para minúsculas e comparar sem diferenciar).

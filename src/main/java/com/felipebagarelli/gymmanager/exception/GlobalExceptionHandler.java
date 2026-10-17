@@ -35,6 +35,13 @@ public class GlobalExceptionHandler{
             .body(new ErrorResponse(status.value(), message, Instant.now(), request.getRequestURI()));
   }
 
+  @ExceptionHandler(AccountPendingException.class)
+  public ResponseEntity<ErrorResponse> handleAccountPending(AccountPendingException ex, HttpServletRequest request){
+    return ResponseEntity
+            .status(HttpStatus.FORBIDDEN)
+            .body(new ErrorResponse(HttpStatus.FORBIDDEN.value(), ex.getMessage(), Instant.now(), request.getRequestURI(), ex.code()));
+  }
+
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request){
     return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);

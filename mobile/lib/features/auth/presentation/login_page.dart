@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/errors/app_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../account/application/account_providers.dart';
 import '../application/auth_controller.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -41,6 +43,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           .login(_emailController.text.trim(), _passwordController.text);
     } on AppException catch (error) {
       if (!mounted) return;
+      // senha certa, mas falta um passo: leva direto para ele
+      final email = _emailController.text.trim();
+      if (error.code == 'EMAIL_NOT_VERIFIED') {
+        context.push('/verify-email', extra: AccountFlowArgs(email: email, resend: true));
+        return;
+      }
+      if (error.code == 'GUARDIAN_CONSENT_PENDING') {
+        context.push('/guardian-pending', extra: AccountFlowArgs(email: email));
+        return;
+      }
       setState(() {
         _error = error.statusCode == 401 ? 'E-mail ou senha inválidos.' : error.message;
       });
@@ -113,6 +125,19 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Entrar'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      key: const Key('forgot-password'),
+                      onPressed: () => context.push('/forgot-password',
+                          extra: AccountFlowArgs(email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim())),
+                      child: const Text('Esqueci minha senha'),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton(
+                      key: const Key('create-account'),
+                      onPressed: () => context.push('/register'),
+                      child: const Text('Criar conta'),
                     ),
                   ],
                 ),

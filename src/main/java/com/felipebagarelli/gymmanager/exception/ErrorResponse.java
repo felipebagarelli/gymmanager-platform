@@ -6,6 +6,11 @@ public record ErrorResponse(
         int status,
         String message,
         Instant timestamp,
-        String path
+        String path,
+        /* motivo legivel por maquina, quando o app precisa reagir (ex.: EMAIL_NOT_VERIFIED) */
+        String code
 ) {
+    public ErrorResponse(int status, String message, Instant timestamp, String path) {
+        this(status, message, timestamp, path, null);
+    }
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "student_profiles")
@@ -31,4 +32,11 @@ public class StudentProfile {
     /** Meta de treinos por semana (opcional, 1 a 14). */
     private Integer weeklyGoal;
     private boolean active;
+
+    /** Responsavel legal (aluno de 12 a 17 anos que se cadastrou sozinho). */
+    private String guardianName;
+    private String guardianEmail;
+
+    /** Quando o responsavel autorizou (null = ainda nao autorizou, se houver responsavel). */
+    private LocalDateTime guardianConsentAt;
 }

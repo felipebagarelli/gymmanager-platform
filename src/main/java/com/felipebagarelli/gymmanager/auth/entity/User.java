@@ -32,4 +32,7 @@ public class User {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    /** E-mail confirmado (null = ainda nao confirmou; nao consegue entrar). */
+    private LocalDateTime emailVerifiedAt;
 }

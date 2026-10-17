@@ -4,6 +4,8 @@ import com.felipebagarelli.gymmanager.auth.config.JwtConfig;
 import com.felipebagarelli.gymmanager.auth.entity.Role;
 import com.felipebagarelli.gymmanager.auth.entity.User;
 import com.felipebagarelli.gymmanager.auth.service.JwtService;
+import com.felipebagarelli.gymmanager.account.controller.AccountController;
+import com.felipebagarelli.gymmanager.account.service.AccountService;
 import com.felipebagarelli.gymmanager.controller.ExerciseController;
 import com.felipebagarelli.gymmanager.controller.WorkoutController;
 import com.felipebagarelli.gymmanager.controller.WorkoutExercisesController;
@@ -37,7 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {ExerciseController.class, StudentController.class, WorkoutController.class, WorkoutExercisesController.class})
+@WebMvcTest(controllers = {ExerciseController.class, StudentController.class, WorkoutController.class, WorkoutExercisesController.class, AccountController.class})
 @Import({SecurityConfig.class, CorsConfig.class, JwtConfig.class, JwtService.class, GlobalExceptionHandler.class})
 @TestPropertySource(properties = {"jwt.secret=test-secret-used-only-in-security-enforcement-tests-1234567890", "app.cors.allowed-origins=http://localhost:5173"})
 class SecurityEnforcementTest {
@@ -56,6 +58,9 @@ class SecurityEnforcementTest {
 
     @MockitoBean
     private WorkoutService workoutService;
+
+    @MockitoBean
+    private AccountService accountService;
 
     @MockitoBean
     private WorkoutExerciseService workoutExerciseService;
@@ -128,6 +133,20 @@ class SecurityEnforcementTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\":\"PAUSED\"}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void signupRoutes_arePublic() throws Exception {
+        when(accountService.termsVersion()).thenReturn("v1");
+        mockMvc.perform(get("/api/v1/legal")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"a@b.com\"}"))
+                .andExpect(status().isAccepted());
+        mockMvc.perform(post("/api/v1/auth/verify-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"a@b.com\",\"code\":\"12\"}"))
+                .andExpect(status().isBadRequest()); // codigo de 6 numeros
     }
 
     @Test

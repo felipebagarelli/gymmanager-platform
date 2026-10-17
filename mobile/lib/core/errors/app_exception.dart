@@ -1,10 +1,13 @@
 import 'package:dio/dio.dart';
 
 class AppException implements Exception {
-  AppException(this.message, {this.statusCode});
+  AppException(this.message, {this.statusCode, this.code});
 
   final String message;
   final int? statusCode;
+
+  /// Motivo legível por máquina, quando a API manda (ex.: EMAIL_NOT_VERIFIED).
+  final String? code;
 
   /// Converte erros do Dio usando o corpo padronizado da API
   /// ({status, message, timestamp, path}) quando existir.
@@ -14,6 +17,7 @@ class AppException implements Exception {
       return AppException(
         data['message'] as String,
         statusCode: error.response?.statusCode,
+        code: data['code'] as String?,
       );
     }
 

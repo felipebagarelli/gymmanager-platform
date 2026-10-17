@@ -53,6 +53,8 @@ public class TrainerService {
                 .active(true)
                 .createdAt(now)
                 .updatedAt(now)
+                // cadastro feito pelo personal/painel: nao passa pela confirmacao de e-mail do app
+                .emailVerifiedAt(now)
                 .build();
         userRepository.save(user);
 

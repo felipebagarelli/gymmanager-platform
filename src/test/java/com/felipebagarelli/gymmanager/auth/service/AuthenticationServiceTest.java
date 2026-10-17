@@ -5,7 +5,10 @@ import com.felipebagarelli.gymmanager.auth.dto.response.LoginResponse;
 import com.felipebagarelli.gymmanager.auth.entity.Role;
 import com.felipebagarelli.gymmanager.auth.entity.User;
 import com.felipebagarelli.gymmanager.auth.repository.UserRepository;
+import com.felipebagarelli.gymmanager.exception.AccountPendingException;
 import com.felipebagarelli.gymmanager.exception.InvalidCredentialsException;
+import com.felipebagarelli.gymmanager.student.entity.StudentProfile;
+import com.felipebagarelli.gymmanager.student.repository.StudentProfileRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +40,9 @@ class AuthenticationServiceTest {
     @Mock
     private LoginAttemptLimiter loginAttemptLimiter;
 
+    @Mock
+    private StudentProfileRepository studentProfileRepository;
+
     @InjectMocks
     private AuthenticationService authenticationService;
 
@@ -47,6 +54,7 @@ class AuthenticationServiceTest {
                 .email("trainer@example.com")
                 .role(Role.TRAINER)
                 .active(true)
+                .emailVerifiedAt(LocalDateTime.now())
                 .build();
 
         when(userRepository.findByEmail("trainer@example.com")).thenReturn(Optional.of(user));
@@ -80,5 +88,34 @@ class AuthenticationServiceTest {
 
         assertThatThrownBy(() -> authenticationService.login(request))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void login_blocksUntilTheEmailIsVerified() {
+        User user = User.builder().id(2L).email("aluno@example.com").role(Role.STUDENT).active(true).build();
+        when(userRepository.findByEmail("aluno@example.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authenticationService.login(new LoginRequest("aluno@example.com", "senhaSegura123")))
+                .isInstanceOf(AccountPendingException.class)
+                .extracting(e -> ((AccountPendingException) e).code())
+                .isEqualTo(AccountPendingException.EMAIL_NOT_VERIFIED);
+    }
+
+    @Test
+    void login_blocksTeenUntilTheGuardianApproves() {
+        User user = User.builder().id(2L).email("teen@example.com").role(Role.STUDENT).active(true)
+                .emailVerifiedAt(LocalDateTime.now()).build();
+        when(userRepository.findByEmail("teen@example.com")).thenReturn(Optional.of(user));
+        StudentProfile teen = StudentProfile.builder().user(user).guardianName("Ana").guardianEmail("mae@example.com").build();
+        when(studentProfileRepository.findByUserEmail("teen@example.com")).thenReturn(Optional.of(teen));
+
+        assertThatThrownBy(() -> authenticationService.login(new LoginRequest("teen@example.com", "senhaSegura123")))
+                .isInstanceOf(AccountPendingException.class)
+                .extracting(e -> ((AccountPendingException) e).code())
+                .isEqualTo(AccountPendingException.GUARDIAN_CONSENT_PENDING);
+
+        teen.setGuardianConsentAt(LocalDateTime.now());
+        when(jwtService.generateToken(user)).thenReturn("jwt");
+        assertThat(authenticationService.login(new LoginRequest("teen@example.com", "senhaSegura123")).token()).isEqualTo("jwt");
     }
 }

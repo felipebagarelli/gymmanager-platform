@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_controller.dart';
+import '../../features/account/application/account_providers.dart';
+import '../../features/account/presentation/guardian_pending_page.dart';
+import '../../features/account/presentation/register_page.dart';
+import '../../features/account/presentation/reset_password_page.dart';
+import '../../features/account/presentation/verify_email_page.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/domain/app_user.dart';
 import '../../features/home/presentation/home_page.dart';
@@ -16,6 +21,12 @@ import '../../features/trainer/students/presentation/student_progress_page.dart'
 import '../../features/sessions/presentation/completion_page.dart';
 import '../../features/sessions/presentation/execute_workout_page.dart';
 import '../../features/workouts/presentation/workout_detail_page.dart';
+
+const _accountPages = {'/register', '/verify-email', '/forgot-password', '/guardian-pending'};
+
+/// E-mail e senha passam entre as telas da conta em memória (nunca na URL).
+AccountFlowArgs _argsOf(GoRouterState state) =>
+    state.extra is AccountFlowArgs ? state.extra! as AccountFlowArgs : const AccountFlowArgs();
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
@@ -34,8 +45,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       final user = auth.value;
-      if (user == null) return location == '/login' ? null : '/login';
-      if (location == '/login' || location == '/splash') return '/';
+      // cadastro, código e senha: abertos para quem ainda não entrou
+      final publicPage = location == '/login' || _accountPages.contains(location);
+      if (user == null) return publicPage ? null : '/login';
+      if (publicPage || location == '/splash') return '/';
       // cada papel só navega pelas próprias telas
       if (user is TrainerUser && location.startsWith('/workouts')) return '/';
       if (user is StudentUser && location.startsWith('/trainer')) return '/';
@@ -48,6 +61,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             const Scaffold(body: Center(child: CircularProgressIndicator())),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
+      GoRoute(path: '/verify-email', builder: (context, state) => VerifyEmailPage(args: _argsOf(state))),
+      GoRoute(path: '/forgot-password', builder: (context, state) => ResetPasswordPage(args: _argsOf(state))),
+      GoRoute(path: '/guardian-pending', builder: (context, state) => GuardianPendingPage(args: _argsOf(state))),
       GoRoute(
         path: '/',
         // o mesmo app atende os dois papéis: o usuário logado define o modo
