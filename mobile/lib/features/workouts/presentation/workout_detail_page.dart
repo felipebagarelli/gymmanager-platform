@@ -10,6 +10,7 @@ import '../../../core/utils/async_widgets.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/pill_button.dart';
 import '../../sessions/application/session_providers.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/workout_providers.dart';
 import '../domain/plan_stats.dart';
 import '../domain/workout_name.dart';
@@ -32,7 +33,10 @@ class WorkoutDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final plan = ref.watch(workoutPlanProvider(workoutId));
-    final name = ref.watch(myWorkoutsProvider).value?.where((w) => w.id == workoutId).firstOrNull?.name;
+    final workout = ref.watch(myWorkoutsProvider).value?.where((w) => w.id == workoutId).firstOrNull;
+    final name = workout?.name;
+    // treino montado pelo próprio aluno sem personal: ele pode editar
+    final ownWorkout = workout != null && workout.ownedByStudent && ref.watch(currentStudentProvider)?.hasTrainer == false;
     final execution = ref.watch(executionProvider(workoutId));
     final hasOpenSession = execution.value != null;
     // carregando (ou recarregando, caso em que o valor antigo pode estar desatualizado) não dá para saber
@@ -53,6 +57,14 @@ class WorkoutDetailPage extends ConsumerWidget {
                     tooltip: 'Voltar',
                     onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   ),
+                  const Spacer(),
+                  if (ownWorkout)
+                    CircleIconButton(
+                      key: const Key('edit-own-workout'),
+                      icon: LucideIcons.pencil,
+                      tooltip: 'Editar treino',
+                      onPressed: () => context.push('/my-workouts/$workoutId/edit'),
+                    ),
                 ],
               ),
             ),

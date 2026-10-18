@@ -13,4 +13,5 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 
     Optional<WorkoutSession> findFirstByAssignmentStudentIdAndFinishedAtIsNotNullOrderByStartedAtDesc(Long studentId);
     boolean existsByAssignmentIdAndFinishedAtIsNull(Long assignmentId);
+    boolean existsByAssignmentWorkoutId(Long workoutId);
 }

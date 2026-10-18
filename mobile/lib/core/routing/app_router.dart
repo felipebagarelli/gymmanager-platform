@@ -68,6 +68,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
+      GoRoute(
+        path: '/my-workouts/:id/edit',
+        builder: (context, state) => WorkoutEditorPage(workoutId: int.parse(state.pathParameters['id']!), studentMode: true),
+      ),
       GoRoute(path: '/verify-email', builder: (context, state) => VerifyEmailPage(args: _argsOf(state))),
       GoRoute(path: '/forgot-password', builder: (context, state) => ResetPasswordPage(args: _argsOf(state))),
       GoRoute(path: '/guardian-pending', builder: (context, state) => GuardianPendingPage(args: _argsOf(state))),

@@ -215,7 +215,9 @@ void _showPersonalData(BuildContext context, StudentProfile profile) {
               ),
             ),
           const SizedBox(height: 8),
-          Text('Para alterar seus dados, fale com seu personal.',
+          Text(profile.hasTrainer
+                  ? 'Para alterar seus dados, fale com seu personal.'
+                  : 'Peso e altura você atualiza em "Perfil de treino e saúde".',
               style: AppText.body(size: 13, color: AppColors.textMuted)),
         ],
       ),

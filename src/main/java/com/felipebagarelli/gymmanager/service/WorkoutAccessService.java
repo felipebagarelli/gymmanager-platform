@@ -66,9 +66,13 @@ public class WorkoutAccessService {
         throw new AccessDeniedException(DENIED_WORKOUT);
     }
 
+    /** Dono: o personal que montou ou, no treino do aluno sem personal, o proprio aluno. */
     private boolean isWorkoutOwner(Workout workout, String email) {
-        return workout.getTrainer() != null
-                && workout.getTrainer().getUser().getEmail().equalsIgnoreCase(email);
+        if (workout.getTrainer() != null) {
+            return workout.getTrainer().getUser().getEmail().equalsIgnoreCase(email);
+        }
+        return workout.getStudentOwner() != null
+                && workout.getStudentOwner().getUser().getEmail().equalsIgnoreCase(email);
     }
 
     private boolean isOwningTrainer(Long studentId, String email) {

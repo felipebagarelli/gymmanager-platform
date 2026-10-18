@@ -1,6 +1,7 @@
 package com.felipebagarelli.gymmanager.entity;
 
 
+import com.felipebagarelli.gymmanager.student.entity.StudentProfile;
 import com.felipebagarelli.gymmanager.trainer.entity.TrainerProfile;
 import jakarta.persistence.*;
 import lombok.*;
@@ -20,4 +21,9 @@ public class Workout {
     @ManyToOne
     @JoinColumn(name = "trainer_id")
     private TrainerProfile trainer;
+
+    /** Treino montado pelo proprio aluno sem personal (trainer fica nulo). */
+    @ManyToOne
+    @JoinColumn(name = "student_owner_id")
+    private StudentProfile studentOwner;
 }

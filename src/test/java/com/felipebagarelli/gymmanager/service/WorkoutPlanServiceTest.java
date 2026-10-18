@@ -69,7 +69,9 @@ class WorkoutPlanServiceTest {
         planService = new WorkoutExerciseService(workoutExercisesRepository, workoutRepository, exerciseRepository,
                 accessService, performanceRepository);
         workoutService = new WorkoutService(workoutRepository, studentProfileRepository, trainerProfileRepository,
-                workoutExercisesRepository, assignmentRepository, accessService);
+                workoutExercisesRepository, assignmentRepository, accessService,
+                org.mockito.Mockito.mock(com.felipebagarelli.gymmanager.student.repository.TrainerStudentRepository.class),
+                org.mockito.Mockito.mock(com.felipebagarelli.gymmanager.session.repository.WorkoutSessionRepository.class));
 
         trainer = TrainerProfile.builder().id(1L)
                 .user(User.builder().email(OWNER).role(Role.TRAINER).build()).build();

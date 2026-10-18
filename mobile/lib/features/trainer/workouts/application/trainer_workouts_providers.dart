@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers.dart';
 import '../../../auth/application/auth_controller.dart';
+import '../../../workouts/application/workout_providers.dart';
 import '../../../workouts/domain/workout.dart';
 import '../../students/application/students_providers.dart';
 import '../data/trainer_workouts_repository.dart';
@@ -10,15 +11,22 @@ import '../domain/workout_draft.dart';
 final trainerWorkoutsRepositoryProvider =
     Provider<TrainerWorkoutsRepository>((ref) => TrainerWorkoutsRepository(ref.watch(dioProvider)));
 
-/// Treinos do personal logado, em ordem alfabética (vazio se não for personal).
+/// Quem monta treinos no app: o personal, ou o aluno sem personal (nos próprios treinos).
+bool _buildsWorkouts(Ref ref) {
+  if (ref.watch(currentTrainerProvider) != null) return true;
+  final student = ref.watch(currentStudentProvider);
+  return student != null && !student.hasTrainer;
+}
+
+/// Treinos de quem monta (personal, ou aluno sem personal), em ordem alfabética.
 final trainerWorkoutsProvider = FutureProvider<List<Workout>>((ref) async {
-  if (ref.watch(currentTrainerProvider) == null) return const [];
+  if (!_buildsWorkouts(ref)) return const [];
   return ref.watch(trainerWorkoutsRepositoryProvider).list();
 });
 
 /// Biblioteca: catálogo comum + exercícios do personal, em ordem alfabética.
 final exerciseLibraryProvider = FutureProvider<List<Exercise>>((ref) async {
-  if (ref.watch(currentTrainerProvider) == null) return const [];
+  if (!_buildsWorkouts(ref)) return const [];
   final items = await ref.watch(trainerWorkoutsRepositoryProvider).exercises();
   return [...items]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 });
@@ -48,6 +56,7 @@ class WorkoutPlanController extends AsyncNotifier<List<PlanItem>> {
   Future<void> edit(PlanItem item, PlanItemDraft draft) async {
     final updated = await _repository.updateItem(item.id, workoutId, draft, position: item.position);
     state = AsyncData([for (final i in state.value ?? const <PlanItem>[]) i.id == item.id ? updated : i]);
+    _changed();
   }
 
   Future<void> remove(PlanItem item) async {
@@ -69,14 +78,20 @@ class WorkoutPlanController extends AsyncNotifier<List<PlanItem>> {
     try {
       final saved = await _repository.reorder(workoutId, [for (final i in next) i.id]);
       state = AsyncData(saved);
+      _changed();
     } catch (_) {
       state = AsyncData(before);
       rethrow;
     }
   }
 
-  /// O número de exercícios aparece na lista de treinos.
-  void _changed() => ref.invalidate(trainerWorkoutsProvider);
+  /// O número de exercícios aparece na lista de treinos; no aluno sem personal, a tela de
+  /// execução usa o mesmo plano.
+  void _changed() {
+    ref.invalidate(trainerWorkoutsProvider);
+    ref.invalidate(workoutPlanProvider(workoutId));
+    ref.invalidate(myWorkoutsProvider);
+  }
 }
 
 final workoutPlanEditorProvider = AsyncNotifierProvider.autoDispose

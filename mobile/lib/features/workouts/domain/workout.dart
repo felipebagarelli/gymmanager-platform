@@ -1,5 +1,5 @@
 class Workout {
-  const Workout({required this.id, required this.name, this.exerciseCount, this.studentCount});
+  const Workout({required this.id, required this.name, this.exerciseCount, this.studentCount, this.trainerId});
 
   final int id;
   final String name;
@@ -10,11 +10,17 @@ class Workout {
   /// Alunos com o treino ativo (só vem para o personal dono do treino).
   final int? studentCount;
 
+  /// Personal que montou; null = treino montado pelo próprio aluno (sem personal).
+  final int? trainerId;
+
+  bool get ownedByStudent => trainerId == null;
+
   factory Workout.fromJson(Map<String, dynamic> json) => Workout(
         id: (json['id'] as num).toInt(),
         name: json['name'] as String,
         exerciseCount: (json['exerciseCount'] as num?)?.toInt(),
         studentCount: (json['studentCount'] as num?)?.toInt(),
+        trainerId: (json['trainerId'] as num?)?.toInt(),
       );
 }
 

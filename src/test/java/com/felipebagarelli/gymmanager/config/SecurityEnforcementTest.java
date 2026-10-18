@@ -95,17 +95,28 @@ class SecurityEnforcementTest {
     }
 
     @Test
-    void workoutManagement_withStudentRoleToken_returns403() throws Exception {
+    void trainerOnlyRoutes_withStudentRoleToken_return403() throws Exception {
         String student = "Bearer " + tokenFor(Role.STUDENT);
-        mockMvc.perform(post("/workouts/1/duplicate").header("Authorization", student))
-                .andExpect(status().isForbidden());
+        // o aluno sem personal monta o proprio treino, mas nao atribui a ninguem nem mexe na biblioteca
         mockMvc.perform(get("/workouts/1/assignments").header("Authorization", student))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(post("/workouts/1/assignments").header("Authorization", student)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"studentId\":2}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(put("/exercises/1").header("Authorization", student)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"X\",\"muscleGroup\":\"Y\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void studentOwnWorkoutRoutes_reachTheService() throws Exception {
+        String student = "Bearer " + tokenFor(Role.STUDENT);
+        when(workoutExerciseService.reorder(anyLong(), any(), anyString())).thenReturn(List.of());
         mockMvc.perform(put("/workout-exercises/workout/1/order")
                         .header("Authorization", student)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"workoutExerciseIds\":[1,2]}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test

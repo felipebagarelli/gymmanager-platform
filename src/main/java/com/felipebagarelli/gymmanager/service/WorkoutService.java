@@ -15,7 +15,10 @@ import com.felipebagarelli.gymmanager.repository.WorkoutAssignmentRepository;
 import com.felipebagarelli.gymmanager.repository.WorkoutExercisesRepository;
 import com.felipebagarelli.gymmanager.repository.WorkoutRepository;
 import com.felipebagarelli.gymmanager.student.entity.StudentProfile;
+import com.felipebagarelli.gymmanager.session.repository.WorkoutSessionRepository;
+import com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus;
 import com.felipebagarelli.gymmanager.student.repository.StudentProfileRepository;
+import com.felipebagarelli.gymmanager.student.repository.TrainerStudentRepository;
 import com.felipebagarelli.gymmanager.trainer.entity.TrainerProfile;
 import com.felipebagarelli.gymmanager.trainer.repository.TrainerProfileRepository;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class WorkoutService {
@@ -35,13 +39,19 @@ public class WorkoutService {
     private final WorkoutExercisesRepository workoutExercisesRepository;
     private final WorkoutAssignmentRepository workoutAssignmentRepository;
     private final WorkoutAccessService workoutAccessService;
+    private final TrainerStudentRepository trainerStudentRepository;
+    private final WorkoutSessionRepository sessionRepository;
 
     public WorkoutService(WorkoutRepository workoutRepository,
                           StudentProfileRepository studentProfileRepository,
                           TrainerProfileRepository trainerProfileRepository,
                           WorkoutExercisesRepository workoutExercisesRepository,
                           WorkoutAssignmentRepository workoutAssignmentRepository,
-                          WorkoutAccessService workoutAccessService){
+                          WorkoutAccessService workoutAccessService,
+                          TrainerStudentRepository trainerStudentRepository,
+                          WorkoutSessionRepository sessionRepository){
+        this.trainerStudentRepository = trainerStudentRepository;
+        this.sessionRepository = sessionRepository;
         this.workoutRepository = workoutRepository;
         this.studentProfileRepository = studentProfileRepository;
         this.trainerProfileRepository = trainerProfileRepository;
@@ -93,10 +103,33 @@ public class WorkoutService {
         return toResponse(workoutAssignmentRepository.save(assignment));
     }
 
+    /** Aluno sem personal (sem vinculo ativo ou pausado): monta os proprios treinos. */
+    private StudentProfile independentStudent(String email) {
+        StudentProfile student = studentProfileRepository.findByUserEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Personal não encontrado!"));
+        boolean withTrainer = trainerStudentRepository.findByStudentId(student.getId())
+                .map(l -> l.getStatus() == TrainerStudentStatus.ACTIVE || l.getStatus() == TrainerStudentStatus.PAUSED)
+                .orElse(false);
+        if (withTrainer) {
+            throw new AccessDeniedException("Seu personal monta os seus treinos.");
+        }
+        return student;
+    }
+
     @Transactional
     public WorkoutResponse addWorkout(CreateWorkoutRequest request, String authenticatedEmail){
-        TrainerProfile trainer = trainerProfileRepository.findByUserEmail(authenticatedEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Personal não encontrado!"));
+        Optional<TrainerProfile> trainerProfile = trainerProfileRepository.findByUserEmail(authenticatedEmail);
+        if (trainerProfile.isEmpty()) {
+            // aluno sem personal: o treino e dele e ja fica ativo para ele
+            StudentProfile owner = independentStudent(authenticatedEmail);
+            Workout own = workoutRepository.save(Workout.builder()
+                    .name(request.name().trim())
+                    .studentOwner(owner)
+                    .build());
+            assign(own, owner);
+            return toResponse(own);
+        }
+        TrainerProfile trainer = trainerProfile.get();
 
         StudentProfile student = null;
         if (request.studentId() != null) {
@@ -116,8 +149,18 @@ public class WorkoutService {
     }
 
     public List<WorkoutResponse> myWorkouts(String authenticatedEmail){
-        TrainerProfile trainer = trainerProfileRepository.findByUserEmail(authenticatedEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Personal não encontrado!"));
+        Optional<TrainerProfile> trainerProfile = trainerProfileRepository.findByUserEmail(authenticatedEmail);
+        if (trainerProfile.isEmpty()) {
+            // aluno sem personal: os treinos dele que estao em uso
+            StudentProfile owner = independentStudent(authenticatedEmail);
+            return workoutAssignmentRepository.findByStudentIdAndStatus(owner.getId(), WorkoutAssignmentStatus.ACTIVE).stream()
+                    .map(WorkoutAssignment::getWorkout)
+                    .filter(w -> w.getStudentOwner() != null && w.getStudentOwner().getId().equals(owner.getId()))
+                    .map(this::toResponse)
+                    .sorted(Comparator.comparing(WorkoutResponse::name, String.CASE_INSENSITIVE_ORDER))
+                    .toList();
+        }
+        TrainerProfile trainer = trainerProfile.get();
         return workoutRepository.findByTrainerId(trainer.getId()).stream()
                 .map(this::toOwnerResponse)
                 .sorted(Comparator.comparing(WorkoutResponse::name, String.CASE_INSENSITIVE_ORDER))
@@ -135,11 +178,35 @@ public class WorkoutService {
     public void deleteById (Long id, String authenticatedEmail){
         Workout workout = findWorkout(id);
         workoutAccessService.assertOwnsWorkout(workout, authenticatedEmail);
+        if (workout.getStudentOwner() != null) {
+            deleteOwnWorkout(workout);
+            return;
+        }
         if (workoutAssignmentRepository.existsByWorkoutId(id)) {
             throw new ConflictException("Este treino já foi atribuído a alunos; encerre as atribuições em vez de excluí-lo.");
         }
         workoutExercisesRepository.deleteByWorkoutId(id);
         workoutRepository.deleteById(id);
+    }
+
+    /**
+     * Treino do proprio aluno: se ja treinou com ele, so sai da lista (o historico continua);
+     * se nunca usou, e apagado.
+     */
+    private void deleteOwnWorkout(Workout workout) {
+        if (sessionRepository.existsByAssignmentWorkoutId(workout.getId())) {
+            workoutAssignmentRepository.findByWorkoutIdAndStudentIdAndStatus(
+                            workout.getId(), workout.getStudentOwner().getId(), WorkoutAssignmentStatus.ACTIVE)
+                    .ifPresent(a -> {
+                        a.setStatus(WorkoutAssignmentStatus.ENDED);
+                        a.setEndedAt(LocalDateTime.now());
+                        workoutAssignmentRepository.save(a);
+                    });
+            return;
+        }
+        workoutAssignmentRepository.deleteByWorkoutId(workout.getId());
+        workoutExercisesRepository.deleteByWorkoutId(workout.getId());
+        workoutRepository.deleteById(workout.getId());
     }
 
     public WorkoutResponse getWorkoutById (Long id, String authenticatedEmail){
@@ -190,7 +257,11 @@ public class WorkoutService {
         Workout copy = workoutRepository.save(Workout.builder()
                 .name(name.length() > MAX_NAME_LENGTH ? name.substring(0, MAX_NAME_LENGTH) : name)
                 .trainer(original.getTrainer())
+                .studentOwner(original.getStudentOwner())
                 .build());
+        if (original.getStudentOwner() != null) {
+            assign(copy, original.getStudentOwner());
+        }
 
         List<WorkoutExercises> plan = workoutExercisesRepository.findByWorkoutIdAndRemovedAtIsNullOrderByPositionAscIdAsc(workoutId);
         for (int i = 0; i < plan.size(); i++) {

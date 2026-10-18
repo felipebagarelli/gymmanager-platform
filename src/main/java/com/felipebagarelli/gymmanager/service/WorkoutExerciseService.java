@@ -78,7 +78,10 @@ public class WorkoutExerciseService {
     /** O personal so monta treinos com o catalogo comum ou com exercicios dele. */
     private Exercises usableExercise(Long exerciseId, Workout workout){
         Exercises exercise = findExercise(exerciseId);
-        if (exercise.getTrainer() != null && !exercise.getTrainer().getId().equals(workout.getTrainer().getId())) {
+        // treino do aluno sem personal: so o catalogo comum
+        boolean allowed = exercise.getTrainer() == null
+                || (workout.getTrainer() != null && exercise.getTrainer().getId().equals(workout.getTrainer().getId()));
+        if (!allowed) {
             throw new AccessDeniedException("Você não tem permissão para usar este exercício.");
         }
         return exercise;

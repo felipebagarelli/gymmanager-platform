@@ -40,16 +40,19 @@ Future<Exercise?> createExerciseFlow(BuildContext context, WidgetRef ref) async 
 // ---------------------------------------------------------------- escolher exercício
 
 /// Lista da biblioteca para escolher o exercício que entra no treino.
-Future<Exercise?> showExercisePicker(BuildContext context) {
+/// [allowCreate] falso (aluno sem personal): só o catálogo, sem criar exercício.
+Future<Exercise?> showExercisePicker(BuildContext context, {bool allowCreate = true}) {
   return showModalBottomSheet<Exercise>(
     context: context,
     isScrollControlled: true,
-    builder: (context) => const _ExercisePicker(),
+    builder: (context) => _ExercisePicker(allowCreate: allowCreate),
   );
 }
 
 class _ExercisePicker extends ConsumerStatefulWidget {
-  const _ExercisePicker();
+  const _ExercisePicker({required this.allowCreate});
+
+  final bool allowCreate;
 
   @override
   ConsumerState<_ExercisePicker> createState() => _ExercisePickerState();
@@ -85,7 +88,8 @@ class _ExercisePickerState extends ConsumerState<_ExercisePicker> {
               child: Row(
                 children: [
                   Expanded(child: Text('ESCOLHER EXERCÍCIO', style: AppText.display(28))),
-                  TextButton.icon(
+                  if (widget.allowCreate)
+                    TextButton.icon(
                     key: const Key('picker-new-exercise'),
                     onPressed: _create,
                     icon: const Icon(LucideIcons.plus, size: 16),
@@ -140,7 +144,9 @@ class _ExercisePickerState extends ConsumerState<_ExercisePicker> {
                                 child: Padding(
                                   padding: const EdgeInsets.all(24),
                                   child: Text(
-                                    items.isEmpty ? 'A biblioteca está vazia. Toque em "Novo" para criar um exercício.' : 'Nenhum exercício encontrado.',
+                                    items.isEmpty
+                                        ? (widget.allowCreate ? 'A biblioteca está vazia. Toque em "Novo" para criar um exercício.' : 'A biblioteca está vazia.')
+                                        : 'Nenhum exercício encontrado.',
                                     textAlign: TextAlign.center,
                                     style: AppText.body(color: AppColors.textMuted),
                                   ),

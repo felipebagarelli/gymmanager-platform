@@ -11,7 +11,9 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../billing/presentation/overdue_view.dart';
+import '../../../core/widgets/pill_button.dart';
 import '../../home/application/home_tab_provider.dart';
+import '../../trainer/workouts/presentation/trainer_workouts_page.dart';
 import '../../sessions/application/session_providers.dart';
 import '../../sessions/domain/training_stats.dart';
 import '../application/workout_providers.dart';
@@ -33,6 +35,8 @@ class MyWorkoutsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workouts = ref.watch(myWorkoutsProvider);
+    // sem personal: o aluno monta os próprios treinos
+    final independent = ref.watch(currentStudentProvider)?.hasTrainer == false;
 
     return SafeArea(
       bottom: false,
@@ -49,7 +53,9 @@ class MyWorkoutsPage extends ConsumerWidget {
             children: [
               const _Header(),
               const SizedBox(height: 16),
-              if (items.isEmpty)
+              if (items.isEmpty && independent)
+                const _BuildFirstWorkout()
+              else if (items.isEmpty)
                 const Padding(
                   padding: EdgeInsets.only(top: 80),
                   child: EmptyState(
@@ -57,11 +63,55 @@ class MyWorkoutsPage extends ConsumerWidget {
                     message: 'Você ainda não tem treinos.\nSeu personal vai atribuir um em breve.',
                   ),
                 )
-              else
+              else ...[
                 _Content(workouts: items),
+                if (independent) ...[
+                  const SizedBox(height: 14),
+                  PillButton(
+                    key: const Key('new-own-workout'),
+                    label: 'Montar novo treino',
+                    icon: LucideIcons.plus,
+                    style: PillStyle.ghost,
+                    height: 46,
+                    onPressed: () => createWorkoutFlow(context, ref, editorPath: studentEditorPath),
+                  ),
+                ],
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Aluno sem personal e sem treinos: convite para montar o primeiro.
+class _BuildFirstWorkout extends ConsumerWidget {
+  const _BuildFirstWorkout();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 40),
+      child: Column(
+        children: [
+          const Icon(LucideIcons.dumbbell, size: 48, color: AppColors.volt),
+          const SizedBox(height: 12),
+          Text('MONTE SEU PRIMEIRO TREINO', textAlign: TextAlign.center, style: AppText.display(28)),
+          const SizedBox(height: 6),
+          Text(
+            'Escolha os exercícios do catálogo, séries e repetições. Depois é só registrar cada treino aqui.',
+            textAlign: TextAlign.center,
+            style: AppText.body(size: 14, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 18),
+          PillButton(
+            key: const Key('build-first-workout'),
+            label: 'Montar treino',
+            icon: LucideIcons.plus,
+            onPressed: () => createWorkoutFlow(context, ref, editorPath: studentEditorPath),
+          ),
+        ],
       ),
     );
   }

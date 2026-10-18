@@ -17,6 +17,7 @@ import '../../../workouts/domain/workout_name.dart';
 import '../application/trainer_workouts_providers.dart';
 import '../domain/workout_draft.dart';
 import 'workout_pickers.dart';
+import 'trainer_workouts_page.dart';
 import 'workout_sheets.dart';
 
 enum _MenuAction { rename, duplicate, delete }
@@ -24,9 +25,12 @@ enum _MenuAction { rename, duplicate, delete }
 /// Montagem de um treino no celular: exercícios (adicionar, ajustar, arrastar para ordenar,
 /// retirar) e os alunos que estão com ele.
 class WorkoutEditorPage extends ConsumerWidget {
-  const WorkoutEditorPage({super.key, required this.workoutId});
+  const WorkoutEditorPage({super.key, required this.workoutId, this.studentMode = false});
 
   final int workoutId;
+
+  /// Aluno sem personal no próprio treino: sem atribuir a alunos e só com o catálogo.
+  final bool studentMode;
 
   void _back(BuildContext context) => context.canPop() ? context.pop() : context.go('/');
 
@@ -43,12 +47,14 @@ class WorkoutEditorPage extends ConsumerWidget {
         if (!ok || copy == null || !context.mounted) return;
         ref.invalidate(trainerWorkoutsProvider);
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cópia criada. Ajuste o que precisar.')));
-        context.pushReplacement('/trainer/workouts/${copy!.id}');
+        context.pushReplacement(studentMode ? studentEditorPath(copy!.id) : trainerEditorPath(copy!.id));
       case _MenuAction.delete:
         final confirmed = await confirmAction(
           context,
           title: 'Excluir treino?',
-          message: 'O treino "${workout.name}" será apagado. Treinos que já foram de algum aluno não podem ser excluídos.',
+          message: studentMode
+              ? 'O treino "${workout.name}" sai da sua lista. Se você já treinou com ele, o histórico continua.'
+              : 'O treino "${workout.name}" será apagado. Treinos que já foram de algum aluno não podem ser excluídos.',
           action: 'Excluir',
           confirmKey: const Key('confirm-delete-workout'),
         );
@@ -92,6 +98,7 @@ class WorkoutEditorPage extends ConsumerWidget {
               loading: () => const SkeletonList(heights: [56, 80, 72, 72, 72]),
               error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(workoutPlanEditorProvider(workoutId))),
               data: (planItems) => _Editor(
+                studentMode: studentMode,
                 workout: workout,
                 items: planItems,
                 onBack: () => _back(context),
@@ -106,7 +113,9 @@ class WorkoutEditorPage extends ConsumerWidget {
 }
 
 class _Editor extends ConsumerWidget {
-  const _Editor({required this.workout, required this.items, required this.onBack, required this.onMenu});
+  const _Editor({required this.workout, required this.items, required this.onBack, required this.onMenu, this.studentMode = false});
+
+  final bool studentMode;
 
   final Workout workout;
   final List<PlanItem> items;
@@ -116,7 +125,7 @@ class _Editor extends ConsumerWidget {
   WorkoutPlanController _plan(WidgetRef ref) => ref.read(workoutPlanEditorProvider(workout.id).notifier);
 
   Future<void> _add(BuildContext context, WidgetRef ref) async {
-    final exercise = await showExercisePicker(context);
+    final exercise = await showExercisePicker(context, allowCreate: !studentMode);
     if (exercise == null || !context.mounted) return;
     final result = await showPlanItemSheet(
       context,
@@ -213,7 +222,7 @@ class _Editor extends ConsumerWidget {
             onPressed: () => _add(context, ref),
           ),
           const SizedBox(height: 24),
-          _Assignees(workoutId: workout.id),
+          if (!studentMode) _Assignees(workoutId: workout.id),
         ],
       ),
     );

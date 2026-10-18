@@ -15,8 +15,9 @@ import '../application/trainer_workouts_providers.dart';
 import 'workout_pickers.dart';
 import 'workout_sheets.dart';
 
-/// Cria um treino pelo nome e abre o editor para montar o plano.
-Future<void> createWorkoutFlow(BuildContext context, WidgetRef ref) async {
+/// Cria um treino pelo nome e abre o editor para montar o plano ([editorPath] monta a rota do editor).
+Future<void> createWorkoutFlow(BuildContext context, WidgetRef ref,
+    {String Function(int id) editorPath = trainerEditorPath}) async {
   final name = await promptWorkoutName(context, title: 'Novo treino', action: 'Criar');
   if (name == null || !context.mounted) return;
   Workout? created;
@@ -25,7 +26,7 @@ Future<void> createWorkoutFlow(BuildContext context, WidgetRef ref) async {
   });
   if (!ok || created == null) return;
   ref.invalidate(trainerWorkoutsProvider);
-  if (context.mounted) context.push('/trainer/workouts/${created!.id}');
+  if (context.mounted) context.push(editorPath(created!.id));
 }
 
 /// Aba "Treinos" do personal: os treinos dele e o acesso à biblioteca de exercícios.
@@ -197,3 +198,8 @@ class _WorkoutTile extends StatelessWidget {
     );
   }
 }
+
+String trainerEditorPath(int id) => '/trainer/workouts/$id';
+
+/// Editor do treino montado pelo próprio aluno sem personal.
+String studentEditorPath(int id) => '/my-workouts/$id/edit';
