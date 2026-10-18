@@ -4,6 +4,8 @@ public record ExerciseResponse (Long id,
          String name,
          String muscleGroup,
          /* dono do exercicio; null = catalogo comum */
-         Long trainerId){
+         Long trainerId,
+         /* equipamento principal (null nos exercicios do personal) */
+         String equipment){
 
 }

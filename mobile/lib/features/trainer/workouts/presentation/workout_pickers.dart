@@ -197,8 +197,11 @@ class ExerciseRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(exercise.name, style: AppText.body(size: 15.5, weight: FontWeight.w600)),
-                  if ((exercise.muscleGroup ?? '').isNotEmpty)
-                    Text(exercise.muscleGroup!, style: AppText.body(size: 13, color: AppColors.textMuted)),
+                  if ((exercise.muscleGroup ?? '').isNotEmpty || exercise.equipmentLabel != null)
+                    Text(
+                      [exercise.muscleGroup, exercise.equipmentLabel].where((p) => (p ?? '').isNotEmpty).join(' · '),
+                      style: AppText.body(size: 13, color: AppColors.textMuted),
+                    ),
                 ],
               ),
             ),

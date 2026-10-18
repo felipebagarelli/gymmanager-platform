@@ -25,7 +25,7 @@ class Workout {
 }
 
 class Exercise {
-  const Exercise({required this.id, required this.name, this.muscleGroup, this.trainerId});
+  const Exercise({required this.id, required this.name, this.muscleGroup, this.trainerId, this.equipment});
 
   final int id;
   final String name;
@@ -37,11 +37,27 @@ class Exercise {
   /// Exercício criado pelo personal (pode editar e excluir).
   bool get custom => trainerId != null;
 
+  /// Equipamento principal (API: BARBELL, DUMBBELL...); null nos exercícios do personal.
+  final String? equipment;
+
+  String? get equipmentLabel => switch (equipment) {
+        'BARBELL' => 'Barra',
+        'DUMBBELL' => 'Halteres',
+        'MACHINE' => 'Máquina',
+        'CABLE' => 'Polia',
+        'BODYWEIGHT' => 'Peso do corpo',
+        'KETTLEBELL' => 'Kettlebell',
+        'BAND' => 'Elástico',
+        'PULL_UP_BAR' => 'Barra fixa',
+        _ => null,
+      };
+
   factory Exercise.fromJson(Map<String, dynamic> json) => Exercise(
         id: (json['id'] as num).toInt(),
         name: json['name'] as String,
         muscleGroup: json['muscleGroup'] as String?,
         trainerId: (json['trainerId'] as num?)?.toInt(),
+        equipment: json['equipment'] as String?,
       );
 }
 

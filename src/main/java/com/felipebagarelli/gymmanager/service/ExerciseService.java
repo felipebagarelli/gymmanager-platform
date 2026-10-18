@@ -48,7 +48,8 @@ public class ExerciseService {
 
     private ExerciseResponse toResponse (Exercises exercise){
         Long trainerId = exercise.getTrainer() != null ? exercise.getTrainer().getId() : null;
-        return new ExerciseResponse(exercise.getId(), exercise.getName(), exercise.getMuscleGroup(), trainerId);
+        String equipment = exercise.getEquipment() != null ? exercise.getEquipment().name() : null;
+        return new ExerciseResponse(exercise.getId(), exercise.getName(), exercise.getMuscleGroup(), trainerId, equipment);
     }
 
     private Exercises findExercise(Long id){

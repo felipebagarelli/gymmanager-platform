@@ -24,4 +24,11 @@ public class Exercises {
     @JoinColumn(name = "trainer_id")
     private TrainerProfile trainer;
 
+    /** Equipamento principal (catalogo; nulo nos exercicios criados pelo personal). */
+    @Enumerated(EnumType.STRING)
+    private ExerciseEquipment equipment;
+
+    /** Codigo estavel do exercicio do catalogo (a IA se refere ao exercicio por ele). */
+    private String catalogCode;
+
 }

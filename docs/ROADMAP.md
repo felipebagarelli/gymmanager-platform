@@ -237,7 +237,7 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - Lojas (Apple/Google): integrar depois, como decidido; conferir as regras antes de publicar com cobrança.
 
 ### C6 — Modo independente
-- **Catálogo inicial de exercícios (urgente para o modo independente):** o aluno sem personal só monta treino com o catálogo comum, que hoje é o que já estava no banco. Carregar um catálogo padronizado por migração (ver B4).
+- ~~Catálogo inicial de exercícios~~ **feito (V12, 18/10/2026):** 91 exercícios com grupo muscular, equipamento principal e código estável (`catalog_code`, usado pela IA). Falta: descrição/vídeo, "precisa de banco", exercício por tempo de verdade (hoje "(segundos)"/"(minutos)" no nome) e filtro por equipamento na escolha do aluno.
 - **Ligar um aluno que já tem conta a um personal:** hoje o personal cadastra com e-mail novo; com e-mail já usado dá "e-mail em uso". Falta convite/aceite (base da Fase E). Decidir o que acontece com os treinos próprios quando ele ganha um personal (hoje continuam ativos).
 - O aluno sem personal não cria exercícios próprios nem edita nome/telefone pelo app.
 - Textos do Personal IA ainda falam em "seu personal" em alguns pontos; revisar para quem treina sozinho.
