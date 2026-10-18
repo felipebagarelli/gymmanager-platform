@@ -27,6 +27,14 @@ public class AiWorkoutProposal {
     @Column(nullable = false)
     private ProposalStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ProposalKind kind = ProposalKind.NEW_WORKOUTS;
+
+    /** Treino ajustado (so nas propostas de ajuste). */
+    private Long targetWorkoutId;
+
     /** O que o aluno pediu (opcional, curto). */
     private String requestNote;
 

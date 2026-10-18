@@ -58,6 +58,15 @@ class WorkoutDetailPage extends ConsumerWidget {
                     onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   ),
                   const Spacer(),
+                  if (ownWorkout) ...[
+                    CircleIconButton(
+                      key: const Key('adjust-with-ai'),
+                      icon: LucideIcons.sparkles,
+                      tooltip: 'Ajustar com a IA',
+                      onPressed: () => context.push('/ai-workout/adjust/$workoutId'),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   if (ownWorkout)
                     CircleIconButton(
                       key: const Key('edit-own-workout'),

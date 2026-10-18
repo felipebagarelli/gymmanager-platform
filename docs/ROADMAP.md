@@ -102,7 +102,7 @@ Objetivo: a IA monta o treino do aluno independente e propõe ajustes; o usuári
 - [x] D1. Proposta estruturada guardada em `ai_workout_proposals` (V13): treinos A/B/C com exercícios pelo código do catálogo; nada vira treino antes do aceite. *(18/10/2026)*
 - [x] D2. Geração restrita e **conferida no servidor** (`ProposalRules`/`ProposalParser`): só o catálogo compatível com o equipamento do aluno, exercício desconhecido/duplicado descartado, séries/repetições/descanso trazidos para os limites do nível e do tempo, sem carga sugerida, textos limpos (sem links); pedido sobre dor/lesão/condição médica é recusado. *(18/10/2026)*
 - [x] D3. Tela "Treino pela IA": preferência opcional, prévia com aviso fixo, "Usar este treino" (cria os treinos do aluno, ativos), "Gerar outra" e "Descartar". Atalhos na aba Treinos do aluno sem personal. *(18/10/2026)*
-- [ ] D4. Ajustes propostos pela IA (progressão de carga, troca de exercício) com o mesmo fluxo de prévia e aceite.
+- [x] D4. Ajustes num treino que o aluno já faz ("Ajustar com a IA" no detalhe do treino): a IA vê as últimas 4 sessões (carga, repetições, "Como foi?") e propõe progressão ou troca; o servidor limita (carga no máximo +10% e só com 2+ sessões e última não "difícil", séries ±1, troca só do mesmo grupo e do equipamento do aluno, até 3 trocas); prévia "antes → depois"; aplicar confere que o plano não mudou e mantém o histórico do exercício trocado. V14. *(18/10/2026)*
 - [x] D5. Auditoria (pedido, proposta validada, aceite/recusa/expiração com data, treinos criados, tokens) e limites: grátis 1 proposta/mês, Pro 30/mês (`AI_PROPOSALS_*`); propostas valem 7 dias. *(18/10/2026)*
 - [x] D6. Testes automáticos: exercícios inventados ou de outro equipamento, números fora dos limites, recusa de pedido médico, links e caracteres de controle, preferência do aluno como dado delimitado, proposta de outro aluno, aceite duplicado, aluno que ganhou personal. Falta o teste com o modelo real (ver seção 8). *(18/10/2026)*
 
@@ -243,7 +243,7 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - Textos do Personal IA ainda falam em "seu personal" em alguns pontos; revisar para quem treina sozinho.
 
 ### Fase D — IA que propõe treinos
-- **D4 (não feito):** ajustes propostos pela IA (progressão de carga, troca de exercício) com o mesmo fluxo de prévia e aceite.
+- **D4:** feito. Falta: lembrete automático de "hora de progredir" (hoje o aluno pede), e usar o histórico de mais de um treino (hoje olha só o treino escolhido).
 - **Testar com a chave real** (`AI_API_KEY`): qualidade das propostas, tempo de resposta, custo por proposta e conferir o `AI_MODEL` (o padrão `claude-opus-5` não foi confirmado). Fazer uma rodada de "red team" com o modelo real (pedidos médicos, tentativas de mudar as regras).
 - **Abrir as vendas do Pro:** agora o Pro já entrega mais (30 propostas/mês contra 1 no grátis). Ligar `PLATFORM_PLAN_ENABLED` é decisão de negócio.
 - Menores de 18: proposta bloqueada até existir a aprovação do responsável.

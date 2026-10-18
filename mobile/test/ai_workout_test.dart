@@ -68,6 +68,37 @@ class FakeAiWorkoutRepository extends AiWorkoutRepository {
   }
 
   @override
+  Future<WorkoutProposal> proposeAdjustment(int workoutId, {String? note}) async {
+    calls.add('adjust:$workoutId:${note ?? ''}');
+    return WorkoutProposal(
+      id: _next++,
+      status: ProposalStatus.proposed,
+      workouts: const [],
+      adjustment: WorkoutAdjustment(
+        summary: 'Você está pronto para progredir.',
+        workoutId: workoutId,
+        workoutName: 'Treino A - Corpo inteiro',
+        changes: const [
+          AdjustmentChange(
+            swap: false,
+            exerciseName: 'Agachamento goblet',
+            setsBefore: 3, repsBefore: 12, restBefore: 60, loadBefore: 20,
+            setsAfter: 3, repsAfter: 12, restAfter: 60, loadAfter: 22,
+            note: 'Suba 2 kg',
+          ),
+          AdjustmentChange(
+            swap: true,
+            exerciseName: 'Flexão de braço',
+            newExerciseName: 'Supino reto com halteres',
+            setsBefore: 3, repsBefore: 10, restBefore: 60,
+            setsAfter: 3, repsAfter: 10, restAfter: 60,
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Future<WorkoutProposal> accept(int id) async {
     calls.add('accept:$id');
     return WorkoutProposal(id: id, status: ProposalStatus.accepted, workouts: const [], workoutIds: const [50]);
@@ -78,10 +109,15 @@ class FakeAiWorkoutRepository extends AiWorkoutRepository {
 }
 
 class _NoWorkouts extends WorkoutRepository {
-  _NoWorkouts() : super(Dio());
+  _NoWorkouts([this.items = const []]) : super(Dio());
+
+  final List<Workout> items;
 
   @override
-  Future<List<Workout>> myWorkouts(int studentId) async => const [];
+  Future<List<Workout>> myWorkouts(int studentId) async => items;
+
+  @override
+  Future<List<PlanItem>> plan(int workoutId) async => const [];
 
   @override
   Future<List<Exercise>> exercises() async => const [];
@@ -99,7 +135,7 @@ PlatformPlanStatus _freePlan() => const PlatformPlanStatus(
       canSubscribe: true,
     );
 
-Widget _app(FakeAiWorkoutRepository ai) => ProviderScope(
+Widget _app(FakeAiWorkoutRepository ai, {List<Workout> workouts = const []}) => ProviderScope(
       retry: (retryCount, error) => null,
       overrides: [
         tokenStorageProvider.overrideWithValue(InMemoryTokenStorage(
@@ -112,7 +148,7 @@ Widget _app(FakeAiWorkoutRepository ai) => ProviderScope(
         platformPlanRepositoryProvider.overrideWithValue(FakePlatformPlanRepository(_freePlan())),
         chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
         chatSummaryIntervalProvider.overrideWithValue(const Duration(hours: 1)),
-        workoutRepositoryProvider.overrideWithValue(_NoWorkouts()),
+        workoutRepositoryProvider.overrideWithValue(_NoWorkouts(workouts)),
         trainerWorkoutsRepositoryProvider.overrideWithValue(FakeTrainerWorkoutsRepository(workouts: {})),
         sessionRepositoryProvider.overrideWithValue(FakeSessionRepository()),
         clockProvider.overrideWithValue(() => DateTime(2026, 10, 18, 12)),
@@ -219,6 +255,57 @@ void main() {
     await _tap(tester, find.byKey(const Key('proposal-blocked-action')));
     expect(find.byKey(const Key('platform-plan')), findsOneWidget);
     await _close(tester);
+  });
+
+  testWidgets('D4: ajusta o próprio treino pelo detalhe, com antes e depois', (tester) async {
+    final ai = FakeAiWorkoutRepository();
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(_app(ai, workouts: const [Workout(id: 10, name: 'Treino A - Corpo inteiro')]));
+    await tester.pumpAndSettle();
+
+    await _tap(tester, find.byKey(const Key('hero-start')));
+    await _tap(tester, find.byKey(const Key('adjust-with-ai')));
+    expect(find.text('AJUSTAR COM A IA'), findsOneWidget);
+
+    await _tap(tester, find.byKey(const Key('proposal-generate')));
+    expect(ai.calls, ['adjust:10:']);
+    expect(find.text('Antes: 3 × 12 · 60 s · 20 kg'), findsOneWidget);
+    expect(find.text('Depois: 3 × 12 · 60 s · 22 kg'), findsOneWidget);
+    expect(find.text('Trocar Flexão de braço'), findsOneWidget);
+    expect(find.text('por Supino reto com halteres'), findsOneWidget);
+
+    await _tap(tester, find.byKey(const Key('proposal-accept')));
+    expect(ai.calls, contains('accept:1'));
+    expect(find.text('Ajustes aplicados ao treino.'), findsOneWidget);
+    expect(find.byType(AiWorkoutPage), findsNothing);
+    await _close(tester);
+  });
+
+  test('lê o ajuste da API', () {
+    final p = WorkoutProposal.fromJson({
+      'id': 4,
+      'status': 'PROPOSED',
+      'kind': 'ADJUSTMENT',
+      'content': null,
+      'workoutIds': [],
+      'adjustment': {
+        'summary': 'Progrida.',
+        'workoutId': 10,
+        'workoutName': 'Treino A',
+        'changes': [
+          {'action': 'PROGRESS', 'exerciseName': 'Goblet', 'setsBefore': 3, 'repsBefore': 12, 'restBefore': null,
+           'loadBefore': 20.5, 'setsAfter': 4, 'repsAfter': 12, 'restAfter': 60, 'loadAfter': 22.5, 'note': ''},
+        ],
+      },
+    });
+    final change = p.adjustment!.changes.single;
+    expect(change.before, '3 × 12 · 20,5 kg');
+    expect(change.after, '4 × 12 · 60 s · 22,5 kg');
+    expect(change.note, isNull);
+    expect(p.workouts, isEmpty);
   });
 
   test('lê a proposta da API', () {

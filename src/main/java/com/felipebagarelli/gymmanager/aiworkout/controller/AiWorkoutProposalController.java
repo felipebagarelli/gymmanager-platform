@@ -4,6 +4,7 @@ import com.felipebagarelli.gymmanager.aiworkout.dto.ProposalDtos.CreateProposalR
 import com.felipebagarelli.gymmanager.aiworkout.dto.ProposalDtos.EligibilityResponse;
 import com.felipebagarelli.gymmanager.aiworkout.dto.ProposalDtos.ProposalResponse;
 import com.felipebagarelli.gymmanager.aiworkout.service.AiWorkoutProposalService;
+import com.felipebagarelli.gymmanager.aiworkout.service.WorkoutAdjustmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,9 +16,19 @@ import org.springframework.web.bind.annotation.*;
 public class AiWorkoutProposalController {
 
     private final AiWorkoutProposalService service;
+    private final WorkoutAdjustmentService adjustments;
 
-    public AiWorkoutProposalController(AiWorkoutProposalService service) {
+    public AiWorkoutProposalController(AiWorkoutProposalService service, WorkoutAdjustmentService adjustments) {
         this.service = service;
+        this.adjustments = adjustments;
+    }
+
+    /** D4: ajustes num treino que o aluno ja faz (aceite e recusa pelas mesmas rotas). */
+    @PostMapping("/api/v1/ai/workouts/{workoutId}/adjustment-proposals")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ProposalResponse proposeAdjustment(@PathVariable Long workoutId, @RequestBody @Valid CreateProposalRequest request,
+                                              @AuthenticationPrincipal Jwt jwt) {
+        return adjustments.propose(jwt.getSubject(), workoutId, request.note());
     }
 
     @GetMapping("/api/v1/ai/workout-proposals/eligibility")

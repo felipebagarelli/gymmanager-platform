@@ -22,8 +22,20 @@ public final class ProposalDtos {
     public record ProposalContent(String summary, List<ProposedWorkout> workouts) {
     }
 
+    /** Uma mudanca proposta: PROGRESS (series/repeticoes/descanso/carga) ou SWAP (troca de exercicio). */
+    public record AdjustmentChange(String action, Long workoutExerciseId, String exerciseName,
+                                   Long newExerciseId, String newExerciseName,
+                                   int setsBefore, int repsBefore, Integer restBefore, Double loadBefore,
+                                   int setsAfter, int repsAfter, int restAfter, Double loadAfter, String note) {
+    }
+
+    public record AdjustmentContent(String summary, Long workoutId, String workoutName, List<AdjustmentChange> changes) {
+    }
+
+    /** {@code content} nas propostas de treino novo; {@code adjustment} nas de ajuste. */
     public record ProposalResponse(Long id, ProposalStatus status, ProposalContent content,
-                                   LocalDateTime createdAt, List<Long> workoutIds) {
+                                   LocalDateTime createdAt, List<Long> workoutIds,
+                                   String kind, AdjustmentContent adjustment) {
     }
 
     /** Pode pedir uma proposta agora? Se nao, o motivo; e quantas ja usou no mes. */

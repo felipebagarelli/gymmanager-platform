@@ -71,6 +71,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
       GoRoute(path: '/ai-workout', builder: (context, state) => const AiWorkoutPage()),
       GoRoute(
+        path: '/ai-workout/adjust/:id',
+        builder: (context, state) => AiWorkoutPage(adjustWorkoutId: int.parse(state.pathParameters['id']!)),
+      ),
+      GoRoute(
         path: '/my-workouts/:id/edit',
         builder: (context, state) => WorkoutEditorPage(workoutId: int.parse(state.pathParameters['id']!), studentMode: true),
       ),

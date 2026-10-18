@@ -9,6 +9,7 @@ import com.felipebagarelli.gymmanager.aiworkout.dto.ProposalDtos.ProposalRespons
 import com.felipebagarelli.gymmanager.aiworkout.dto.ProposalDtos.ProposedExercise;
 import com.felipebagarelli.gymmanager.aiworkout.dto.ProposalDtos.ProposedWorkout;
 import com.felipebagarelli.gymmanager.aiworkout.entity.AiWorkoutProposal;
+import com.felipebagarelli.gymmanager.aiworkout.entity.ProposalKind;
 import com.felipebagarelli.gymmanager.aiworkout.entity.ProposalStatus;
 import com.felipebagarelli.gymmanager.aiworkout.repository.AiWorkoutProposalRepository;
 import com.felipebagarelli.gymmanager.entity.Exercises;
@@ -72,6 +73,7 @@ public class AiWorkoutProposalService {
     private final WorkoutExercisesRepository workoutExercisesRepository;
     private final WorkoutAssignmentRepository assignmentRepository;
     private final PlatformPlanService platformPlanService;
+    private final AdjustmentApplier adjustmentApplier;
     private final int freePerMonth;
     private final int proPerMonth;
     private final Clock clock;
@@ -87,11 +89,12 @@ public class AiWorkoutProposalService {
                                     WorkoutExercisesRepository workoutExercisesRepository,
                                     WorkoutAssignmentRepository assignmentRepository,
                                     PlatformPlanService platformPlanService,
+                                    AdjustmentApplier adjustmentApplier,
                                     @Value("${app.ai.proposals.free-per-month:1}") int freePerMonth,
                                     @Value("${app.ai.proposals.pro-per-month:30}") int proPerMonth) {
         this(aiProvider, repository, studentProfileRepository, trainerStudentRepository, trainingProfileRepository,
                 screeningRepository, exerciseRepository, workoutRepository, workoutExercisesRepository, assignmentRepository,
-                platformPlanService, freePerMonth, proPerMonth, Clock.systemDefaultZone());
+                platformPlanService, adjustmentApplier, freePerMonth, proPerMonth, Clock.systemDefaultZone());
     }
 
     AiWorkoutProposalService(AiProvider aiProvider, AiWorkoutProposalRepository repository,
@@ -104,7 +107,9 @@ public class AiWorkoutProposalService {
                              WorkoutExercisesRepository workoutExercisesRepository,
                              WorkoutAssignmentRepository assignmentRepository,
                              PlatformPlanService platformPlanService,
+                             AdjustmentApplier adjustmentApplier,
                              int freePerMonth, int proPerMonth, Clock clock) {
+        this.adjustmentApplier = adjustmentApplier;
         this.aiProvider = aiProvider;
         this.repository = repository;
         this.studentProfileRepository = studentProfileRepository;
@@ -175,14 +180,20 @@ public class AiWorkoutProposalService {
                 used, pro ? proPerMonth : freePerMonth, pro);
     }
 
-    /** Pede a proposta a IA (fora de transacao); so grava e conta se vier uma proposta valida. */
-    public ProposalResponse propose(String email, String note) {
+    /** Aluno que pode pedir proposta agora (treino novo ou ajuste); senao 409 com o motivo. */
+    public StudentProfile requireAllowed(String email) {
         StudentProfile student = studentOf(email);
         boolean pro = platformPlanService.isPro(student);
         String[] blocked = blocker(student, pro, usedThisMonth(student));
         if (blocked != null) {
             throw new ConflictException(blocked[1]);
         }
+        return student;
+    }
+
+    /** Pede a proposta a IA (fora de transacao); so grava e conta se vier uma proposta valida. */
+    public ProposalResponse propose(String email, String note) {
+        StudentProfile student = requireAllowed(email);
         TrainingProfile profile = trainingProfileRepository.findByStudentId(student.getId()).orElseThrow();
         ProposalRules rules = ProposalRules.of(profile);
         Map<String, Exercises> catalog = new LinkedHashMap<>();
@@ -241,6 +252,13 @@ public class AiWorkoutProposalService {
         if (withTrainer) {
             throw new ConflictException("Quem monta seus treinos é o seu personal.");
         }
+        if (proposal.getKind() == ProposalKind.ADJUSTMENT) {
+            adjustmentApplier.apply(AdjustmentParser.fromJson(proposal.getProposalJson()));
+            proposal.setStatus(ProposalStatus.ACCEPTED);
+            proposal.setDecidedAt(now());
+            proposal.setWorkoutIds(String.valueOf(proposal.getTargetWorkoutId()));
+            return toResponse(repository.save(proposal));
+        }
         ProposalContent content = ProposalParser.fromJson(proposal.getProposalJson());
         List<Long> created = new ArrayList<>();
         for (ProposedWorkout w : content.workouts()) {
@@ -284,10 +302,15 @@ public class AiWorkoutProposalService {
         return toResponse(proposal);
     }
 
-    private ProposalResponse toResponse(AiWorkoutProposal p) {
+    public ProposalResponse toResponse(AiWorkoutProposal p) {
         List<Long> workoutIds = p.getWorkoutIds() == null || p.getWorkoutIds().isBlank()
                 ? List.of()
                 : Arrays.stream(p.getWorkoutIds().split(",")).map(Long::valueOf).toList();
-        return new ProposalResponse(p.getId(), p.getStatus(), ProposalParser.fromJson(p.getProposalJson()), p.getCreatedAt(), workoutIds);
+        if (p.getKind() == ProposalKind.ADJUSTMENT) {
+            return new ProposalResponse(p.getId(), p.getStatus(), null, p.getCreatedAt(), workoutIds,
+                    ProposalKind.ADJUSTMENT.name(), AdjustmentParser.fromJson(p.getProposalJson()));
+        }
+        return new ProposalResponse(p.getId(), p.getStatus(), ProposalParser.fromJson(p.getProposalJson()), p.getCreatedAt(),
+                workoutIds, ProposalKind.NEW_WORKOUTS.name(), null);
     }
 }

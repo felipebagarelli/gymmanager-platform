@@ -148,7 +148,7 @@ class AiWorkoutProposalServiceTest {
         when(ai.ask(any())).thenReturn(new AiReply(GOOD, 1200, 400));
 
         service = new AiWorkoutProposalService(ai, repo, students, links, profiles, screenings, exercises,
-                workoutRepository, plans, assignmentRepository, plan, 1, 30, clock);
+                workoutRepository, plans, assignmentRepository, plan, mock(AdjustmentApplier.class), 1, 30, clock);
     }
 
     @Test

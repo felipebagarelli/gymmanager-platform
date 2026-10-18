@@ -79,8 +79,94 @@ class ProposedWorkout {
 
 enum ProposalStatus { proposed, accepted, rejected, expired }
 
+String _kg(double v) => v == v.roundToDouble() ? '${v.toInt()} kg' : '${v.toString().replaceAll('.', ',')} kg';
+
+/// Uma mudança proposta num treino que o aluno já faz: progressão ou troca de exercício.
+class AdjustmentChange {
+  const AdjustmentChange({
+    required this.swap,
+    required this.exerciseName,
+    this.newExerciseName,
+    required this.setsBefore,
+    required this.repsBefore,
+    this.restBefore,
+    this.loadBefore,
+    required this.setsAfter,
+    required this.repsAfter,
+    required this.restAfter,
+    this.loadAfter,
+    this.note,
+  });
+
+  final bool swap;
+  final String exerciseName;
+  final String? newExerciseName;
+  final int setsBefore;
+  final int repsBefore;
+  final int? restBefore;
+  final double? loadBefore;
+  final int setsAfter;
+  final int repsAfter;
+  final int restAfter;
+  final double? loadAfter;
+  final String? note;
+
+  String get before => [
+        '$setsBefore × $repsBefore',
+        if (restBefore != null) '$restBefore s',
+        if (loadBefore != null) _kg(loadBefore!),
+      ].join(' · ');
+
+  String get after => [
+        '$setsAfter × $repsAfter',
+        '$restAfter s',
+        if (loadAfter != null) _kg(loadAfter!),
+      ].join(' · ');
+
+  factory AdjustmentChange.fromJson(Map<String, dynamic> json) => AdjustmentChange(
+        swap: json['action'] == 'SWAP',
+        exerciseName: json['exerciseName'] as String? ?? 'Exercício',
+        newExerciseName: json['newExerciseName'] as String?,
+        setsBefore: (json['setsBefore'] as num).toInt(),
+        repsBefore: (json['repsBefore'] as num).toInt(),
+        restBefore: (json['restBefore'] as num?)?.toInt(),
+        loadBefore: (json['loadBefore'] as num?)?.toDouble(),
+        setsAfter: (json['setsAfter'] as num).toInt(),
+        repsAfter: (json['repsAfter'] as num).toInt(),
+        restAfter: (json['restAfter'] as num).toInt(),
+        loadAfter: (json['loadAfter'] as num?)?.toDouble(),
+        note: (json['note'] as String?)?.trim().isEmpty ?? true ? null : json['note'] as String,
+      );
+}
+
+class WorkoutAdjustment {
+  const WorkoutAdjustment({this.summary, required this.workoutId, required this.workoutName, required this.changes});
+
+  final String? summary;
+  final int workoutId;
+  final String workoutName;
+  final List<AdjustmentChange> changes;
+
+  factory WorkoutAdjustment.fromJson(Map<String, dynamic> json) => WorkoutAdjustment(
+        summary: (json['summary'] as String?)?.trim().isEmpty ?? true ? null : json['summary'] as String,
+        workoutId: (json['workoutId'] as num).toInt(),
+        workoutName: json['workoutName'] as String? ?? 'Treino',
+        changes: [for (final c in json['changes'] as List<dynamic>? ?? const []) AdjustmentChange.fromJson(c as Map<String, dynamic>)],
+      );
+}
+
 class WorkoutProposal {
-  const WorkoutProposal({required this.id, required this.status, this.summary, required this.workouts, this.workoutIds = const []});
+  const WorkoutProposal({
+    required this.id,
+    required this.status,
+    this.summary,
+    required this.workouts,
+    this.workoutIds = const [],
+    this.adjustment,
+  });
+
+  /// Preenchido nas propostas de ajuste de um treino que o aluno já faz (D4).
+  final WorkoutAdjustment? adjustment;
 
   final int id;
   final ProposalStatus status;
@@ -101,6 +187,7 @@ class WorkoutProposal {
       summary: (content['summary'] as String?)?.trim().isEmpty ?? true ? null : content['summary'] as String,
       workouts: [for (final w in content['workouts'] as List<dynamic>? ?? const []) ProposedWorkout.fromJson(w as Map<String, dynamic>)],
       workoutIds: [for (final id in json['workoutIds'] as List<dynamic>? ?? const []) (id as num).toInt()],
+      adjustment: json['adjustment'] == null ? null : WorkoutAdjustment.fromJson(json['adjustment'] as Map<String, dynamic>),
     );
   }
 }
@@ -121,6 +208,16 @@ class AiWorkoutRepository {
           '/api/v1/ai/workout-proposals',
           data: {'note': (note == null || note.trim().isEmpty) ? null : note.trim()},
           // montar a proposta leva alguns segundos
+          options: Options(receiveTimeout: const Duration(seconds: 90)),
+        );
+        return WorkoutProposal.fromJson(response.data!);
+      });
+
+  /// Ajustes num treino que o aluno já faz (progressão, troca de exercício).
+  Future<WorkoutProposal> proposeAdjustment(int workoutId, {String? note}) => _guard(() async {
+        final response = await _dio.post<Map<String, dynamic>>(
+          '/api/v1/ai/workouts/$workoutId/adjustment-proposals',
+          data: {'note': (note == null || note.trim().isEmpty) ? null : note.trim()},
           options: Options(receiveTimeout: const Duration(seconds: 90)),
         );
         return WorkoutProposal.fromJson(response.data!);

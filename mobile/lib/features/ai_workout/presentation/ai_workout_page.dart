@@ -21,7 +21,10 @@ const proposalDisclaimer = 'Proposta gerada por IA a partir do seu perfil. Não 
 
 /// "Treino pela IA": pede uma proposta, mostra a prévia e só cria os treinos se o aluno aceitar.
 class AiWorkoutPage extends ConsumerStatefulWidget {
-  const AiWorkoutPage({super.key});
+  const AiWorkoutPage({super.key, this.adjustWorkoutId});
+
+  /// Ajustar um treino que o aluno já faz (D4); nulo = montar treinos novos.
+  final int? adjustWorkoutId;
 
   @override
   ConsumerState<AiWorkoutPage> createState() => _AiWorkoutPageState();
@@ -51,7 +54,8 @@ class _AiWorkoutPageState extends ConsumerState<AiWorkoutPage> {
       final repo = ref.read(aiWorkoutRepositoryProvider);
       // pedir outra descarta a anterior (fica registrada como recusada)
       if (previous != null) await repo.reject(previous.id);
-      final proposal = await repo.propose(note: _note.text);
+      final adjust = widget.adjustWorkoutId;
+      final proposal = adjust == null ? await repo.propose(note: _note.text) : await repo.proposeAdjustment(adjust, note: _note.text);
       if (mounted) setState(() => _proposal = proposal);
     } catch (error) {
       if (mounted) setState(() => _error = messageOf(error));
@@ -72,6 +76,13 @@ class _AiWorkoutPageState extends ConsumerState<AiWorkoutPage> {
       ref.invalidate(myWorkoutsProvider);
       ref.invalidate(trainerWorkoutsProvider);
       if (!mounted) return;
+      final adjust = widget.adjustWorkoutId;
+      if (adjust != null) {
+        ref.invalidate(workoutPlanProvider(adjust));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ajustes aplicados ao treino.')));
+        _back();
+        return;
+      }
       final count = accepted.workoutIds.length;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(count == 1 ? 'Treino criado! Ele já está na aba Treinos.' : '$count treinos criados! Eles já estão na aba Treinos.'),
@@ -105,8 +116,11 @@ class _AiWorkoutPageState extends ConsumerState<AiWorkoutPage> {
               child: CircleIconButton(icon: LucideIcons.arrowLeft, tooltip: 'Voltar', onPressed: _back),
             ),
             const SizedBox(height: 12),
-            Text('TREINO PELA IA', style: AppText.display(34)),
-            Text('A IA monta uma proposta com base no seu perfil. Você confere e decide se usa.',
+            Text(widget.adjustWorkoutId == null ? 'TREINO PELA IA' : 'AJUSTAR COM A IA', style: AppText.display(34)),
+            Text(
+                widget.adjustWorkoutId == null
+                    ? 'A IA monta uma proposta com base no seu perfil. Você confere e decide se usa.'
+                    : 'A IA olha suas últimas sessões deste treino e sugere progressões ou trocas. Você confere e decide.',
                 style: AppText.body(size: 14, color: AppColors.textSecondary)),
             const SizedBox(height: 16),
             if (_working && _proposal == null)
@@ -130,6 +144,34 @@ class _AiWorkoutPageState extends ConsumerState<AiWorkoutPage> {
     );
   }
 
+  List<Widget> _adjustmentPreview(WorkoutAdjustment adjustment, bool canRegenerate) => [
+        Text(adjustment.workoutName.toUpperCase(), key: const Key('adjustment-workout'), style: AppText.display(22)),
+        if (adjustment.summary != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 12),
+            child: Text(adjustment.summary!, key: const Key('proposal-summary'), style: AppText.body(size: 15)),
+          ),
+        for (final change in adjustment.changes) _ChangeCard(change: change),
+        InfoAlert(kind: AlertKind.warn, icon: LucideIcons.shieldAlert, text: proposalDisclaimer),
+        const SizedBox(height: 16),
+        PillButton(
+          key: const Key('proposal-accept'),
+          label: _working ? 'Aplicando...' : 'Aplicar ajustes',
+          icon: LucideIcons.check,
+          onPressed: _working ? null : _accept,
+        ),
+        const SizedBox(height: 8),
+        if (canRegenerate)
+          PillButton(
+            key: const Key('proposal-again'),
+            label: 'Sugerir outros',
+            style: PillStyle.ghost,
+            height: 46,
+            onPressed: _working ? null : _generate,
+          ),
+        TextButton(key: const Key('proposal-discard'), onPressed: _working ? null : _discard, child: const Text('Descartar')),
+      ];
+
   Widget _request(ProposalEligibility e) {
     final limit = e.monthlyLimit;
     return Column(
@@ -150,7 +192,7 @@ class _AiWorkoutPageState extends ConsumerState<AiWorkoutPage> {
         const SizedBox(height: 8),
         PillButton(
           key: const Key('proposal-generate'),
-          label: 'Gerar proposta',
+          label: widget.adjustWorkoutId == null ? 'Gerar proposta' : 'Sugerir ajustes',
           icon: LucideIcons.sparkles,
           onPressed: _working ? null : _generate,
         ),
@@ -170,6 +212,8 @@ class _AiWorkoutPageState extends ConsumerState<AiWorkoutPage> {
 
   List<Widget> _preview(WorkoutProposal proposal, ProposalEligibility? eligibility) {
     final canRegenerate = eligibility?.allowed ?? false;
+    final adjustment = proposal.adjustment;
+    if (adjustment != null) return _adjustmentPreview(adjustment, canRegenerate);
     return [
       if (proposal.summary != null)
         Padding(
@@ -196,6 +240,49 @@ class _AiWorkoutPageState extends ConsumerState<AiWorkoutPage> {
         ),
       TextButton(key: const Key('proposal-discard'), onPressed: _working ? null : _discard, child: const Text('Descartar')),
     ];
+  }
+}
+
+class _ChangeCard extends StatelessWidget {
+  const _ChangeCard({required this.change});
+
+  final AdjustmentChange change;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        radius: 18,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(change.swap ? LucideIcons.repeat : LucideIcons.trendingUp, size: 18, color: AppColors.volt),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    change.swap ? 'Trocar ${change.exerciseName}' : change.exerciseName,
+                    style: AppText.body(size: 15, weight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (change.swap)
+              Text('por ${change.newExerciseName}', style: AppText.body(size: 14, weight: FontWeight.w600, color: AppColors.volt)),
+            Text('Antes: ${change.before}', style: AppText.body(size: 13, color: AppColors.textMuted)),
+            Text('Depois: ${change.after}', style: AppText.body(size: 13.5, color: AppColors.textPrimary)),
+            if (change.note != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(change.note!, style: AppText.body(size: 12.5, color: AppColors.textMuted)),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
