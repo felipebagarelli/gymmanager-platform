@@ -95,6 +95,7 @@ public class ChatService {
 
         List<ConversationSummary> summaries = new ArrayList<>();
         for (TrainerStudent link : links) {
+            if (link.pendingPayment()) continue; // contratacao pelo hub ainda nao paga
             Conversation conversation = getOrCreate(link);
             MessageSender side = sideOf(link, email);
             MessageResponse last = messageRepository.findFirstByConversationIdOrderByIdDesc(conversation.getId())

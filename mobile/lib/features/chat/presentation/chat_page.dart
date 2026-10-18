@@ -14,6 +14,7 @@ import '../../../core/widgets/pill_button.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../billing/presentation/overdue_view.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../hub/presentation/trainer_search_view.dart';
 import '../application/chat_providers.dart';
 import '../domain/chat.dart';
 
@@ -52,7 +53,7 @@ class ChatPage extends ConsumerWidget {
             : ErrorRetry(error: error, onRetry: () => ref.invalidate(chatSummaryProvider)),
         data: (conversation) => conversation == null
             ? (ref.watch(currentStudentProvider)?.hasTrainer == false
-                ? const _FindTrainer()
+                ? const TrainerSearchView()
                 : const EmptyState(
                     icon: LucideIcons.messageCircle,
                     message: 'Você ainda não tem um personal vinculado para conversar.',
@@ -359,31 +360,6 @@ class _ClosedNotice extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Aluno sem personal: a aba Mensagens apresenta a busca de personais (Fase E).
-class _FindTrainer extends StatelessWidget {
-  const _FindTrainer();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      key: const Key('find-trainer'),
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-      children: [
-        const Icon(LucideIcons.users, size: 48, color: AppColors.volt),
-        const SizedBox(height: 12),
-        Text('ENCONTRE UM PERSONAL', textAlign: TextAlign.center, style: AppText.display(30)),
-        const SizedBox(height: 8),
-        Text(
-          'Em breve você vai poder encontrar e contratar um personal por aqui, e conversar com ele nesta aba.\n\n'
-          'Enquanto isso, monte seus treinos na aba Treinos e tire dúvidas com o Personal IA.',
-          textAlign: TextAlign.center,
-          style: AppText.body(size: 14.5, color: AppColors.textSecondary),
-        ),
-      ],
     );
   }
 }

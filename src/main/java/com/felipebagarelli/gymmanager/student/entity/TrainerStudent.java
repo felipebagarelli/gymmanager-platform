@@ -31,4 +31,9 @@ public class TrainerStudent {
     private TrainerStudentStatus status;
 
     private LocalDateTime createdAt;
+
+    /** Contratacao pelo hub aguardando o pagamento: o personal ainda nao ve nada do aluno. */
+    public boolean pendingPayment() {
+        return status == TrainerStudentStatus.INVITED;
+    }
 }

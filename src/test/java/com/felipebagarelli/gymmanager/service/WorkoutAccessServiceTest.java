@@ -123,4 +123,19 @@ class WorkoutAccessServiceTest {
         assertThatThrownBy(() -> accessService.assertCanReadWorkout(workout, "outro@example.com"))
                 .isInstanceOf(AccessDeniedException.class);
     }
+
+    @Test
+    void hubLinkWaitingForPayment_givesTheTrainerNoAccess() {
+        TrainerStudent pending = TrainerStudent.builder()
+                .trainer(TrainerProfile.builder().id(1L).user(User.builder().email("trainer@example.com").role(Role.TRAINER).build()).build())
+                .student(StudentProfile.builder().id(2L).build())
+                .status(com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.INVITED)
+                .build();
+        lenient().when(trainerStudentRepository.findByStudentId(2L)).thenReturn(Optional.of(pending));
+
+        assertThatThrownBy(() -> accessService.assertCanWrite(2L, "trainer@example.com"))
+                .isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> accessService.assertCanRead(2L, "trainer@example.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
 }

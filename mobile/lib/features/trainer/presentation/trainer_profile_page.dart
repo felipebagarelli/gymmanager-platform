@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -50,6 +51,29 @@ class TrainerProfilePage extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _Field(label: 'Telefone', value: phone),
                 ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          AppCard(
+            key: const Key('open-public-profile'),
+            radius: 18,
+            padding: const EdgeInsets.all(14),
+            onTap: () => context.push('/trainer/public-profile'),
+            child: Row(
+              children: [
+                const Icon(LucideIcons.store, size: 22, color: AppColors.volt),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Perfil no hub', style: AppText.body(size: 15.5, weight: FontWeight.w600)),
+                      Text('Apareça para alunos que procuram um personal', style: AppText.body(size: 13, color: AppColors.textMuted)),
+                    ],
+                  ),
+                ),
+                const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.textMuted),
               ],
             ),
           ),

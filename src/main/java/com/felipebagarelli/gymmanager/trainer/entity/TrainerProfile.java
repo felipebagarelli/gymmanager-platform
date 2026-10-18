@@ -23,4 +23,15 @@ public class TrainerProfile {
     private String displayName;
     private String phone;
     private String bio;
+
+    // ---- perfil publico no hub (Fase E): so aparece se listed = true e puder receber
+    private boolean listed;
+    private String headline;
+    private String city;
+    private String state;
+    @Builder.Default
+    private boolean online = true;
+    private boolean inPerson;
+    /** Especialidades separadas por virgula (TrainerSpecialty). */
+    private String specialties;
 }

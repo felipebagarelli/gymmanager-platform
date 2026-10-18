@@ -10,6 +10,8 @@ import '../../features/account/presentation/register_page.dart';
 import '../../features/account/presentation/reset_password_page.dart';
 import '../../features/account/presentation/verify_email_page.dart';
 import '../../features/auth/presentation/login_page.dart';
+import '../../features/hub/presentation/public_profile_page.dart';
+import '../../features/hub/presentation/trainer_public_page.dart';
 import '../../features/onboarding/application/onboarding_providers.dart';
 import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/auth/domain/app_user.dart';
@@ -70,6 +72,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
       GoRoute(path: '/ai-workout', builder: (context, state) => const AiWorkoutPage()),
+      GoRoute(
+        path: '/hub/trainers/:id',
+        builder: (context, state) => TrainerPublicPage(trainerId: int.parse(state.pathParameters['id']!)),
+      ),
+      GoRoute(path: '/trainer/public-profile', builder: (context, state) => const PublicProfilePage()),
       GoRoute(
         path: '/ai-workout/adjust/:id',
         builder: (context, state) => AiWorkoutPage(adjustWorkoutId: int.parse(state.pathParameters['id']!)),

@@ -8,5 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface TrainerProfileRepository extends JpaRepository<TrainerProfile, Long> {
+    java.util.List<TrainerProfile> findByListedTrueOrderByDisplayNameAsc();
+
     Optional<TrainerProfile> findByUserEmail(String email);
 }

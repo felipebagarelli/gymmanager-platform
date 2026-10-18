@@ -89,7 +89,8 @@ public class SubscriptionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Plano não encontrado!"));
 
         TrainerStudent link = trainerStudentRepository.findByStudentId(student.getId())
-                .filter(l -> l.getStatus() == TrainerStudentStatus.ACTIVE)
+                // ativo, ou contratacao pelo hub aguardando o pagamento
+                .filter(l -> l.getStatus() == TrainerStudentStatus.ACTIVE || l.getStatus() == TrainerStudentStatus.INVITED)
                 .orElseThrow(() -> new AccessDeniedException("Você não está vinculado a um personal ativo."));
         if (!plan.isActive() || !plan.getTrainer().getId().equals(link.getTrainer().getId())) {
             throw new AccessDeniedException("Este plano não está disponível para você.");

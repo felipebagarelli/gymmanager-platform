@@ -10,6 +10,7 @@ import 'package:gymmanager_mobile/features/auth/application/auth_controller.dart
 import 'package:gymmanager_mobile/features/auth/domain/student_profile.dart';
 import 'package:gymmanager_mobile/features/chat/application/chat_providers.dart';
 import 'package:gymmanager_mobile/features/chat/domain/chat.dart';
+import 'package:gymmanager_mobile/features/hub/application/hub_providers.dart';
 import 'package:gymmanager_mobile/features/onboarding/application/onboarding_providers.dart';
 import 'package:gymmanager_mobile/features/sessions/application/session_providers.dart';
 import 'package:gymmanager_mobile/features/trainer/workouts/application/trainer_workouts_providers.dart';
@@ -20,6 +21,7 @@ import 'package:gymmanager_mobile/features/workouts/domain/workout.dart';
 
 import 'onboarding_test.dart' show FakeOnboardingRepository;
 import 'support/fake_chat.dart';
+import 'support/fake_hub.dart';
 import 'support/fake_repositories.dart';
 import 'support/fake_trainer_workouts.dart';
 import 'support/fakes.dart';
@@ -68,6 +70,7 @@ Widget _app({
         clockProvider.overrideWithValue(() => DateTime(2026, 10, 18, 12)),
         // o onboarding já foi feito nesses testes
         needsOnboardingProvider.overrideWithValue(false),
+        hubRepositoryProvider.overrideWithValue(FakeHubRepository()),
       ],
       child: Consumer(
         builder: (context, ref, _) => MaterialApp.router(theme: AppTheme.dark(), routerConfig: ref.watch(routerProvider)),

@@ -9,6 +9,8 @@ import com.felipebagarelli.gymmanager.billing.repository.BillingEventRepository;
 import com.felipebagarelli.gymmanager.billing.repository.SubscriptionRepository;
 import com.felipebagarelli.gymmanager.billing.repository.TrainerPayoutAccountRepository;
 import com.felipebagarelli.gymmanager.exception.ResourceNotFoundException;
+import com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus;
+import com.felipebagarelli.gymmanager.student.repository.TrainerStudentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +27,14 @@ public class BillingWebhookService {
     private final BillingEventRepository eventRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final TrainerPayoutAccountRepository accountRepository;
+    private final TrainerStudentRepository trainerStudentRepository;
 
     public BillingWebhookService(PaymentProvider paymentProvider,
                                  BillingEventRepository eventRepository,
                                  SubscriptionRepository subscriptionRepository,
-                                 TrainerPayoutAccountRepository accountRepository) {
+                                 TrainerPayoutAccountRepository accountRepository,
+                                 TrainerStudentRepository trainerStudentRepository) {
+        this.trainerStudentRepository = trainerStudentRepository;
         this.paymentProvider = paymentProvider;
         this.eventRepository = eventRepository;
         this.subscriptionRepository = subscriptionRepository;
@@ -54,6 +59,16 @@ public class BillingWebhookService {
                         .orElseThrow(() -> new ResourceNotFoundException("Assinatura não encontrada!"));
                 subscription.setStripeSubscriptionId(event.externalSubscriptionId());
                 change(subscription, SubscriptionStatus.ACTIVE, null);
+                // contratacao pelo hub: o pagamento confirmado ativa o vinculo com o personal
+                if (subscription.getStudent() != null && subscription.getTrainer() != null) {
+                    trainerStudentRepository.findByStudentId(subscription.getStudent().getId())
+                            .filter(link -> link.pendingPayment()
+                                    && link.getTrainer().getId().equals(subscription.getTrainer().getId()))
+                            .ifPresent(link -> {
+                                link.setStatus(TrainerStudentStatus.ACTIVE);
+                                trainerStudentRepository.save(link);
+                            });
+                }
             }
             case PAYMENT_SUCCEEDED -> change(byExternalId(event), SubscriptionStatus.ACTIVE, event);
             case PAYMENT_FAILED -> change(byExternalId(event), SubscriptionStatus.PAST_DUE, null);

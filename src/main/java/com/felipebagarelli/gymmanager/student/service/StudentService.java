@@ -79,6 +79,7 @@ public class StudentService {
 
     private TrainerStudent findOwningLink(Long studentId, String authenticatedEmail) {
         TrainerStudent link = trainerStudentRepository.findByStudentId(studentId)
+                .filter(l -> !l.pendingPayment())
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado!"));
         assertOwnership(link.getTrainer(), authenticatedEmail);
         return link;
@@ -136,6 +137,8 @@ public class StudentService {
         assertOwnership(trainer, authenticatedEmail);
 
         return trainerStudentRepository.findByTrainerId(trainerId).stream()
+                // contratacao pelo hub ainda nao paga nao aparece
+                .filter(link -> !link.pendingPayment())
                 .map(link -> toResponse(link.getStudent(), link.getStatus()))
                 .toList();
     }
@@ -149,7 +152,8 @@ public class StudentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado!"));
         Optional<TrainerStudent> link = trainerStudentRepository.findByStudentId(id);
 
-        boolean ownTrainer = link.map(l -> l.getTrainer().getUser().getEmail().equalsIgnoreCase(authenticatedEmail))
+        boolean ownTrainer = link.filter(l -> !l.pendingPayment())
+                .map(l -> l.getTrainer().getUser().getEmail().equalsIgnoreCase(authenticatedEmail))
                 .orElse(false);
         boolean self = student.getUser().getEmail().equalsIgnoreCase(authenticatedEmail);
         if (!ownTrainer && !self) {

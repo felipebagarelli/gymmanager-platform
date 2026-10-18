@@ -61,6 +61,17 @@ class AuthController extends AsyncNotifier<AppUser?> {
     }
   }
 
+  /// Relê os dados do usuário logado (ex.: o pagamento ao personal foi confirmado e o aluno ganhou um vínculo).
+  Future<void> refreshUser() async {
+    final stored = await ref.read(tokenStorageProvider).read();
+    if (stored == null || state.value == null) return;
+    try {
+      state = AsyncData(await _loadUser(stored.role ?? UserRole.student));
+    } on AppException {
+      // sem conexão: mantém o que já tinha
+    }
+  }
+
   Future<void> logout() async {
     await ref.read(tokenStorageProvider).clear();
     state = const AsyncData(null);

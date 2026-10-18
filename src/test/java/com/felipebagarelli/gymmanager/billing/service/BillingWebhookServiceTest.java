@@ -41,13 +41,15 @@ class BillingWebhookServiceTest {
     private SubscriptionRepository subscriptionRepository;
     @Mock
     private TrainerPayoutAccountRepository accountRepository;
+    @Mock
+    private com.felipebagarelli.gymmanager.student.repository.TrainerStudentRepository trainerStudentRepository;
 
     private BillingWebhookService service;
     private Subscription subscription;
 
     @BeforeEach
     void setUp() {
-        service = new BillingWebhookService(provider, eventRepository, subscriptionRepository, accountRepository);
+        service = new BillingWebhookService(provider, eventRepository, subscriptionRepository, accountRepository, trainerStudentRepository);
         subscription = Subscription.builder().id(1L).status(SubscriptionStatus.PENDING)
                 .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
         when(subscriptionRepository.findById(1L)).thenReturn(Optional.of(subscription));
@@ -133,5 +135,31 @@ class BillingWebhookServiceTest {
 
         assertThatThrownBy(() -> service.handle("p", "ruim")).isInstanceOf(InvalidWebhookException.class);
         verify(subscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void checkoutCompleted_activatesTheHubLinkWaitingForPayment() {
+        var trainer = com.felipebagarelli.gymmanager.trainer.entity.TrainerProfile.builder().id(5L).build();
+        var other = com.felipebagarelli.gymmanager.trainer.entity.TrainerProfile.builder().id(6L).build();
+        var student = com.felipebagarelli.gymmanager.student.entity.StudentProfile.builder().id(9L).build();
+        subscription.setStudent(student);
+        subscription.setTrainer(trainer);
+        var link = com.felipebagarelli.gymmanager.student.entity.TrainerStudent.builder().trainer(trainer).student(student)
+                .status(com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.INVITED).build();
+        when(trainerStudentRepository.findByStudentId(9L)).thenReturn(Optional.of(link));
+        event(Type.CHECKOUT_COMPLETED, 1L, "sub_1");
+
+        service.handle("p", "s");
+
+        org.assertj.core.api.Assertions.assertThat(link.getStatus())
+                .isEqualTo(com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.ACTIVE);
+
+        // vinculo pendente com outro personal nao e ativado por este pagamento
+        link.setStatus(com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.INVITED);
+        link.setTrainer(other);
+        when(provider.parseWebhook("p", "s")).thenReturn(new BillingNotification("evt_2", Type.CHECKOUT_COMPLETED, 1L, "sub_1", null, null, false));
+        service.handle("p", "s");
+        org.assertj.core.api.Assertions.assertThat(link.getStatus())
+                .isEqualTo(com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.INVITED);
     }
 }

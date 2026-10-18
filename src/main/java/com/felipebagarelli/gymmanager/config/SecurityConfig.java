@@ -46,6 +46,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/students/me/onboarding", "/api/v1/students/me/training-profile",
                                 "/api/v1/students/me/health-screening").hasRole("STUDENT")
                         .requestMatchers("/api/v1/trainers/*/students").hasRole("TRAINER")
+                        .requestMatchers("/api/v1/trainers/me/public-profile").hasRole("TRAINER")
+                        .requestMatchers("/api/v1/hub/**").hasRole("STUDENT")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/students/*").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/students/*").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/students/*/reactivate").hasRole("TRAINER")

@@ -108,10 +108,10 @@ Objetivo: a IA monta o treino do aluno independente e propõe ajustes; o usuári
 
 ### Fase E — Hub de personais
 Objetivo: o aluno encontra e contrata um personal dentro do app.
-- [ ] E1. Perfil público do personal (foto, bio, especialidades, cidade/online, planos e preços), com controle do que é público.
-- [ ] E2. Busca e filtros.
-- [ ] E3. Contratar: assinar o plano do personal pelo app cria o vínculo (`TrainerStudent` ativo).
-- [ ] E4. Transição do aluno independente: o histórico e os treinos feitos com a IA continuam visíveis; o personal passa a ser o dono dos novos treinos.
+- [x] E1. Perfil público do personal ("Perfil no hub" no Perfil do personal): aparecer ou não, chamada, bio, cidade/UF, online/presencial, especialidades; os planos ativos e preços aparecem sozinhos. O app mostra o que falta para aparecer (chamada, plano ativo, recebimento no Stripe). E-mail e telefone nunca são públicos. Sem foto por enquanto. V15. *(18/10/2026)*
+- [x] E2. Busca na aba Mensagens do aluno sem personal: texto (nome, chamada, bio, cidade; sem diferenciar acento), especialidade e "online"; só aparece quem pode ser contratado. *(18/10/2026)*
+- [x] E3. Contratar: "Assinar" cria o vínculo como pendente (`INVITED`) e abre o checkout do plano do personal; **o webhook do pagamento confirmado ativa o vínculo**. Enquanto pendente, o personal não vê nada do aluno (lista, perfil, treinos, sessões, chat). O app confere de novo ao voltar do navegador. *(18/10/2026)*
+- [x] E4. Transição: com o vínculo ativo, o app vira o modo "com personal" (Mensagens com ele, mensalidade dele no Perfil, sem onboarding/IA); histórico e treinos próprios continuam. *(18/10/2026)*
 - [ ] E5. Avaliações e moderação (definir regras antes).
 
 ---
@@ -154,8 +154,8 @@ O detalhamento de cada regra está em `docs/ARQUITETURA-E-SISTEMA.md`, seção 4
 | 4 | Quem é o "dono" do treino gerado pela IA | D | **Resolvido no C6 (18/10/2026):** o treino pode ser do personal ou do próprio aluno sem personal (`student_owner_id`). A IA propõe para esse dono, que confirma antes de gravar |
 | 5 | Verificação de e-mail e recuperação de senha | C | **Decidido (16/10/2026): fluxo padrão** (link/código por e-mail, com validade e uso único). Envio por serviço de e-mail transacional (ex.: Brevo, Resend ou Amazon SES) atrás de uma porta `EmailSender`, como o `PaymentProvider`. Exige domínio próprio com SPF/DKIM/DMARC |
 | 6 | Idade mínima de uso | C | **Decidido (16/10/2026): a partir de 12 anos, com aceite de termos.** De 12 a 17: consentimento e vínculo de um responsável (LGPD art. 14 e ECA Digital, Lei 15.211/2025, em vigor desde 17/03/2026, que veda autodeclaração de idade e prevê conta vinculada ao responsável até 16 anos). Pagamento e treino por IA de menor só com aprovação do responsável. Validar com advogado antes do lançamento |
-| 7 | Comissão da plataforma no hub e regras de cancelamento/reembolso | E | |
-| 8 | O que do perfil do personal é público e como funcionam avaliações | E | |
+| 7 | Comissão da plataforma no hub e regras de cancelamento/reembolso | E | **Padrão aplicado (18/10/2026), revisar:** a mesma comissão de hoje (`PLATFORM_FEE_PERCENT`, 10%) e o cancelamento como já funciona. Falta política de reembolso por escrito |
+| 8 | O que do perfil do personal é público e como funcionam avaliações | E | **Público (aplicado):** nome, chamada, bio, especialidades, cidade/UF, online/presencial, planos e preços; nunca e-mail/telefone; o personal escolhe aparecer. **Avaliações (E5): a definir** — quem pode avaliar (só aluno com vínculo há X dias?), nota e/ou texto, resposta do personal, denúncia e moderação |
 
 ---
 
@@ -251,3 +251,13 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - Banco: exercícios com halteres/barra que precisam de banco entram mesmo para quem não marcou "banco" (o catálogo não tem esse dado).
 - Painel de custo da IA (tokens por proposta já ficam gravados).
 - Itens marcados no ROADMAP como obrigatórios antes de ir ao ar (seção 5) que ainda faltam: triagem refeita periodicamente, termos/política revisados por advogado, exclusão e retificação de dados pelo app.
+
+### Fase E — Hub de personais
+- **E5 (não feito):** avaliações e moderação, depois de decidir as regras (decisão 8).
+- **Foto do personal** (e verificação do registro profissional, CREF) no perfil público.
+- **Plano Pro ao ganhar personal:** quem assinava o GymManager Pro continua sendo cobrado; avisar e oferecer o cancelamento ao contratar.
+- **Treinos próprios ao ganhar personal:** hoje continuam ativos ao lado dos do personal; decidir se saem da lista ou se o personal pode vê-los.
+- **Checkout abandonado:** o vínculo fica pendente sem prazo; expirar pendências antigas e permitir trocar de personal antes de pagar (hoje o novo pedido reaproveita o vínculo).
+- **Menores de 18:** contratação bloqueada até existir a aprovação do responsável.
+- **Busca em memória:** bom para o volume atual; com muitos personais, paginar e buscar no banco.
+- Painel web não tem o perfil público (entra no B6).

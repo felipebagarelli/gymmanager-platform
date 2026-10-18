@@ -77,6 +77,8 @@ public class WorkoutAccessService {
 
     private boolean isOwningTrainer(Long studentId, String email) {
         return trainerStudentRepository.findByStudentId(studentId)
+                // contratacao pelo hub ainda nao paga: o personal nao acessa nada
+                .filter(link -> !link.pendingPayment())
                 .map(TrainerStudent::getTrainer)
                 .map(trainer -> trainer.getUser().getEmail().equalsIgnoreCase(email))
                 .orElse(false);

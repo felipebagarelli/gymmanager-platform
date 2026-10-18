@@ -31,7 +31,7 @@ class StudentProfile {
         height: (json['height'] as num?)?.toDouble(),
         weight: (json['weight'] as num?)?.toDouble(),
         weeklyGoal: (json['weeklyGoal'] as num?)?.toInt(),
-        // "status" é o vínculo com o personal; sem vínculo, vem nulo
-        hasTrainer: json['status'] != null,
+        // "status" é o vínculo com o personal: só ativo ou pausado conta (pendente de pagamento, não)
+        hasTrainer: json['status'] == 'ACTIVE' || json['status'] == 'PAUSED',
       );
 }
