@@ -26,7 +26,7 @@ Não há usuário inicial. Cadastre pelo endpoint público:
 Depois entre no painel; os alunos são criados pelo personal.
 
 ## 4. Integrações (opcionais, ligam ao definir as variáveis)
-- **IA**: `AI_API_KEY` (Anthropic). Sem chave, o assistente responde "indisponível". Limite por aluno: `AI_DAILY_LIMIT`.
+- **IA**: `AI_API_KEY` (Anthropic). Sem chave, o assistente responde "indisponível". Limite por aluno: `AI_DAILY_LIMIT`. Propostas de treino pela IA por mês: `AI_PROPOSALS_FREE_PER_MONTH` (1) e `AI_PROPOSALS_PRO_PER_MONTH` (30).
 - **Pagamentos (Stripe Connect)**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PLATFORM_FEE_PERCENT`.
 - **Plano da plataforma (GymManager Pro)**: `PLATFORM_PLAN_ENABLED` (padrão `false`: vendas fechadas), `PLATFORM_PLAN_MONTHLY_CENTS` (1990), `PLATFORM_PLAN_YEARLY_CENTS` (14990), `PLATFORM_PLAN_TRIAL_DAYS` (7) e `STRIPE_PLATFORM_WEBHOOK_SECRET`. No Stripe, crie um segundo endpoint de webhook para eventos **da sua conta** (não de contas conectadas) apontando para `/api/v1/billing/platform-webhook`, com os eventos `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid` e `invoice.payment_failed`.
 - **E-mail (cadastro, troca de senha, responsável)**: `MAIL_HOST`, `MAIL_PORT` (587), `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` (ex.: `GymManager <nao-responda@seudominio.com.br>`). Brevo, Resend e Amazon SES funcionam por SMTP. Sem `MAIL_HOST`, os e-mails só aparecem no log (desenvolvimento).

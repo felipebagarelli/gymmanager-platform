@@ -68,6 +68,15 @@ class MyWorkoutsPage extends ConsumerWidget {
                 if (independent) ...[
                   const SizedBox(height: 14),
                   PillButton(
+                    key: const Key('ai-workout'),
+                    label: 'Pedir treino à IA',
+                    icon: LucideIcons.sparkles,
+                    style: PillStyle.ghost,
+                    height: 46,
+                    onPressed: () => context.push('/ai-workout'),
+                  ),
+                  const SizedBox(height: 8),
+                  PillButton(
                     key: const Key('new-own-workout'),
                     label: 'Montar novo treino',
                     icon: LucideIcons.plus,
@@ -106,9 +115,18 @@ class _BuildFirstWorkout extends ConsumerWidget {
           ),
           const SizedBox(height: 18),
           PillButton(
+            key: const Key('ai-first-workout'),
+            label: 'Montar com a IA',
+            icon: LucideIcons.sparkles,
+            onPressed: () => context.push('/ai-workout'),
+          ),
+          const SizedBox(height: 8),
+          PillButton(
             key: const Key('build-first-workout'),
-            label: 'Montar treino',
+            label: 'Montar eu mesmo',
             icon: LucideIcons.plus,
+            style: PillStyle.ghost,
+            height: 46,
             onPressed: () => createWorkoutFlow(context, ref, editorPath: studentEditorPath),
           ),
         ],

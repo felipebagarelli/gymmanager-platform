@@ -99,12 +99,12 @@ Objetivo: qualquer pessoa usa o app sem personal, pagando o plano da plataforma.
 
 ### Fase D — IA que propõe treinos (com confirmação)
 Objetivo: a IA monta o treino do aluno independente e propõe ajustes; o usuário sempre confirma.
-- [ ] D1. Modelo de **proposta**: a IA gera uma proposta estruturada; nada vai para os treinos até o aceite.
-- [ ] D2. Geração restrita: só exercícios do catálogo da plataforma; limites de volume, séries e progressão; carga inicial conservadora; nada de reabilitação, dor ou condição médica.
-- [ ] D3. Tela de prévia: o aluno vê o treino proposto, pode recusar ou pedir outro, e só "Usar este treino" grava (pela API normal de treinos).
+- [x] D1. Proposta estruturada guardada em `ai_workout_proposals` (V13): treinos A/B/C com exercícios pelo código do catálogo; nada vira treino antes do aceite. *(18/10/2026)*
+- [x] D2. Geração restrita e **conferida no servidor** (`ProposalRules`/`ProposalParser`): só o catálogo compatível com o equipamento do aluno, exercício desconhecido/duplicado descartado, séries/repetições/descanso trazidos para os limites do nível e do tempo, sem carga sugerida, textos limpos (sem links); pedido sobre dor/lesão/condição médica é recusado. *(18/10/2026)*
+- [x] D3. Tela "Treino pela IA": preferência opcional, prévia com aviso fixo, "Usar este treino" (cria os treinos do aluno, ativos), "Gerar outra" e "Descartar". Atalhos na aba Treinos do aluno sem personal. *(18/10/2026)*
 - [ ] D4. Ajustes propostos pela IA (progressão de carga, troca de exercício) com o mesmo fluxo de prévia e aceite.
-- [ ] D5. Auditoria: guardar cada proposta, quem aceitou/recusou e quando. Limites de custo e de uso por plano.
-- [ ] D6. Testes de segurança da IA: tentativa de burlar limites, pedidos médicos, dados de terceiros, injeção de instruções.
+- [x] D5. Auditoria (pedido, proposta validada, aceite/recusa/expiração com data, treinos criados, tokens) e limites: grátis 1 proposta/mês, Pro 30/mês (`AI_PROPOSALS_*`); propostas valem 7 dias. *(18/10/2026)*
+- [x] D6. Testes automáticos: exercícios inventados ou de outro equipamento, números fora dos limites, recusa de pedido médico, links e caracteres de controle, preferência do aluno como dado delimitado, proposta de outro aluno, aceite duplicado, aluno que ganhou personal. Falta o teste com o modelo real (ver seção 8). *(18/10/2026)*
 
 ### Fase E — Hub de personais
 Objetivo: o aluno encontra e contrata um personal dentro do app.
@@ -150,7 +150,7 @@ O detalhamento de cada regra está em `docs/ARQUITETURA-E-SISTEMA.md`, seção 4
 |---|---|---|---|
 | 1 | Preço, período grátis e limites do plano da plataforma | C | **Decidido (16/10/2026): grátis (registrar treinos + 1 treino gerado) e pago a R$ 19,90/mês ou R$ 149,90/ano, com 7 dias de teste.** Base da pesquisa: Apps para personal no Brasil cobram do personal de ~R$ 10 a R$ 150/mês (MFIT, Treino Mestre, Nexur, O Personal Digital); apps de treino com IA lá fora vão de US$ 3 a 16/mês (Hevy, Freeletics, Fitbod). Proposta: plano grátis (registrar treinos + 1 treino gerado) e pago perto de R$ 19,90/mês ou R$ 149,90/ano, com 7 dias de teste |
 | 2 | Cobrança do plano da plataforma: Stripe ou compras dentro do app (Apple/Google) | C | **Decidido (16/10/2026): começar tudo pelo Stripe; integrar as lojas depois.** Atenção: no Brasil a Apple passou a aceitar pagamento externo (acordo com o CADE, iOS 26.5, 18/06/2026), mas cobra comissão também nesse caso e a opção da Apple aparece ao lado; menores de 18 exigem "parental gate". O Google está mudando as regras (taxas do Brasil não divulgadas). Conferir as regras das duas lojas antes de publicar |
-| 3 | Aluno **com** personal pode pedir treino à IA? | D | Proposta: não. A IA só sugere, e o personal aprova; os treinos do personal não são alterados pela IA |
+| 3 | Aluno **com** personal pode pedir treino à IA? | D | **Aplicado como proposto (18/10/2026): não.** Só o aluno sem personal pede proposta. "A IA sugere e o personal aprova" fica para depois |
 | 4 | Quem é o "dono" do treino gerado pela IA | D | **Resolvido no C6 (18/10/2026):** o treino pode ser do personal ou do próprio aluno sem personal (`student_owner_id`). A IA propõe para esse dono, que confirma antes de gravar |
 | 5 | Verificação de e-mail e recuperação de senha | C | **Decidido (16/10/2026): fluxo padrão** (link/código por e-mail, com validade e uso único). Envio por serviço de e-mail transacional (ex.: Brevo, Resend ou Amazon SES) atrás de uma porta `EmailSender`, como o `PaymentProvider`. Exige domínio próprio com SPF/DKIM/DMARC |
 | 6 | Idade mínima de uso | C | **Decidido (16/10/2026): a partir de 12 anos, com aceite de termos.** De 12 a 17: consentimento e vínculo de um responsável (LGPD art. 14 e ECA Digital, Lei 15.211/2025, em vigor desde 17/03/2026, que veda autodeclaração de idade e prevê conta vinculada ao responsável até 16 anos). Pagamento e treino por IA de menor só com aprovação do responsável. Validar com advogado antes do lançamento |
@@ -241,3 +241,13 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - **Ligar um aluno que já tem conta a um personal:** hoje o personal cadastra com e-mail novo; com e-mail já usado dá "e-mail em uso". Falta convite/aceite (base da Fase E). Decidir o que acontece com os treinos próprios quando ele ganha um personal (hoje continuam ativos).
 - O aluno sem personal não cria exercícios próprios nem edita nome/telefone pelo app.
 - Textos do Personal IA ainda falam em "seu personal" em alguns pontos; revisar para quem treina sozinho.
+
+### Fase D — IA que propõe treinos
+- **D4 (não feito):** ajustes propostos pela IA (progressão de carga, troca de exercício) com o mesmo fluxo de prévia e aceite.
+- **Testar com a chave real** (`AI_API_KEY`): qualidade das propostas, tempo de resposta, custo por proposta e conferir o `AI_MODEL` (o padrão `claude-opus-5` não foi confirmado). Fazer uma rodada de "red team" com o modelo real (pedidos médicos, tentativas de mudar as regras).
+- **Abrir as vendas do Pro:** agora o Pro já entrega mais (30 propostas/mês contra 1 no grátis). Ligar `PLATFORM_PLAN_ENABLED` é decisão de negócio.
+- Menores de 18: proposta bloqueada até existir a aprovação do responsável.
+- Aluno com personal: a IA não propõe; falta "a IA sugere e o personal aprova" (decisão 3).
+- Banco: exercícios com halteres/barra que precisam de banco entram mesmo para quem não marcou "banco" (o catálogo não tem esse dado).
+- Painel de custo da IA (tokens por proposta já ficam gravados).
+- Itens marcados no ROADMAP como obrigatórios antes de ir ao ar (seção 5) que ainda faltam: triagem refeita periodicamente, termos/política revisados por advogado, exclusão e retificação de dados pelo app.

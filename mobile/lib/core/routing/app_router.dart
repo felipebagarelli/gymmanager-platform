@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/account/application/account_providers.dart';
+import '../../features/ai_workout/presentation/ai_workout_page.dart';
 import '../../features/account/presentation/guardian_pending_page.dart';
 import '../../features/account/presentation/register_page.dart';
 import '../../features/account/presentation/reset_password_page.dart';
@@ -68,6 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
+      GoRoute(path: '/ai-workout', builder: (context, state) => const AiWorkoutPage()),
       GoRoute(
         path: '/my-workouts/:id/edit',
         builder: (context, state) => WorkoutEditorPage(workoutId: int.parse(state.pathParameters['id']!), studentMode: true),

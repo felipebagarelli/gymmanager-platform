@@ -36,7 +36,7 @@ public class ClaudeAiProvider implements AiProvider {
     MessageCreateParams buildParams(AiRequest request) {
         MessageCreateParams.Builder builder = MessageCreateParams.builder()
                 .model(model)
-                .maxTokens(maxTokens)
+                .maxTokens(request.maxTokens() != null ? request.maxTokens() : maxTokens)
                 .system(request.systemPrompt())
                 // perguntas curtas de treino: esforco medio basta e reduz custo/latencia
                 .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.MEDIUM).build());
