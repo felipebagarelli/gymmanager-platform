@@ -12,6 +12,7 @@ import '../../../core/widgets/app_card.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/student_profile.dart';
 import '../../billing/presentation/subscription_card.dart';
+import '../../platform_plan/presentation/platform_plan_card.dart';
 import '../../chat/application/chat_providers.dart';
 import '../../sessions/application/evolution_providers.dart';
 import '../../sessions/application/session_providers.dart';
@@ -51,7 +52,8 @@ class ProfilePage extends ConsumerWidget {
           const SizedBox(height: 18),
           const _Stats(),
           const SizedBox(height: 14),
-          const SubscriptionCard(),
+          // sem personal: plano da plataforma; com personal: a mensalidade dele
+          if (profile.hasTrainer) const SubscriptionCard() else const PlatformPlanCard(),
           const SizedBox(height: 14),
           AppCard(
             padding: EdgeInsets.zero,

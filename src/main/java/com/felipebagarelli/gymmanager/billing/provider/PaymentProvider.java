@@ -25,4 +25,17 @@ public interface PaymentProvider {
 
     /** Valida a assinatura do webhook e o converte em notificacao de dominio. */
     BillingNotification parseWebhook(String payload, String signature);
+
+    // ---- plano da plataforma (conta da propria plataforma, sem Connect)
+
+    CheckoutSession createPlatformCheckout(PlatformCheckoutRequest request);
+
+    /** Cancelar no fim do periodo (true) ou desfazer o cancelamento (false). */
+    void setPlatformCancelAtPeriodEnd(String externalSubscriptionId, boolean cancel);
+
+    /** Fatura em aberto do plano da plataforma (assinatura em atraso). */
+    Optional<String> createPlatformRegularizationLink(String externalSubscriptionId);
+
+    /** Webhook do endpoint da conta da plataforma (segredo proprio). */
+    PlatformBillingNotification parsePlatformWebhook(String payload, String signature);
 }

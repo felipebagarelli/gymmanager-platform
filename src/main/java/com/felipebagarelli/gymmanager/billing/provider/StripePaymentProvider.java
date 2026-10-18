@@ -13,6 +13,7 @@ import com.stripe.net.Webhook;
 import com.stripe.param.AccountCreateParams;
 import com.stripe.param.AccountLinkCreateParams;
 import com.stripe.param.InvoiceListParams;
+import com.stripe.param.SubscriptionUpdateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,10 +31,12 @@ public class StripePaymentProvider implements PaymentProvider {
 
     private final String secretKey;
     private final String webhookSecret;
+    private final String platformWebhookSecret;
 
-    public StripePaymentProvider(String secretKey, String webhookSecret) {
+    public StripePaymentProvider(String secretKey, String webhookSecret, String platformWebhookSecret) {
         this.secretKey = secretKey;
         this.webhookSecret = webhookSecret;
+        this.platformWebhookSecret = platformWebhookSecret;
     }
 
     private RequestOptions platform() {
@@ -160,5 +163,83 @@ public class StripePaymentProvider implements PaymentProvider {
             throw new InvalidWebhookException("Assinatura do webhook inválida.");
         }
         return StripeEventMapper.map(payload);
+    }
+
+    // ---- plano da plataforma: conta da propria plataforma (sem Stripe-Account)
+
+    @Override
+    public CheckoutSession createPlatformCheckout(PlatformCheckoutRequest request) {
+        try {
+            String local = String.valueOf(request.localSubscriptionId());
+            SessionCreateParams.SubscriptionData.Builder subscription = SessionCreateParams.SubscriptionData.builder()
+                    .putMetadata("platformSubscriptionId", local);
+            if (request.trialDays() > 0) {
+                subscription.setTrialPeriodDays((long) request.trialDays());
+            }
+            SessionCreateParams params = SessionCreateParams.builder()
+                    .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
+                    .setCustomerEmail(request.customerEmail())
+                    .setSuccessUrl(request.successUrl())
+                    .setCancelUrl(request.cancelUrl())
+                    .putMetadata("platformSubscriptionId", local)
+                    .addLineItem(SessionCreateParams.LineItem.builder()
+                            .setQuantity(1L)
+                            .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
+                                    .setCurrency("brl")
+                                    .setUnitAmount((long) request.priceCents())
+                                    .setRecurring(SessionCreateParams.LineItem.PriceData.Recurring.builder()
+                                            .setInterval(request.yearly()
+                                                    ? SessionCreateParams.LineItem.PriceData.Recurring.Interval.YEAR
+                                                    : SessionCreateParams.LineItem.PriceData.Recurring.Interval.MONTH)
+                                            .build())
+                                    .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                            .setName(request.productName())
+                                            .build())
+                                    .build())
+                            .build())
+                    .setSubscriptionData(subscription.build())
+                    .build();
+            Session session = Session.create(params, platform());
+            return new CheckoutSession(session.getId(), session.getUrl());
+        } catch (StripeException e) {
+            throw failure(e);
+        }
+    }
+
+    @Override
+    public void setPlatformCancelAtPeriodEnd(String externalSubscriptionId, boolean cancel) {
+        try {
+            Subscription.retrieve(externalSubscriptionId, platform())
+                    .update(SubscriptionUpdateParams.builder().setCancelAtPeriodEnd(cancel).build(), platform());
+        } catch (StripeException e) {
+            throw failure(e);
+        }
+    }
+
+    @Override
+    public Optional<String> createPlatformRegularizationLink(String externalSubscriptionId) {
+        try {
+            InvoiceCollection open = Invoice.list(InvoiceListParams.builder()
+                    .setSubscription(externalSubscriptionId)
+                    .setStatus(InvoiceListParams.Status.OPEN)
+                    .setLimit(1L)
+                    .build(), platform());
+            return open.getData().stream().map(Invoice::getHostedInvoiceUrl).filter(Objects::nonNull).findFirst();
+        } catch (StripeException e) {
+            throw failure(e);
+        }
+    }
+
+    @Override
+    public PlatformBillingNotification parsePlatformWebhook(String payload, String signature) {
+        if (platformWebhookSecret == null || platformWebhookSecret.isBlank()) {
+            throw new PaymentUnavailableException("Os pagamentos não estão disponíveis no momento.");
+        }
+        try {
+            Webhook.constructEvent(payload, signature, platformWebhookSecret);
+        } catch (SignatureVerificationException | RuntimeException e) {
+            throw new InvalidWebhookException("Assinatura do webhook inválida.");
+        }
+        return StripeEventMapper.mapPlatform(payload);
     }
 }

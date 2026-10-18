@@ -45,4 +45,24 @@ public class UnavailablePaymentProvider implements PaymentProvider {
     public BillingNotification parseWebhook(String payload, String signature) {
         throw unavailable();
     }
+
+    @Override
+    public CheckoutSession createPlatformCheckout(PlatformCheckoutRequest request) {
+        throw unavailable();
+    }
+
+    @Override
+    public void setPlatformCancelAtPeriodEnd(String externalSubscriptionId, boolean cancel) {
+        throw unavailable();
+    }
+
+    @Override
+    public Optional<String> createPlatformRegularizationLink(String externalSubscriptionId) {
+        throw unavailable();
+    }
+
+    @Override
+    public PlatformBillingNotification parsePlatformWebhook(String payload, String signature) {
+        throw unavailable();
+    }
 }

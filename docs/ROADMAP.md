@@ -94,7 +94,7 @@ Objetivo: qualquer pessoa usa o app sem personal, pagando o plano da plataforma.
 - [x] C2. Aceite registrado em `legal_acceptances` (termos, privacidade e dados de saúde separados; versão, data, IP e aparelho). Idade mínima 12 anos; de 12 a 17, o responsável recebe um link e autoriza numa página do servidor (`/consent/guardian`), e só então a conta entra. *(16/10/2026)*
 - [x] C3. Onboarding do aluno sem personal, logo depois de entrar: objetivo, nível, dias por semana, tempo por treino, onde treina (academia, casa com equipamento, peso do corpo) e medidas opcionais. Revisável pelo Perfil. Backend: `GET /api/v1/students/me/onboarding` e `PUT /api/v1/students/me/training-profile` (V9). *(18/10/2026)*
 - [x] C4. Triagem de saúde com 7 perguntas sim/não (texto próprio, inspirado no PAR-Q+), guardada com versão e histórico (`POST /api/v1/students/me/health-screening`). Qualquer "sim" marca risco: o app recomenda avaliação médica/profissional e `aiWorkoutsAllowed` fica falso (a Fase D não gera treino). *(18/10/2026)*
-- [ ] C5. Plano da plataforma: assinatura cobrada pela plataforma (sem Connect e sem repasse), com período gratuito/limites a definir. Ver decisão pendente sobre compras dentro do app (seção 6).
+- [x] C5. Plano da plataforma (GymManager Pro): grátis (registrar treinos + 1 treino gerado pela IA/mês) ou Pro R$ 19,90/mês ou R$ 149,90/ano, com 7 dias de teste só na primeira assinatura. Checkout do Stripe na conta da plataforma (sem Connect), webhook próprio (`/api/v1/billing/platform-webhook`), cancelar no fim do período, desfazer o cancelamento e pagar a fatura em atraso. Só aluno sem personal e maior de 18. App: cartão no Perfil. Tabela `platform_subscriptions` (V10). **Vendas fechadas por padrão** (`PLATFORM_PLAN_ENABLED=false`) até a Fase D entregar a IA que monta treinos. *(18/10/2026)*
 - [ ] C6. App no "modo independente": Treinos e Histórico funcionam igual; Mensagens vira a entrada para "encontrar um personal" (Fase E); Perfil mostra o plano da plataforma.
 
 ### Fase D — IA que propõe treinos (com confirmação)
@@ -226,3 +226,12 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - Lesões e exercícios a evitar não são perguntados (a IA da Fase D vai precisar disso).
 - Aluno com personal não faz onboarding nem triagem pelo app; o personal também não vê essas respostas. Decidir se o personal deve ver (com consentimento do aluno).
 - No Perfil, revisar reabre todos os passos (não dá para editar só um item).
+
+### C5 — Plano da plataforma
+- **Abrir as vendas só com a Fase D pronta:** hoje o Pro não libera nada a mais. Ligar `PLATFORM_PLAN_ENABLED` junto com a IA que monta treinos.
+- **Contador do grátis:** o limite de 1 treino gerado por mês ainda não é contado (nasce com a Fase D).
+- **Menores de 18:** assinatura bloqueada; falta o fluxo de aprovação do responsável na compra (ECA Digital; a Apple também exige "parental gate").
+- **Trocar cartão e mudar de mensal para anual:** usar o Portal do Cliente do Stripe (hoje não há como pelo app).
+- **Direito de arrependimento (CDC, 7 dias)** e política de reembolso por escrito nos termos.
+- Nota fiscal/impostos da receita da plataforma.
+- Lojas (Apple/Google): integrar depois, como decidido; conferir as regras antes de publicar com cobrança.
