@@ -92,8 +92,8 @@ Objetivo: o personal faz pelo celular tudo o que faz no painel web. O backend j�
 Objetivo: qualquer pessoa usa o app sem personal, pagando o plano da plataforma.
 - [x] C1. Cadastro de aluno pelo app (`POST /api/v1/auth/register-student`), confirmação de e-mail por código de 6 números (30 min, 5 tentativas, só o hash no banco) e "esqueci a senha" por código. Login com conta pendente leva ao passo que falta. E-mail atrás da porta `EmailSender` (SMTP do fornecedor; sem `MAIL_HOST`, só no log). Migração V8. *(16/10/2026)*
 - [x] C2. Aceite registrado em `legal_acceptances` (termos, privacidade e dados de saúde separados; versão, data, IP e aparelho). Idade mínima 12 anos; de 12 a 17, o responsável recebe um link e autoriza numa página do servidor (`/consent/guardian`), e só então a conta entra. *(16/10/2026)*
-- [ ] C3. Onboarding: objetivo, nível, dias por semana, tempo por treino, equipamento disponível.
-- [ ] C4. Questionário de saúde (triagem tipo PAR-Q). Resposta de risco bloqueia a geração de treino por IA e recomenda avaliação profissional/médica.
+- [x] C3. Onboarding do aluno sem personal, logo depois de entrar: objetivo, nível, dias por semana, tempo por treino, onde treina (academia, casa com equipamento, peso do corpo) e medidas opcionais. Revisável pelo Perfil. Backend: `GET /api/v1/students/me/onboarding` e `PUT /api/v1/students/me/training-profile` (V9). *(18/10/2026)*
+- [x] C4. Triagem de saúde com 7 perguntas sim/não (texto próprio, inspirado no PAR-Q+), guardada com versão e histórico (`POST /api/v1/students/me/health-screening`). Qualquer "sim" marca risco: o app recomenda avaliação médica/profissional e `aiWorkoutsAllowed` fica falso (a Fase D não gera treino). *(18/10/2026)*
 - [ ] C5. Plano da plataforma: assinatura cobrada pela plataforma (sem Connect e sem repasse), com período gratuito/limites a definir. Ver decisão pendente sobre compras dentro do app (seção 6).
 - [ ] C6. App no "modo independente": Treinos e Histórico funcionam igual; Mensagens vira a entrada para "encontrar um personal" (Fase E); Perfil mostra o plano da plataforma.
 
@@ -218,3 +218,11 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - Contas criadas pelo personal ou pelo cadastro de personal do painel entram como já confirmadas (sem código).
 - Página de autorização do responsável é simples (sem a identidade visual do app).
 - O login compara o e-mail exatamente como foi salvo: o cadastro novo salva em minúsculas, mas contas antigas com maiúsculas exigem digitar igual. Padronizar (migrar e-mails para minúsculas e comparar sem diferenciar).
+
+### C3/C4 — Onboarding e triagem de saúde
+- **Validar a triagem** com profissional de saúde/educação física. O texto é próprio, inspirado no PAR-Q+ (o questionário oficial tem licença própria: não copiar sem autorização).
+- **Validade da triagem:** pedir para responder de novo periodicamente (ex.: a cada 12 meses) e quando o aluno informar mudança de saúde.
+- **Liberação médica:** quem respondeu "sim" só volta a ter treino automático respondendo de novo; avaliar registrar a liberação (data, profissional) em vez de confiar só na nova resposta.
+- Lesões e exercícios a evitar não são perguntados (a IA da Fase D vai precisar disso).
+- Aluno com personal não faz onboarding nem triagem pelo app; o personal também não vê essas respostas. Decidir se o personal deve ver (com consentimento do aluno).
+- No Perfil, revisar reabre todos os passos (não dá para editar só um item).

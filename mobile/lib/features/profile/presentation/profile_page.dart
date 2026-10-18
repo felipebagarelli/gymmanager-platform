@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/providers.dart';
@@ -63,6 +64,13 @@ class ProfilePage extends ConsumerWidget {
                   label: 'Dados pessoais',
                   onTap: () => _showPersonalData(context, profile),
                 ),
+                if (!profile.hasTrainer)
+                  _MenuRow(
+                    key: const Key('menu-training-profile'),
+                    icon: LucideIcons.clipboardList,
+                    label: 'Perfil de treino e saúde',
+                    onTap: () => context.push('/onboarding'),
+                  ),
                 const _MenuRow(icon: LucideIcons.bell, label: 'Notificações', soon: true),
                 const _MenuRow(icon: LucideIcons.shieldCheck, label: 'Privacidade e termos', soon: true),
                 _MenuRow(

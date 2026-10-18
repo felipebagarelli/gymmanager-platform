@@ -7,6 +7,7 @@ class StudentProfile {
     this.height,
     this.weight,
     this.weeklyGoal,
+    this.hasTrainer = true,
   });
 
   final int id;
@@ -19,6 +20,9 @@ class StudentProfile {
   /// Meta de treinos por semana definida pelo personal (null = sem meta).
   final int? weeklyGoal;
 
+  /// Tem vínculo com um personal. Sem personal, o aluno usa o app sozinho (plano da plataforma).
+  final bool hasTrainer;
+
   factory StudentProfile.fromJson(Map<String, dynamic> json) => StudentProfile(
         id: (json['id'] as num).toInt(),
         email: json['email'] as String,
@@ -27,5 +31,7 @@ class StudentProfile {
         height: (json['height'] as num?)?.toDouble(),
         weight: (json['weight'] as num?)?.toDouble(),
         weeklyGoal: (json['weeklyGoal'] as num?)?.toInt(),
+        // "status" é o vínculo com o personal; sem vínculo, vem nulo
+        hasTrainer: json['status'] != null,
       );
 }

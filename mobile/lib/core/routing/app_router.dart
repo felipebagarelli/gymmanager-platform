@@ -9,6 +9,8 @@ import '../../features/account/presentation/register_page.dart';
 import '../../features/account/presentation/reset_password_page.dart';
 import '../../features/account/presentation/verify_email_page.dart';
 import '../../features/auth/presentation/login_page.dart';
+import '../../features/onboarding/application/onboarding_providers.dart';
+import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/auth/domain/app_user.dart';
 import '../../features/home/presentation/home_page.dart';
 import '../../features/trainer/messages/presentation/trainer_conversation_page.dart';
@@ -31,6 +33,7 @@ AccountFlowArgs _argsOf(GoRouterState state) =>
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
   ref.listen(authControllerProvider, (previous, next) => refresh.value++);
+  ref.listen(needsOnboardingProvider, (previous, next) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -52,6 +55,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       // cada papel só navega pelas próprias telas
       if (user is TrainerUser && location.startsWith('/workouts')) return '/';
       if (user is StudentUser && location.startsWith('/trainer')) return '/';
+      // aluno sem personal: antes de tudo, objetivo, rotina e triagem de saúde
+      if (user is StudentUser && location != '/onboarding' && ref.read(needsOnboardingProvider)) return '/onboarding';
       return null;
     },
     routes: [
@@ -62,6 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
+      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
       GoRoute(path: '/verify-email', builder: (context, state) => VerifyEmailPage(args: _argsOf(state))),
       GoRoute(path: '/forgot-password', builder: (context, state) => ResetPasswordPage(args: _argsOf(state))),
       GoRoute(path: '/guardian-pending', builder: (context, state) => GuardianPendingPage(args: _argsOf(state))),

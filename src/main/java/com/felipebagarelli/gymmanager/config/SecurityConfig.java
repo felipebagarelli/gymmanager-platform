@@ -43,6 +43,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/legal").permitAll()
                         .requestMatchers("/consent/guardian").permitAll()
+                        .requestMatchers("/api/v1/students/me/onboarding", "/api/v1/students/me/training-profile",
+                                "/api/v1/students/me/health-screening").hasRole("STUDENT")
                         .requestMatchers("/api/v1/trainers/*/students").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/students/*").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/students/*").hasRole("TRAINER")
