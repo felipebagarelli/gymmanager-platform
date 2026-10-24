@@ -102,6 +102,23 @@ class FakeTrainerWorkoutsRepository extends TrainerWorkoutsRepository {
     return _workout(copy.id);
   }
 
+  /// Treinos que alunos do personal montaram (não aparecem na lista dele).
+  final Map<int, String> studentOwned = {};
+
+  /// Põe um treino montado pelo aluno, que o personal abre pelo perfil do aluno.
+  void seedStudentWorkout(int id, String name) {
+    studentOwned[id] = name;
+    plans[id] = [];
+    assigned[id] = {};
+  }
+
+  @override
+  Future<Workout> get(int workoutId) async {
+    final name = studentOwned[workoutId];
+    if (name == null) throw AppException('Treino não encontrado.', statusCode: 404);
+    return Workout(id: workoutId, name: name, exerciseCount: plans[workoutId]!.length);
+  }
+
   @override
   Future<List<PlanItem>> plan(int workoutId) async => [...plans[workoutId]!];
 

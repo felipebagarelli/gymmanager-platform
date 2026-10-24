@@ -44,7 +44,7 @@ class TrainerServiceTest {
         RegisterTrainerRequest request = new RegisterTrainerRequest(
                 "trainer@example.com", "senhaSegura123", "João Personal", "11999999999");
 
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("hashed-password");
         when(trainerProfileRepository.save(any(TrainerProfile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -70,7 +70,7 @@ class TrainerServiceTest {
         RegisterTrainerRequest request = new RegisterTrainerRequest(
                 "trainer@example.com", "senhaSegura123", "João Personal", "11999999999");
 
-        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+        when(userRepository.existsByEmailIgnoreCase(request.email())).thenReturn(true);
 
         assertThatThrownBy(() -> trainerService.registerTrainer(request))
                 .isInstanceOf(EmailAlreadyInUseException.class);

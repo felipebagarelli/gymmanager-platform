@@ -40,7 +40,10 @@ class WorkoutEditorPage extends ConsumerWidget {
       case _MenuAction.rename:
         final name = await promptWorkoutName(context, initial: workout.name, title: 'Renomear treino', action: 'Salvar');
         if (name == null || name == workout.name || !context.mounted) return;
-        if (await runAction(context, () => repo.rename(workout.id, name))) ref.invalidate(trainerWorkoutsProvider);
+        if (await runAction(context, () => repo.rename(workout.id, name))) {
+          ref.invalidate(trainerWorkoutsProvider);
+          ref.invalidate(workoutByIdProvider(workout.id));
+        }
       case _MenuAction.duplicate:
         Workout? copy;
         final ok = await runAction(context, () async => copy = await repo.duplicate(workout.id));
@@ -79,7 +82,12 @@ class WorkoutEditorPage extends ConsumerWidget {
           loading: () => const SkeletonList(heights: [56, 80, 72, 72, 72]),
           error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(trainerWorkoutsProvider)),
           data: (items) {
-            final workout = items.where((w) => w.id == workoutId).firstOrNull;
+            // fora da lista do personal: pode ser um treino que o aluno dele montou
+            final own = items.where((w) => w.id == workoutId).firstOrNull;
+            final workout = own ?? (studentMode ? null : ref.watch(workoutByIdProvider(workoutId)).value);
+            if (workout == null && !studentMode && ref.watch(workoutByIdProvider(workoutId)).isLoading) {
+              return const SkeletonList(heights: [56, 80, 72, 72, 72]);
+            }
             if (workout == null) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,6 +107,7 @@ class WorkoutEditorPage extends ConsumerWidget {
               error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(workoutPlanEditorProvider(workoutId))),
               data: (planItems) => _Editor(
                 studentMode: studentMode,
+                fromStudent: !studentMode && own == null,
                 workout: workout,
                 items: planItems,
                 onBack: () => _back(context),
@@ -113,14 +122,26 @@ class WorkoutEditorPage extends ConsumerWidget {
 }
 
 class _Editor extends ConsumerWidget {
-  const _Editor({required this.workout, required this.items, required this.onBack, required this.onMenu, this.studentMode = false});
+  const _Editor({
+    required this.workout,
+    required this.items,
+    required this.onBack,
+    required this.onMenu,
+    this.studentMode = false,
+    this.fromStudent = false,
+  });
 
   final bool studentMode;
+
+  /// O personal abriu um treino que o aluno dele montou.
+  final bool fromStudent;
 
   final Workout workout;
   final List<PlanItem> items;
   final VoidCallback onBack;
   final ValueChanged<_MenuAction> onMenu;
+
+  bool get _ownMenu => !fromStudent;
 
   WorkoutPlanController _plan(WidgetRef ref) => ref.read(workoutPlanEditorProvider(workout.id).notifier);
 
@@ -181,10 +202,13 @@ class _Editor extends ConsumerWidget {
                 tooltip: 'Mais opções',
                 icon: const Icon(LucideIcons.ellipsisVertical, size: 20),
                 onSelected: onMenu,
-                itemBuilder: (context) => const [
-                  PopupMenuItem(key: Key('workout-rename'), value: _MenuAction.rename, child: Text('Renomear')),
-                  PopupMenuItem(key: Key('workout-duplicate'), value: _MenuAction.duplicate, child: Text('Duplicar')),
-                  PopupMenuItem(key: Key('workout-delete'), value: _MenuAction.delete, child: Text('Excluir')),
+                // o personal edita o treino que o aluno montou, mas não duplica nem exclui
+                itemBuilder: (context) => [
+                  const PopupMenuItem(key: Key('workout-rename'), value: _MenuAction.rename, child: Text('Renomear')),
+                  if (_ownMenu) ...const [
+                    PopupMenuItem(key: Key('workout-duplicate'), value: _MenuAction.duplicate, child: Text('Duplicar')),
+                    PopupMenuItem(key: Key('workout-delete'), value: _MenuAction.delete, child: Text('Excluir')),
+                  ],
                 ],
               ),
             ],
@@ -222,7 +246,10 @@ class _Editor extends ConsumerWidget {
             onPressed: () => _add(context, ref),
           ),
           const SizedBox(height: 24),
-          if (!studentMode) _Assignees(workoutId: workout.id),
+          if (!studentMode && !fromStudent) _Assignees(workoutId: workout.id),
+          if (fromStudent)
+            Text('Treino montado pelo aluno. Você pode ajustar os exercícios; só ele pode excluir.',
+                key: const Key('student-owned-note'), style: AppText.body(size: 13, color: AppColors.textMuted)),
         ],
       ),
     );

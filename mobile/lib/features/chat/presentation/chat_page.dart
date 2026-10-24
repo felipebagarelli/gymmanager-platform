@@ -51,10 +51,11 @@ class ChatPage extends ConsumerWidget {
         error: (error, _) => isPaymentRequired(error)
             ? const OverdueView()
             : ErrorRetry(error: error, onRetry: () => ref.invalidate(chatSummaryProvider)),
-        data: (conversation) => conversation == null
-            ? (ref.watch(currentStudentProvider)?.hasTrainer == false
-                ? const TrainerSearchView()
-                : const EmptyState(
+        // sem personal (nunca teve ou o vínculo acabou): o hub para encontrar um
+        data: (conversation) => ref.watch(currentStudentProvider)?.hasTrainer == false
+            ? const TrainerSearchView()
+            : conversation == null
+            ? (const EmptyState(
                     icon: LucideIcons.messageCircle,
                     message: 'Você ainda não tem um personal vinculado para conversar.',
                   ))

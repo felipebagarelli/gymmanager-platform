@@ -29,9 +29,17 @@ public class JwtConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(SecretKey jwtSecretKey) {
-        return NimbusJwtDecoder.withSecretKey(jwtSecretKey)
+    public JwtDecoder jwtDecoder(SecretKey jwtSecretKey,
+                                 org.springframework.beans.factory.ObjectProvider<com.felipebagarelli.gymmanager.auth.repository.UserRepository> users) {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(jwtSecretKey)
                 .macAlgorithm(MacAlgorithm.HS256)
                 .build();
+        com.felipebagarelli.gymmanager.auth.repository.UserRepository repository = users.getIfAvailable();
+        if (repository != null) {
+            decoder.setJwtValidator(new org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator<>(
+                    org.springframework.security.oauth2.jwt.JwtValidators.createDefault(),
+                    new com.felipebagarelli.gymmanager.auth.service.SessionValidator(repository)));
+        }
+        return decoder;
     }
 }

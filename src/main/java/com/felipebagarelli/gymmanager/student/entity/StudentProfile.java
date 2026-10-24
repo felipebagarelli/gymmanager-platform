@@ -39,4 +39,7 @@ public class StudentProfile {
 
     /** Quando o responsavel autorizou (null = ainda nao autorizou, se houver responsavel). */
     private LocalDateTime guardianConsentAt;
+
+    /** O aluno autorizou o personal a ver a triagem de saude e o perfil de treino. */
+    private boolean shareHealthWithTrainer;
 }

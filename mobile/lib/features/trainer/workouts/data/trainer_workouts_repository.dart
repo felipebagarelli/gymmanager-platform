@@ -14,6 +14,8 @@ class TrainerWorkoutsRepository {
 
   Future<List<Workout>> list() => _list('/workouts', Workout.fromJson);
 
+  Future<Workout> get(int workoutId) => _one(() => _dio.get('/workouts/$workoutId'), Workout.fromJson);
+
   Future<Workout> create(String name) => _one(() => _dio.post('/workouts', data: {'name': name.trim()}), Workout.fromJson);
 
   Future<Workout> rename(int workoutId, String name) =>

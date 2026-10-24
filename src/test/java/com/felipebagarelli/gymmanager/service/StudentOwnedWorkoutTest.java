@@ -179,4 +179,23 @@ class StudentOwnedWorkoutTest {
         assertThat(workouts.getLast().getStudentOwner()).isSameAs(ana);
         assertThat(service.myWorkouts(ANA)).extracting(WorkoutResponse::id).contains(copy.id());
     }
+
+    @Test
+    void theStudentsTrainer_editsWithOwnExercises_butCannotDeleteNorAssign() {
+        WorkoutResponse created = service.addWorkout(new CreateWorkoutRequest("Treino A", null), ANA);
+        TrainerProfile joao = TrainerProfile.builder().id(5L)
+                .user(User.builder().email("joao@example.com").role(Role.TRAINER).build()).build();
+        when(links.findByStudentId(9L)).thenReturn(Optional.of(
+                TrainerStudent.builder().trainer(joao).student(ana).status(TrainerStudentStatus.ACTIVE).build()));
+        when(exerciseRepository.findById(2L)).thenReturn(Optional.of(Exercises.builder().id(2L).name("Do Joao").trainer(joao).build()));
+
+        assertThat(planService.addWorkoutExercise(new CreateWorkoutExerciseRequest(2L, created.id(), 10, 3, null, 60, null, null),
+                "joao@example.com").exerciseName()).isEqualTo("Do Joao");
+        assertThatThrownBy(() -> service.deleteById(created.id(), "joao@example.com")).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.assignToStudent(created.id(), 9L, "joao@example.com")).isInstanceOf(RuntimeException.class);
+        // outro personal nao edita
+        assertThatThrownBy(() -> planService.addWorkoutExercise(
+                new CreateWorkoutExerciseRequest(2L, created.id(), 10, 3, null, 60, null, null), "outro@example.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
 }

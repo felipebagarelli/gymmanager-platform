@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = {ExerciseController.class, StudentController.class, WorkoutController.class, WorkoutExercisesController.class, AccountController.class})
-@Import({SecurityConfig.class, CorsConfig.class, JwtConfig.class, JwtService.class, GlobalExceptionHandler.class})
+@Import({SecurityConfig.class, CorsConfig.class, JwtConfig.class, JwtService.class, GlobalExceptionHandler.class, com.felipebagarelli.gymmanager.auth.service.IpRateLimiter.class})
 @TestPropertySource(properties = {"jwt.secret=test-secret-used-only-in-security-enforcement-tests-1234567890", "app.cors.allowed-origins=http://localhost:5173"})
 class SecurityEnforcementTest {
 

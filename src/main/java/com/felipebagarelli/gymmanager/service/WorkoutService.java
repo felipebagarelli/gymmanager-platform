@@ -179,6 +179,10 @@ public class WorkoutService {
         Workout workout = findWorkout(id);
         workoutAccessService.assertOwnsWorkout(workout, authenticatedEmail);
         if (workout.getStudentOwner() != null) {
+            // o personal edita, mas so o aluno exclui o treino que montou
+            if (!workoutAccessService.isStudentOwner(workout, authenticatedEmail)) {
+                throw new AccessDeniedException("Só o aluno pode excluir um treino que ele montou.");
+            }
             deleteOwnWorkout(workout);
             return;
         }
@@ -231,6 +235,9 @@ public class WorkoutService {
     @Transactional
     public WorkoutAssignmentResponse assignToStudent(Long workoutId, Long studentId, String authenticatedEmail){
         Workout workout = findWorkout(workoutId);
+        if (workout.getTrainer() == null) {
+            throw new ConflictException("Treinos montados pelo aluno não podem ser atribuídos a outros alunos.");
+        }
         workoutAccessService.assertOwnsWorkout(workout, authenticatedEmail);
         StudentProfile student = findStudent(studentId);
         workoutAccessService.assertCanWrite(student.getId(), authenticatedEmail);

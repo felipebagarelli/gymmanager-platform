@@ -34,19 +34,20 @@ public class AuthenticationService {
     }
 
     public LoginResponse login(LoginRequest request) {
-        loginAttemptLimiter.assertAllowed(request.email());
+        String email = request.email() == null ? "" : request.email().trim().toLowerCase(java.util.Locale.ROOT);
+        loginAttemptLimiter.assertAllowed(email);
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.email(), request.password()));
+                    new UsernamePasswordAuthenticationToken(email, request.password()));
         } catch (AuthenticationException ex) {
-            loginAttemptLimiter.recordFailure(request.email());
+            loginAttemptLimiter.recordFailure(email);
             throw new InvalidCredentialsException("E-mail ou senha inválidos!");
         }
 
-        User user = userRepository.findByEmail(request.email())
+        User user = userRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new InvalidCredentialsException("E-mail ou senha inválidos!"));
 
-        loginAttemptLimiter.reset(request.email());
+        loginAttemptLimiter.reset(email);
         // senha certa, mas a conta ainda nao foi liberada: o app mostra o passo que falta
         if (user.getEmailVerifiedAt() == null) {
             throw new AccountPendingException(AccountPendingException.EMAIL_NOT_VERIFIED,

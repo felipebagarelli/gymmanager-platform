@@ -122,6 +122,8 @@ class OnboardingStatus {
     this.screeningAnsweredAt,
     required this.completed,
     required this.aiWorkoutsAllowed,
+    this.screeningExpired = false,
+    this.shareWithTrainer = false,
   });
 
   final TrainingProfile? trainingProfile;
@@ -132,6 +134,12 @@ class OnboardingStatus {
   final bool completed;
   final bool aiWorkoutsAllowed;
 
+  /// Triagem com mais de 12 meses: pedir para responder de novo.
+  final bool screeningExpired;
+
+  /// O aluno autorizou o personal a ver a triagem e o perfil de treino.
+  final bool shareWithTrainer;
+
   factory OnboardingStatus.fromJson(Map<String, dynamic> json) {
     final screening = json['healthScreening'] as Map<String, dynamic>?;
     return OnboardingStatus(
@@ -140,8 +148,31 @@ class OnboardingStatus {
       screeningAnsweredAt: screening?['answeredAt'] == null ? null : DateTime.parse(screening!['answeredAt'] as String),
       completed: json['completed'] as bool? ?? false,
       aiWorkoutsAllowed: json['aiWorkoutsAllowed'] as bool? ?? false,
+      screeningExpired: json['screeningExpired'] as bool? ?? false,
+      shareWithTrainer: json['shareWithTrainer'] as bool? ?? false,
     );
   }
+}
+
+/// Triagem e perfil de treino do aluno, vistos pelo personal (só com a autorização do aluno).
+class StudentHealth {
+  const StudentHealth({required this.shared, this.trainingProfile, this.risk, this.answeredAt, this.answers = const []});
+
+  final bool shared;
+  final TrainingProfile? trainingProfile;
+  final bool? risk;
+  final DateTime? answeredAt;
+
+  /// Respostas na ordem de [screeningQuestions] (true = "sim").
+  final List<bool> answers;
+
+  factory StudentHealth.fromJson(Map<String, dynamic> json) => StudentHealth(
+        shared: json['shared'] as bool? ?? false,
+        trainingProfile: TrainingProfile.fromJson(json['trainingProfile'] as Map<String, dynamic>?),
+        risk: json['risk'] as bool?,
+        answeredAt: json['answeredAt'] == null ? null : DateTime.parse(json['answeredAt'] as String),
+        answers: [for (final a in (json['answers'] as List<dynamic>? ?? const [])) a as bool],
+      );
 }
 
 /// Perguntas da triagem de saúde, na ordem que o servidor espera (versão "triagem-2026-10").

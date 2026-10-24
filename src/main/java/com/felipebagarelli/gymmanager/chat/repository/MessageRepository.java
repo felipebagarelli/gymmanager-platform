@@ -19,5 +19,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     Optional<Message> findFirstByConversationIdOrderByIdDesc(Long conversationId);
 
+    void deleteByConversationId(Long conversationId);
+
     long countByConversationIdAndIdGreaterThanAndSenderRoleNot(Long conversationId, Long afterId, MessageSender sender);
 }

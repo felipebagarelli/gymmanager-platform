@@ -37,6 +37,12 @@ public class StudentService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final WorkoutSessionRepository sessionRepository;
+    private StudentLinkService linkService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    void setLinkService(StudentLinkService linkService) {
+        this.linkService = linkService;
+    }
 
     public StudentService(StudentProfileRepository studentProfileRepository,
                            TrainerStudentRepository trainerStudentRepository,
@@ -62,7 +68,8 @@ public class StudentService {
                 student.getGoal(),
                 student.getHeight(),
                 student.getWeight(),
-                student.isActive(),
+                // vinculo encerrado aparece como inativo para o personal
+                student.isActive() && status != TrainerStudentStatus.CANCELED,
                 status,
                 student.getWeeklyGoal(),
                 sessionRepository.findFirstByAssignmentStudentIdAndFinishedAtIsNotNullOrderByStartedAtDesc(student.getId())
@@ -91,13 +98,14 @@ public class StudentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Personal não encontrado!"));
         assertOwnership(trainer, authenticatedEmail);
 
-        if (userRepository.existsByEmail(request.email())) {
+        String email = request.email().trim().toLowerCase(java.util.Locale.ROOT);
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new EmailAlreadyInUseException("E-mail já está em uso!");
         }
 
         LocalDateTime now = LocalDateTime.now();
         User user = User.builder()
-                .email(request.email())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .role(Role.STUDENT)
                 .active(true)
@@ -187,10 +195,8 @@ public class StudentService {
 
     @Transactional
     public void deactivate(Long id, String authenticatedEmail) {
-        TrainerStudent link = findOwningLink(id, authenticatedEmail);
-        StudentProfile student = link.getStudent();
-        student.setActive(false);
-        studentProfileRepository.save(student);
+        // o aluno nao perde o app: o acompanhamento acaba e ele volta ao plano gratis
+        linkService.end(findOwningLink(id, authenticatedEmail));
     }
 
     /** Desfaz o "desativar": o aluno volta a poder usar o chat e a aparecer como ativo. */
@@ -200,6 +206,10 @@ public class StudentService {
         StudentProfile student = link.getStudent();
         student.setActive(true);
         studentProfileRepository.save(student);
+        if (link.getStatus() == TrainerStudentStatus.CANCELED) {
+            link.setStatus(TrainerStudentStatus.ACTIVE);
+            trainerStudentRepository.save(link);
+        }
         return toResponse(student, link.getStatus());
     }
 
@@ -219,6 +229,20 @@ public class StudentService {
         link.setStatus(status);
         trainerStudentRepository.save(link);
         return toResponse(link.getStudent(), status);
+    }
+
+    /** O proprio aluno corrige os dados (LGPD: retificacao). */
+    @Transactional
+    public StudentProfileResponse updateMyProfile(com.felipebagarelli.gymmanager.student.dto.request.UpdateMyProfileRequest request,
+                                                  String authenticatedEmail) {
+        StudentProfile student = studentProfileRepository.findByUserEmail(authenticatedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado!"));
+        student.setName(request.name().trim());
+        student.setPhone(request.phone() == null || request.phone().isBlank() ? null : request.phone().trim());
+        student.setHeight(request.height());
+        student.setWeight(request.weight());
+        studentProfileRepository.save(student);
+        return getMyProfile(authenticatedEmail);
     }
 
     public StudentProfileResponse getMyProfile(String authenticatedEmail) {

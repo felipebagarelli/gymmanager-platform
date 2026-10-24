@@ -16,7 +16,7 @@ class ProposalEligibility {
   final bool allowed;
   final String? reason;
 
-  /// HAS_TRAINER, MINOR, NO_PROFILE, NO_SCREENING, HEALTH_RISK, FREE_LIMIT, PRO_LIMIT.
+  /// HAS_TRAINER, MINOR, NO_PROFILE, NO_SCREENING, SCREENING_EXPIRED, HEALTH_RISK, FREE_LIMIT, PRO_LIMIT.
   final String? reasonCode;
   final int usedThisMonth;
   final int? monthlyLimit;

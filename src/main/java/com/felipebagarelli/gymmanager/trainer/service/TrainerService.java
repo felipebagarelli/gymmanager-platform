@@ -41,13 +41,14 @@ public class TrainerService {
 
     @Transactional
     public TrainerProfileResponse registerTrainer(RegisterTrainerRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
+        String email = request.email().trim().toLowerCase(java.util.Locale.ROOT);
+        if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new EmailAlreadyInUseException("E-mail já está em uso!");
         }
 
         LocalDateTime now = LocalDateTime.now();
         User user = User.builder()
-                .email(request.email())
+                .email(email)
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .role(Role.TRAINER)
                 .active(true)
@@ -71,6 +72,16 @@ public class TrainerService {
     public TrainerProfileResponse getTrainerById(Long id) {
         return toResponse(trainerProfileRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Personal não encontrado!")));
+    }
+
+    @Transactional
+    public TrainerProfileResponse updateMyProfile(com.felipebagarelli.gymmanager.trainer.dto.request.UpdateTrainerProfileRequest request,
+                                                  String authenticatedEmail) {
+        TrainerProfile trainer = trainerProfileRepository.findByUserEmail(authenticatedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Personal não encontrado!"));
+        trainer.setDisplayName(request.displayName().trim());
+        trainer.setPhone(request.phone() == null || request.phone().isBlank() ? null : request.phone().trim());
+        return toResponse(trainerProfileRepository.save(trainer));
     }
 
     public TrainerProfileResponse getMyProfile(String authenticatedEmail) {

@@ -122,4 +122,24 @@ class OnboardingServiceTest {
         assertThatThrownBy(() -> service.answerScreening(Arrays.asList(false, false, null, false, false, false, false), EMAIL))
                 .isInstanceOf(BadRequestException.class);
     }
+
+    @Test
+    void screeningOlderThan12Months_blocksAiUntilAnsweredAgain() {
+        screenings.add(HealthScreening.builder().id(1L).student(student).answers("NNNNNNN").risk(false)
+                .answeredAt(java.time.LocalDateTime.now().minusDays(400)).build());
+        OnboardingResponse old = service.status(EMAIL);
+        assertThat(old.screeningExpired()).isTrue();
+        assertThat(old.aiWorkoutsAllowed()).isFalse();
+
+        service.answerScreening(answers(false, false, false, false, false, false, false), EMAIL);
+        OnboardingResponse fresh = service.status(EMAIL);
+        assertThat(fresh.screeningExpired()).isFalse();
+    }
+
+    @Test
+    void sharingWithTrainer_isTheStudentsChoice() {
+        assertThat(service.status(EMAIL).shareWithTrainer()).isFalse();
+        assertThat(service.setSharing(true, EMAIL).shareWithTrainer()).isTrue();
+        assertThat(service.setSharing(false, EMAIL).shareWithTrainer()).isFalse();
+    }
 }

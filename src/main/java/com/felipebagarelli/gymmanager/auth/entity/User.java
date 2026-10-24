@@ -35,4 +35,7 @@ public class User {
 
     /** E-mail confirmado (null = ainda nao confirmou; nao consegue entrar). */
     private LocalDateTime emailVerifiedAt;
+
+    /** Troca de senha (ou exclusao da conta): tokens emitidos antes disso deixam de valer. */
+    private LocalDateTime passwordChangedAt;
 }

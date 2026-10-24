@@ -39,6 +39,12 @@ public class StudentController {
         return studentService.getMyProfile(jwt.getSubject());
     }
 
+    @PutMapping("/api/v1/students/me")
+    public StudentProfileResponse updateMyProfile(@RequestBody @Valid com.felipebagarelli.gymmanager.student.dto.request.UpdateMyProfileRequest request,
+                                                  @AuthenticationPrincipal Jwt jwt) {
+        return studentService.updateMyProfile(request, jwt.getSubject());
+    }
+
     @GetMapping("/api/v1/students/{id}")
     public StudentProfileResponse getStudentById(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
         return studentService.getById(id, jwt.getSubject());

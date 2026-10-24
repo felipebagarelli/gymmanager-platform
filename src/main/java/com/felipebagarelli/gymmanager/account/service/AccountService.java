@@ -345,6 +345,8 @@ public class AccountService {
                 .orElseThrow(() -> new BadRequestException("Código incorreto."));
         tokenService.consumeCode(user, TokenPurpose.RESET_PASSWORD, code);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        // encerra as sessoes abertas em outros aparelhos
+        user.setPasswordChangedAt(now());
         // recebeu o codigo no e-mail: o e-mail e dele
         if (user.getEmailVerifiedAt() == null) {
             user.setEmailVerifiedAt(now());

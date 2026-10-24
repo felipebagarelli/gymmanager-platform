@@ -244,6 +244,23 @@ void main() {
       await _close(tester);
     });
 
+    testWidgets('treino montado pelo aluno: o personal ajusta, sem atribuir, duplicar ou excluir', (tester) async {
+      final repo = _workouts()..seedStudentWorkout(77, 'Treino da Maria');
+      await _pump(tester, _app(repo));
+      final container = ProviderScope.containerOf(tester.element(find.byType(MaterialApp)));
+      container.read(routerProvider).push('/trainer/workouts/77');
+      await tester.pumpAndSettle();
+
+      expect(find.text('TREINO DA MARIA'), findsOneWidget);
+      expect(find.byKey(const Key('student-owned-note')), findsOneWidget);
+      expect(find.byKey(const Key('no-assignees')), findsNothing);
+      await _tap(tester, find.byKey(const Key('workout-menu')));
+      expect(find.byKey(const Key('workout-rename')), findsOneWidget);
+      expect(find.byKey(const Key('workout-duplicate')), findsNothing);
+      expect(find.byKey(const Key('workout-delete')), findsNothing);
+      await _close(tester);
+    });
+
     testWidgets('renomear atualiza o título', (tester) async {
       final repo = _workouts();
       await _pump(tester, _app(repo));

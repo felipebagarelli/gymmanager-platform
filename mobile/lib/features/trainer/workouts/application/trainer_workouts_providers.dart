@@ -24,6 +24,10 @@ final trainerWorkoutsProvider = FutureProvider<List<Workout>>((ref) async {
   return ref.watch(trainerWorkoutsRepositoryProvider).list();
 });
 
+/// Um treino pelo id: para o personal abrir o treino que o aluno montou (não está na lista dele).
+final workoutByIdProvider = FutureProvider.autoDispose.family<Workout, int>(
+    (ref, workoutId) => ref.watch(trainerWorkoutsRepositoryProvider).get(workoutId));
+
 /// Biblioteca: catálogo comum + exercícios do personal, em ordem alfabética.
 final exerciseLibraryProvider = FutureProvider<List<Exercise>>((ref) async {
   if (!_buildsWorkouts(ref)) return const [];

@@ -8,10 +8,14 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/async_widgets.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../account/application/account_providers.dart';
+import '../../account/presentation/account_actions.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/student_profile.dart';
 import '../../billing/presentation/subscription_card.dart';
+import '../../onboarding/application/onboarding_providers.dart';
 import '../../platform_plan/presentation/platform_plan_card.dart';
 import '../../chat/application/chat_providers.dart';
 import '../../sessions/application/evolution_providers.dart';
@@ -64,7 +68,7 @@ class ProfilePage extends ConsumerWidget {
                   key: const Key('menu-personal-data'),
                   icon: LucideIcons.user,
                   label: 'Dados pessoais',
-                  onTap: () => _showPersonalData(context, profile),
+                  onTap: () => _showPersonalData(context, ref, profile),
                 ),
                 if (!profile.hasTrainer)
                   _MenuRow(
@@ -73,8 +77,21 @@ class ProfilePage extends ConsumerWidget {
                     label: 'Perfil de treino e saúde',
                     onTap: () => context.push('/onboarding'),
                   ),
+                const _ShareHealthRow(),
                 const _MenuRow(icon: LucideIcons.bell, label: 'Notificações', soon: true),
-                const _MenuRow(icon: LucideIcons.shieldCheck, label: 'Privacidade e termos', soon: true),
+                _MenuRow(
+                  key: const Key('menu-legal'),
+                  icon: LucideIcons.shieldCheck,
+                  label: 'Privacidade e termos',
+                  onTap: () => showLegalDocuments(context, ref),
+                ),
+                _MenuRow(
+                  key: const Key('menu-delete-account'),
+                  icon: LucideIcons.trash2,
+                  label: 'Excluir conta',
+                  danger: true,
+                  onTap: () => deleteMyAccount(context, ref, trainer: false),
+                ),
                 _MenuRow(
                   key: const Key('logout'),
                   icon: LucideIcons.logOut,
@@ -180,11 +197,87 @@ class _MenuRow extends StatelessWidget {
   }
 }
 
-void _showPersonalData(BuildContext context, StudentProfile profile) {
+/// "Mostrar minha triagem ao personal": o aluno decide (LGPD: dado de saúde só com consentimento).
+class _ShareHealthRow extends ConsumerWidget {
+  const _ShareHealthRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(onboardingStatusProvider).value;
+    if (status == null) return const SizedBox.shrink();
+    return Container(
+      constraints: const BoxConstraints(minHeight: 52),
+      padding: const EdgeInsets.only(left: 16, right: 8),
+      decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.borderSubtle))),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.heartPulse, size: 20, color: AppColors.textSecondary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Mostrar minha triagem ao personal', style: AppText.body(size: 15.5, weight: FontWeight.w500)),
+                Text('Respostas de saúde e perfil de treino', style: AppText.body(size: 12.5, color: AppColors.textMuted)),
+              ],
+            ),
+          ),
+          Switch(
+            key: const Key('share-health'),
+            value: status.shareWithTrainer,
+            onChanged: (share) async {
+              final ok = await runAction(context, () => ref.read(onboardingRepositoryProvider).setSharing(share));
+              if (ok) ref.invalidate(onboardingStatusProvider);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _editPersonalData(BuildContext context, WidgetRef ref, StudentProfile profile) async {
+  final values = await showEditFieldsSheet(
+    context,
+    title: 'Corrigir dados',
+    fields: [
+      EditField('name', 'Nome', profile.name, required: true),
+      EditField('phone', 'Telefone', profile.phone ?? '', keyboard: TextInputType.phone),
+      EditField('height', 'Altura (m)', profile.height == null ? '' : formatNumber(profile.height!),
+          keyboard: const TextInputType.numberWithOptions(decimal: true), helper: 'Ex.: 1,72'),
+      EditField('weight', 'Peso (kg)', profile.weight == null ? '' : formatNumber(profile.weight!),
+          keyboard: const TextInputType.numberWithOptions(decimal: true)),
+    ],
+    validate: (v) => {
+      'height': v['height']!.isEmpty || (parseDecimal(v['height']!) ?? 0) >= 0.9 && (parseDecimal(v['height']!) ?? 0) <= 2.5
+          ? null
+          : 'Altura em metros, entre 0,9 e 2,5.',
+      'weight': v['weight']!.isEmpty || (parseDecimal(v['weight']!) ?? 0) >= 25 && (parseDecimal(v['weight']!) ?? 0) <= 350
+          ? null
+          : 'Peso em kg, entre 25 e 350.',
+    },
+  );
+  if (values == null || !context.mounted) return;
+  final ok = await runAction(
+    context,
+    () => ref.read(accountRepositoryProvider).updateStudentData(
+          name: values['name']!,
+          phone: values['phone']!.isEmpty ? null : values['phone'],
+          height: parseDecimal(values['height']!),
+          weight: parseDecimal(values['weight']!),
+        ),
+  );
+  if (!ok) return;
+  await ref.read(authControllerProvider.notifier).refreshUser();
+  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dados salvos')));
+}
+
+void _showPersonalData(BuildContext context, WidgetRef ref, StudentProfile profile) {
   final goal = profile.goal;
   final rows = <(String, String)>[
     ('Nome', profile.name),
     ('E-mail', profile.email),
+    if (profile.phone != null && profile.phone!.isNotEmpty) ('Telefone', profile.phone!),
     if (goal != null && goal.isNotEmpty) ('Objetivo', goal),
     if (profile.height != null) ('Altura', '${formatNumber(profile.height!)} m'),
     if (profile.weight != null) ('Peso', formatLoad(profile.weight)),
@@ -194,7 +287,7 @@ void _showPersonalData(BuildContext context, StudentProfile profile) {
     useSafeArea: true,
     backgroundColor: AppColors.elevated,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-    builder: (context) => SingleChildScrollView(
+    builder: (sheetContext) => SingleChildScrollView(
       key: const Key('personal-data'),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       child: Column(
@@ -214,11 +307,19 @@ void _showPersonalData(BuildContext context, StudentProfile profile) {
                 ],
               ),
             ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            key: const Key('edit-personal-data'),
+            icon: const Icon(LucideIcons.pencil, size: 18),
+            label: const Text('Corrigir meus dados'),
+            onPressed: () {
+              Navigator.of(sheetContext).pop();
+              // contexto da página: o da folha deixa de existir ao fechar
+              _editPersonalData(context, ref, profile);
+            },
+          ),
           const SizedBox(height: 8),
-          Text(profile.hasTrainer
-                  ? 'Para alterar seus dados, fale com seu personal.'
-                  : 'Peso e altura você atualiza em "Perfil de treino e saúde".',
-              style: AppText.body(size: 13, color: AppColors.textMuted)),
+          Text('O e-mail é o seu login e não muda por aqui.', style: AppText.body(size: 13, color: AppColors.textMuted)),
         ],
       ),
     ),

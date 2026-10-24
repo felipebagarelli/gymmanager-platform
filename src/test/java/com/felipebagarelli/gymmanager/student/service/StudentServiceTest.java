@@ -95,7 +95,7 @@ class StudentServiceTest {
                 "aluno@example.com", "senhaSegura123", "Maria Aluna", LocalDate.of(2000, 1, 1), "11988888888", "hipertrofia", 1.65, 60.0);
 
         when(trainerProfileRepository.findById(1L)).thenReturn(Optional.of(trainer()));
-        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+        when(userRepository.existsByEmailIgnoreCase(request.email())).thenReturn(true);
 
         assertThatThrownBy(() -> studentService.createStudent(1L, request, "trainer@example.com"))
                 .isInstanceOf(EmailAlreadyInUseException.class);
@@ -111,7 +111,7 @@ class StudentServiceTest {
                 "aluno@example.com", "senhaSegura123", "Maria Aluna", LocalDate.of(2000, 1, 1), "11988888888", "hipertrofia", 1.65, 60.0);
 
         when(trainerProfileRepository.findById(1L)).thenReturn(Optional.of(trainer()));
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase(request.email())).thenReturn(false);
         when(passwordEncoder.encode(request.password())).thenReturn("hashed-password");
         when(studentProfileRepository.save(any(StudentProfile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));

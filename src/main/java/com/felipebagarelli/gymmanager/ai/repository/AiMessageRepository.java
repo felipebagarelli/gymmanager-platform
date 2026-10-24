@@ -15,5 +15,7 @@ public interface AiMessageRepository extends JpaRepository<AiMessage, Long> {
     /** Mais recentes primeiro (o service reordena). */
     List<AiMessage> findByStudentIdOrderByIdDesc(Long studentId, Pageable pageable);
 
+    void deleteByStudentId(Long studentId);
+
     long countByStudentIdAndRoleAndCreatedAtGreaterThanEqual(Long studentId, AiRole role, LocalDateTime since);
 }

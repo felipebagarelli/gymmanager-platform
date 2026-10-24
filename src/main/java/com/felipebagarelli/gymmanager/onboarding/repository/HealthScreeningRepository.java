@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface HealthScreeningRepository extends JpaRepository<HealthScreening, Long> {
     Optional<HealthScreening> findFirstByStudentIdOrderByAnsweredAtDescIdDesc(Long studentId);
+
+    void deleteByStudentId(Long studentId);
 }

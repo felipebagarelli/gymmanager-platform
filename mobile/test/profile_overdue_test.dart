@@ -7,6 +7,8 @@ import 'package:gymmanager_mobile/core/errors/app_exception.dart';
 import 'package:gymmanager_mobile/core/providers.dart';
 import 'package:gymmanager_mobile/core/storage/token_storage.dart';
 import 'package:gymmanager_mobile/core/theme/app_theme.dart';
+import 'package:gymmanager_mobile/features/account/application/account_providers.dart';
+import 'package:gymmanager_mobile/features/account/data/account_repository.dart';
 import 'package:gymmanager_mobile/features/auth/application/auth_controller.dart';
 import 'package:gymmanager_mobile/features/auth/domain/student_profile.dart';
 import 'package:gymmanager_mobile/features/billing/application/billing_providers.dart';
@@ -52,6 +54,26 @@ class _FakeBilling extends BillingRepository {
 
   @override
   Future<List<Plan>> availablePlans() async => const [];
+}
+
+class _FakeAccount extends AccountRepository {
+  _FakeAccount() : super(Dio());
+
+  final deleted = <String>[];
+  final updates = <Map<String, Object?>>[];
+
+  @override
+  Future<LegalInfo> legal() async => const LegalInfo(termsVersion: 'v1', termsUrl: 'https://example.com/termos');
+
+  @override
+  Future<void> deleteMyAccount(String password) async {
+    if (password != 'certa') throw AppException('Senha incorreta.', statusCode: 400);
+    deleted.add(password);
+  }
+
+  @override
+  Future<void> updateStudentData({required String name, String? phone, double? height, double? weight}) async =>
+      updates.add({'name': name, 'phone': phone, 'height': height, 'weight': weight});
 }
 
 class _Blocked402Workouts extends FakeWorkoutRepository {
@@ -107,6 +129,7 @@ Widget _app({
   WorkoutRepository? workouts,
   _FakeBilling? billing,
   List<String>? opened,
+  _FakeAccount? account,
 }) {
   final List<Override> overrides = [
     tokenStorageProvider.overrideWithValue(
@@ -124,6 +147,7 @@ Widget _app({
       return true;
     }),
     clockProvider.overrideWithValue(() => _now),
+    accountRepositoryProvider.overrideWithValue(account ?? _FakeAccount()),
     homeTabProvider.overrideWith(() => _FixedTab(tab)),
   ];
   return ProviderScope(
@@ -191,7 +215,7 @@ void main() {
     testWidgets('menu: o que ainda não existe fica "Em breve"; Dados pessoais abre os dados', (tester) async {
       await _pump(tester, _app(tab: HomeTab.profile, subscription: _active));
 
-      expect(find.text('Em breve'), findsNWidgets(2));
+      expect(find.text('Em breve'), findsOneWidget);
       expect(find.text('Notificações'), findsOneWidget);
       expect(find.text('Privacidade e termos'), findsOneWidget);
 
@@ -203,6 +227,72 @@ void main() {
       expect(find.text('Hipertrofia'), findsOneWidget);
       expect(find.text('1,7 m'), findsOneWidget);
       expect(find.text('62.5 kg'), findsOneWidget);
+      await _close(tester);
+    });
+
+    testWidgets('corrigir os dados manda nome, telefone, altura e peso', (tester) async {
+      final account = _FakeAccount();
+      await _pump(tester, _app(tab: HomeTab.profile, subscription: _active, account: account));
+
+      await tester.tap(find.byKey(const Key('menu-personal-data')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('edit-personal-data')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('edit-phone')), '11 99999-0000');
+      await tester.enterText(find.byKey(const Key('edit-weight')), '64,0');
+      await tester.enterText(find.byKey(const Key('edit-height')), '3');
+      await tester.tap(find.byKey(const Key('save-data')));
+      await tester.pumpAndSettle();
+      expect(find.text('Altura em metros, entre 0,9 e 2,5.'), findsOneWidget);
+      expect(account.updates, isEmpty);
+
+      await tester.enterText(find.byKey(const Key('edit-height')), '1,72');
+      await tester.tap(find.byKey(const Key('save-data')));
+      await tester.pumpAndSettle();
+      expect(account.updates.single, {'name': 'Maria Aluna', 'phone': '11 99999-0000', 'height': 1.72, 'weight': 64.0});
+      await _close(tester);
+    });
+
+    testWidgets('Privacidade e termos abre o documento publicado', (tester) async {
+      final opened = <String>[];
+      await _pump(tester, _app(tab: HomeTab.profile, subscription: _active, opened: opened));
+
+      await tester.tap(find.byKey(const Key('menu-legal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('open-terms')));
+      await tester.pumpAndSettle();
+      expect(opened, ['https://example.com/termos']);
+
+      // política ainda não publicada: avisa
+      await tester.tap(find.byKey(const Key('menu-legal')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('open-privacy')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Documento em preparação'), findsOneWidget);
+      await _close(tester);
+    });
+
+    testWidgets('Excluir conta pede a senha e sai do app', (tester) async {
+      final account = _FakeAccount();
+      await _pump(tester, _app(tab: HomeTab.profile, subscription: _active, account: account));
+
+      await tester.tap(find.byKey(const Key('menu-delete-account')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('delete-account-password')), 'errada');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('confirm-delete-account')));
+      await tester.pumpAndSettle();
+      expect(find.text('Senha incorreta.'), findsOneWidget);
+      expect(find.byKey(const Key('profile-name')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('menu-delete-account')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('delete-account-password')), 'certa');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('confirm-delete-account')));
+      await tester.pumpAndSettle();
+      expect(account.deleted, ['certa']);
+      expect(find.byKey(const Key('profile-name')), findsNothing);
       await _close(tester);
     });
 

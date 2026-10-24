@@ -58,8 +58,20 @@ public final class OnboardingDtos {
             TrainingProfileResponse trainingProfile,
             HealthScreeningResponse healthScreening,
             boolean completed,
-            /* treino gerado por IA liberado (triagem respondida e sem risco) */
-            boolean aiWorkoutsAllowed
+            /* treino gerado por IA liberado (triagem respondida ha menos de 12 meses e sem risco) */
+            boolean aiWorkoutsAllowed,
+            /* triagem com mais de 12 meses: pedir para responder de novo */
+            boolean screeningExpired,
+            /* o aluno autorizou o personal a ver estas respostas */
+            boolean shareWithTrainer
     ) {
+    }
+
+    public record ShareRequest(boolean share) {
+    }
+
+    /** Visao do personal: so com a autorizacao do aluno. */
+    public record TrainerHealthView(boolean shared, TrainingProfileResponse trainingProfile, String screeningVersion,
+                                    Boolean risk, LocalDateTime answeredAt, List<Boolean> answers) {
     }
 }

@@ -33,6 +33,9 @@ public interface PaymentProvider {
     /** Cancelar no fim do periodo (true) ou desfazer o cancelamento (false). */
     void setPlatformCancelAtPeriodEnd(String externalSubscriptionId, boolean cancel);
 
+    /** Cancela o Pro na hora (exclusao da conta). */
+    void cancelPlatformSubscription(String externalSubscriptionId);
+
     /** Fatura em aberto do plano da plataforma (assinatura em atraso). */
     Optional<String> createPlatformRegularizationLink(String externalSubscriptionId);
 

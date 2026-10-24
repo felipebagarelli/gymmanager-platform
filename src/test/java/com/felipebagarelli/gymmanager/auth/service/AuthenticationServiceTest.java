@@ -57,7 +57,7 @@ class AuthenticationServiceTest {
                 .emailVerifiedAt(LocalDateTime.now())
                 .build();
 
-        when(userRepository.findByEmail("trainer@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailIgnoreCase("trainer@example.com")).thenReturn(Optional.of(user));
         when(jwtService.generateToken(user)).thenReturn("fake-jwt-token");
         when(jwtService.expirationSeconds()).thenReturn(3600L);
 
@@ -93,7 +93,7 @@ class AuthenticationServiceTest {
     @Test
     void login_blocksUntilTheEmailIsVerified() {
         User user = User.builder().id(2L).email("aluno@example.com").role(Role.STUDENT).active(true).build();
-        when(userRepository.findByEmail("aluno@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailIgnoreCase("aluno@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authenticationService.login(new LoginRequest("aluno@example.com", "senhaSegura123")))
                 .isInstanceOf(AccountPendingException.class)
@@ -105,7 +105,7 @@ class AuthenticationServiceTest {
     void login_blocksTeenUntilTheGuardianApproves() {
         User user = User.builder().id(2L).email("teen@example.com").role(Role.STUDENT).active(true)
                 .emailVerifiedAt(LocalDateTime.now()).build();
-        when(userRepository.findByEmail("teen@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailIgnoreCase("teen@example.com")).thenReturn(Optional.of(user));
         StudentProfile teen = StudentProfile.builder().user(user).guardianName("Ana").guardianEmail("mae@example.com").build();
         when(studentProfileRepository.findByUserEmail("teen@example.com")).thenReturn(Optional.of(teen));
 

@@ -4,6 +4,7 @@ class StudentProfile {
     required this.email,
     required this.name,
     this.goal,
+    this.phone,
     this.height,
     this.weight,
     this.weeklyGoal,
@@ -14,6 +15,7 @@ class StudentProfile {
   final String email;
   final String name;
   final String? goal;
+  final String? phone;
   final double? height;
   final double? weight;
 
@@ -28,6 +30,7 @@ class StudentProfile {
         email: json['email'] as String,
         name: json['name'] as String,
         goal: json['goal'] as String?,
+        phone: json['phone'] as String?,
         height: (json['height'] as num?)?.toDouble(),
         weight: (json['weight'] as num?)?.toDouble(),
         weeklyGoal: (json['weeklyGoal'] as num?)?.toInt(),

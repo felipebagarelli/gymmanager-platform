@@ -6,7 +6,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/async_widgets.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../account/application/account_providers.dart';
+import '../../account/presentation/account_actions.dart';
+import '../../auth/domain/trainer_profile.dart';
 import '../../auth/application/auth_controller.dart';
 
 /// Perfil do personal: identificação e sair.
@@ -51,6 +55,13 @@ class TrainerProfilePage extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _Field(label: 'Telefone', value: phone),
                 ],
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  key: const Key('edit-trainer-data'),
+                  icon: const Icon(LucideIcons.pencil, size: 16),
+                  label: const Text('Corrigir meus dados'),
+                  onPressed: () => _edit(context, ref, trainer),
+                ),
               ],
             ),
           ),
@@ -81,23 +92,80 @@ class TrainerProfilePage extends ConsumerWidget {
           AppCard(
             padding: EdgeInsets.zero,
             radius: 18,
-            child: InkWell(
-              key: const Key('trainer-logout'),
-              onTap: () => ref.read(authControllerProvider.notifier).logout(),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 52),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const Icon(LucideIcons.logOut, size: 20, color: AppColors.danger),
-                    const SizedBox(width: 12),
-                    Text('Sair', style: AppText.body(size: 15.5, weight: FontWeight.w500, color: AppColors.danger)),
-                  ],
+            child: Column(
+              children: [
+                _Row(
+                  key: const Key('trainer-legal'),
+                  icon: LucideIcons.shieldCheck,
+                  label: 'Privacidade e termos',
+                  onTap: () => showLegalDocuments(context, ref),
                 ),
-              ),
+                _Row(
+                  key: const Key('trainer-delete-account'),
+                  icon: LucideIcons.trash2,
+                  label: 'Excluir conta',
+                  danger: true,
+                  onTap: () => deleteMyAccount(context, ref, trainer: true),
+                ),
+                _Row(
+                  key: const Key('trainer-logout'),
+                  icon: LucideIcons.logOut,
+                  label: 'Sair',
+                  danger: true,
+                  onTap: () => ref.read(authControllerProvider.notifier).logout(),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+Future<void> _edit(BuildContext context, WidgetRef ref, TrainerProfile trainer) async {
+  final values = await showEditFieldsSheet(
+    context,
+    title: 'Corrigir dados',
+    fields: [
+      EditField('name', 'Nome', trainer.displayName, required: true),
+      EditField('phone', 'Telefone', trainer.phone ?? '', keyboard: TextInputType.phone),
+    ],
+  );
+  if (values == null || !context.mounted) return;
+  final ok = await runAction(
+    context,
+    () => ref.read(accountRepositoryProvider)
+        .updateTrainerData(displayName: values['name']!, phone: values['phone']!.isEmpty ? null : values['phone']),
+  );
+  if (!ok) return;
+  await ref.read(authControllerProvider.notifier).refreshUser();
+  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Dados salvos')));
+}
+
+class _Row extends StatelessWidget {
+  const _Row({super.key, required this.icon, required this.label, required this.onTap, this.danger = false});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? AppColors.danger : AppColors.textPrimary;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 52),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: danger ? AppColors.danger : AppColors.textSecondary),
+            const SizedBox(width: 12),
+            Text(label, style: AppText.body(size: 15.5, weight: FontWeight.w500, color: color)),
+          ],
+        ),
       ),
     );
   }

@@ -10,4 +10,6 @@ public interface AiWorkoutProposalRepository extends JpaRepository<AiWorkoutProp
     long countByStudentIdAndCreatedAtGreaterThanEqual(Long studentId, LocalDateTime since);
 
     Optional<AiWorkoutProposal> findByIdAndStudentId(Long id, Long studentId);
+
+    void deleteByStudentId(Long studentId);
 }

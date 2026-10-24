@@ -112,7 +112,7 @@ Objetivo: o aluno encontra e contrata um personal dentro do app.
 - [x] E2. Busca na aba Mensagens do aluno sem personal: texto (nome, chamada, bio, cidade; sem diferenciar acento), especialidade e "online"; só aparece quem pode ser contratado. *(18/10/2026)*
 - [x] E3. Contratar: "Assinar" cria o vínculo como pendente (`INVITED`) e abre o checkout do plano do personal; **o webhook do pagamento confirmado ativa o vínculo**. Enquanto pendente, o personal não vê nada do aluno (lista, perfil, treinos, sessões, chat). O app confere de novo ao voltar do navegador. *(18/10/2026)*
 - [x] E4. Transição: com o vínculo ativo, o app vira o modo "com personal" (Mensagens com ele, mensalidade dele no Perfil, sem onboarding/IA); histórico e treinos próprios continuam. *(18/10/2026)*
-- [ ] E5. Avaliações e moderação (definir regras antes).
+- [ ] E5. Avaliações e moderação — **adiado para uma próxima atualização** (decisão do dono, 24/10/2026).
 
 ---
 
@@ -144,6 +144,15 @@ O detalhamento de cada regra está em `docs/ARQUITETURA-E-SISTEMA.md`, seção 4
 
 ---
 
+### Decisões de 24/10/2026 (aplicadas)
+- **Aluno desativado não perde o app:** "Desativar" encerra o acompanhamento (vínculo `CANCELED`), cancela a mensalidade com o personal no Stripe e tira da lista os treinos do personal; o aluno continua com a conta, os treinos próprios e o histórico, no plano grátis (o hub aparece em Mensagens). "Reativar" religa o vínculo (a mensalidade tem de ser assinada de novo). A V16 converteu quem estava desativado do jeito antigo.
+- **Treinos próprios ao ganhar personal:** continuam na lista; o personal dele pode editar (inclusive com os exercícios dele), mas não atribuir a outros, duplicar ou excluir.
+- **Personal vê a triagem:** só com a autorização do aluno ("Mostrar minha triagem ao personal", no Perfil). Card "Saúde" no perfil do aluno.
+- **Triagem vence em 12 meses** para pedir treino à IA (bloqueio `SCREENING_EXPIRED`). Não achamos exigência legal de prazo; é boa prática (questionários tipo PAR-Q pedem refazer quando a saúde muda ou anualmente).
+- **Direitos do titular (LGPD):** o próprio usuário corrige nome/telefone (e altura/peso, se aluno) e **exclui a conta** pelo app (com a senha) ou pede pela página `/conta/excluir` (Google Play). Exclusão: cancela cobranças, apaga triagem, perfil de treino, conversas e propostas da IA, mensagens do chat; anonimiza cadastro; o histórico de treinos fica sem identificação; o registro de aceite dos termos fica. Personal com alunos ativos precisa desativá-los antes.
+- **"Privacidade e termos"** abre `TERMS_URL`/`PRIVACY_URL` (ou avisa "em preparação").
+- **Segurança:** e-mails em minúsculas (login sem diferenciar maiúsculas); trocar a senha ou excluir a conta derruba as sessões abertas em outros aparelhos; cadastro e rotas de e-mail/código limitados por IP (por hora).
+
 ## 6. Decisões pendentes (precisam de resposta antes da fase correspondente)
 
 | # | Decisão | Fase | Observação |
@@ -154,7 +163,7 @@ O detalhamento de cada regra está em `docs/ARQUITETURA-E-SISTEMA.md`, seção 4
 | 4 | Quem é o "dono" do treino gerado pela IA | D | **Resolvido no C6 (18/10/2026):** o treino pode ser do personal ou do próprio aluno sem personal (`student_owner_id`). A IA propõe para esse dono, que confirma antes de gravar |
 | 5 | Verificação de e-mail e recuperação de senha | C | **Decidido (16/10/2026): fluxo padrão** (link/código por e-mail, com validade e uso único). Envio por serviço de e-mail transacional (ex.: Brevo, Resend ou Amazon SES) atrás de uma porta `EmailSender`, como o `PaymentProvider`. Exige domínio próprio com SPF/DKIM/DMARC |
 | 6 | Idade mínima de uso | C | **Decidido (16/10/2026): a partir de 12 anos, com aceite de termos.** De 12 a 17: consentimento e vínculo de um responsável (LGPD art. 14 e ECA Digital, Lei 15.211/2025, em vigor desde 17/03/2026, que veda autodeclaração de idade e prevê conta vinculada ao responsável até 16 anos). Pagamento e treino por IA de menor só com aprovação do responsável. Validar com advogado antes do lançamento |
-| 7 | Comissão da plataforma no hub e regras de cancelamento/reembolso | E | **Padrão aplicado (18/10/2026), revisar:** a mesma comissão de hoje (`PLATFORM_FEE_PERCENT`, 10%) e o cancelamento como já funciona. Falta política de reembolso por escrito |
+| 7 | Comissão da plataforma no hub e regras de cancelamento/reembolso | E | **Padrão aplicado (18/10/2026), revisar:** a mesma comissão de hoje (`PLATFORM_FEE_PERCENT`, 10%) e o cancelamento como já funciona. **Reembolso (24/10/2026): "normal conforme as leis"** — direito de arrependimento de 7 dias (CDC art. 49) para compra pelo app; falta escrever na política e fazer o reembolso (hoje é manual, pelo painel do Stripe) |
 | 8 | O que do perfil do personal é público e como funcionam avaliações | E | **Público (aplicado):** nome, chamada, bio, especialidades, cidade/UF, online/presencial, planos e preços; nunca e-mail/telefone; o personal escolhe aparecer. **Avaliações (E5): a definir** — quem pode avaliar (só aluno com vínculo há X dias?), nota e/ou texto, resposta do personal, denúncia e moderação |
 
 ---
@@ -261,3 +270,15 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - **Menores de 18:** contratação bloqueada até existir a aprovação do responsável.
 - **Busca em memória:** bom para o volume atual; com muitos personais, paginar e buscar no banco.
 - Painel web não tem o perfil público (entra no B6).
+- ~~Treinos próprios ao ganhar personal~~ — decidido em 24/10/2026 (continuam; o personal edita).
+
+### Direitos do titular e segurança (24/10/2026)
+- **E-mail em produção:** sem `MAIL_HOST` o servidor sobe e os códigos só vão para o log. Proposta pendente de aprovação: recusar subir no perfil `prod` sem e-mail configurado.
+- **Reembolso de 7 dias:** é manual (painel do Stripe). Automatizar ("pedir reembolso" no app dentro de 7 dias) e escrever na política.
+- **Exclusão de conta:** os dados no Stripe (cliente, faturas) ficam lá por obrigação fiscal; não apagamos. Pedido por e-mail (`SUPPORT_EMAIL`) é atendido à mão. Backups antigos ainda têm os dados até o ciclo de backup girar (documentar o prazo na política).
+- **Exclusão do personal:** hoje exige desativar todos os alunos antes; avaliar fazer isso automaticamente com aviso a cada aluno.
+- **Corrigir e-mail:** não dá pelo app (é o login). Criar troca de e-mail com confirmação no endereço novo.
+- **Limite por IP em memória:** reseta ao reiniciar e não vale com várias instâncias; atrás de proxy, conferir que o IP real chega (`server.forward-headers-strategy`).
+- **Triagem vencida:** o app só avisa quando a IA bloqueia; mostrar o aviso também no Perfil/Home antes de vencer.
+- **Compartilhamento da saúde:** o aluno não vê quando o personal consultou; registrar acessos se a revisão jurídica pedir.
+- **Mensalidade ao reativar:** "Reativar" religa o vínculo, mas a assinatura cancelada não volta; o aluno assina de novo pelo app.

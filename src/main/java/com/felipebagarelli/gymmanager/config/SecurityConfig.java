@@ -44,7 +44,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/legal").permitAll()
                         .requestMatchers("/consent/guardian").permitAll()
                         .requestMatchers("/api/v1/students/me/onboarding", "/api/v1/students/me/training-profile",
-                                "/api/v1/students/me/health-screening").hasRole("STUDENT")
+                                "/api/v1/students/me/health-screening", "/api/v1/students/me/health-sharing").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/students/me").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/trainers/me").hasRole("TRAINER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/students/*/health").hasRole("TRAINER")
+                        .requestMatchers(HttpMethod.GET, "/conta/excluir").permitAll()
                         .requestMatchers("/api/v1/trainers/*/students").hasRole("TRAINER")
                         .requestMatchers("/api/v1/trainers/me/public-profile").hasRole("TRAINER")
                         .requestMatchers("/api/v1/hub/**").hasRole("STUDENT")

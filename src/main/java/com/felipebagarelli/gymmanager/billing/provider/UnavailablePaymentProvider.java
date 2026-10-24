@@ -57,6 +57,11 @@ public class UnavailablePaymentProvider implements PaymentProvider {
     }
 
     @Override
+    public void cancelPlatformSubscription(String externalSubscriptionId) {
+        throw unavailable();
+    }
+
+    @Override
     public Optional<String> createPlatformRegularizationLink(String externalSubscriptionId) {
         throw unavailable();
     }

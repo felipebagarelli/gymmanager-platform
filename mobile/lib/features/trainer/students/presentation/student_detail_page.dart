@@ -12,6 +12,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/pill_button.dart';
 import '../../../../core/widgets/skeleton.dart';
+import '../../../onboarding/domain/onboarding.dart';
 import '../../../sessions/domain/history_stats.dart';
 import '../../../sessions/domain/training_stats.dart';
 import '../../../sessions/domain/workout_session.dart';
@@ -35,7 +36,10 @@ class StudentDetailPage extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Desativar aluno?'),
-        content: Text('${student.name} deixa de poder enviar mensagens. O histórico de treinos é mantido.'),
+        content: Text(
+          'O acompanhamento acaba: a mensalidade com você é cancelada, seus treinos saem da lista e o chat fecha. '
+          '${student.name.split(' ').first} continua no app pelo plano grátis, com o histórico.',
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Voltar')),
           FilledButton(
@@ -176,6 +180,10 @@ class StudentDetailPage extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (s.active) ...[
+                const SizedBox(height: 12),
+                _Health(studentId: s.id),
+              ],
               const SizedBox(height: 20),
               _WorkoutsTitle(studentId: s.id, active: s.active),
               const SizedBox(height: 8),
@@ -216,6 +224,70 @@ class StudentDetailPage extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Triagem de saúde e perfil de treino: só aparecem se o aluno autorizou.
+class _Health extends ConsumerWidget {
+  const _Health({required this.studentId});
+
+  final int studentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final health = ref.watch(studentHealthProvider(studentId)).value;
+    if (health == null) return const SizedBox.shrink();
+    final profile = health.trainingProfile;
+    final yes = [
+      for (var i = 0; i < health.answers.length && i < screeningQuestions.length; i++)
+        if (health.answers[i]) screeningQuestions[i],
+    ];
+    return AppCard(
+      key: const Key('student-health'),
+      radius: 18,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(LucideIcons.heartPulse, size: 20, color: AppColors.volt),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Saúde', style: AppText.body(size: 15.5, weight: FontWeight.w600))),
+              if (health.risk == true) const TagChip('Atenção'),
+            ],
+          ),
+          const SizedBox(height: 6),
+          if (!health.shared)
+            Text('O aluno não autorizou mostrar a triagem. Ele pode liberar em Perfil.',
+                key: const Key('health-not-shared'), style: AppText.body(size: 13, color: AppColors.textMuted))
+          else ...[
+            if (profile != null)
+              Text(
+                '${profile.goal.label} · ${profile.level.label} · ${profile.daysPerWeek}x/semana · ${profile.location.label}',
+                style: AppText.body(size: 13.5, color: AppColors.textSecondary),
+              ),
+            if (health.answeredAt != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('Triagem respondida em ${formatShortDate(health.answeredAt!)}',
+                    style: AppText.body(size: 12.5, color: AppColors.textMuted)),
+              ),
+            const SizedBox(height: 6),
+            if (health.answeredAt == null)
+              Text('Triagem ainda não respondida.', style: AppText.body(size: 13, color: AppColors.textMuted))
+            else if (yes.isEmpty)
+              Text('Respondeu "não" a todas as perguntas.', style: AppText.body(size: 13.5))
+            else
+              for (final q in yes)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('• Sim: $q', style: AppText.body(size: 13.5)),
+                ),
+          ],
+        ],
       ),
     );
   }

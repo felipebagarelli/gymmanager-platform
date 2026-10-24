@@ -1,3 +1,4 @@
+import '../../../onboarding/domain/onboarding.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers.dart';
@@ -28,6 +29,10 @@ final tuitionByStudentProvider = FutureProvider<Map<int, TuitionStatus>>((ref) a
     return const {};
   }
 });
+
+/// Triagem de saúde do aluno, se ele autorizou o personal a ver.
+final studentHealthProvider = FutureProvider.autoDispose.family<StudentHealth, int>(
+    (ref, studentId) => ref.watch(studentsRepositoryProvider).health(studentId));
 
 final managedStudentProvider = FutureProvider.autoDispose.family<ManagedStudent, int>(
   (ref, studentId) => ref.watch(studentsRepositoryProvider).get(studentId),

@@ -168,6 +168,26 @@ public class SubscriptionService {
         return toResponse(subscriptionRepository.save(subscription));
     }
 
+    /**
+     * Cancela a mensalidade do aluno com o personal (vinculo encerrado ou conta excluida). Sem
+     * assinatura em andamento, nao faz nada.
+     */
+    @Transactional
+    public void cancelActive(StudentProfile student) {
+        subscriptionRepository.findFirstByStudentIdOrderByIdDesc(student.getId())
+                .filter(s -> s.getStatus() != SubscriptionStatus.CANCELED)
+                .ifPresent(subscription -> {
+                    if (subscription.getStripeSubscriptionId() != null) {
+                        accountRepository.findByTrainerId(subscription.getTrainer().getId())
+                                .map(TrainerPayoutAccount::getStripeAccountId)
+                                .ifPresent(account -> paymentProvider.cancelSubscription(account, subscription.getStripeSubscriptionId()));
+                    }
+                    subscription.setStatus(SubscriptionStatus.CANCELED);
+                    subscription.setUpdatedAt(LocalDateTime.now());
+                    subscriptionRepository.save(subscription);
+                });
+    }
+
     /** Assinaturas dos alunos do personal (pendentes nao aparecem: ainda nao viraram cobranca). */
     public List<SubscriptionResponse> forTrainer(String trainerEmail) {
         TrainerProfile trainer = trainerProfileRepository.findByUserEmail(trainerEmail)

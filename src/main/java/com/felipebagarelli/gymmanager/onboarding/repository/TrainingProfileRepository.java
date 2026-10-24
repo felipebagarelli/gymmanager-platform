@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface TrainingProfileRepository extends JpaRepository<TrainingProfile, Long> {
     Optional<TrainingProfile> findByStudentId(Long studentId);
+
+    void deleteByStudentId(Long studentId);
 }

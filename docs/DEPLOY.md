@@ -31,6 +31,7 @@ Depois entre no painel; os alunos são criados pelo personal.
 - **Plano da plataforma (GymManager Pro)**: `PLATFORM_PLAN_ENABLED` (padrão `false`: vendas fechadas), `PLATFORM_PLAN_MONTHLY_CENTS` (1990), `PLATFORM_PLAN_YEARLY_CENTS` (14990), `PLATFORM_PLAN_TRIAL_DAYS` (7) e `STRIPE_PLATFORM_WEBHOOK_SECRET`. No Stripe, crie um segundo endpoint de webhook para eventos **da sua conta** (não de contas conectadas) apontando para `/api/v1/billing/platform-webhook`, com os eventos `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid` e `invoice.payment_failed`.
 - **E-mail (cadastro, troca de senha, responsável)**: `MAIL_HOST`, `MAIL_PORT` (587), `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` (ex.: `GymManager <nao-responda@seudominio.com.br>`). Brevo, Resend e Amazon SES funcionam por SMTP. Sem `MAIL_HOST`, os e-mails só aparecem no log (desenvolvimento).
 - **Endereço público e documentos**: `PUBLIC_URL` (endereço HTTPS do backend, usado no link do responsável), `TERMS_VERSION`, `TERMS_URL`, `PRIVACY_URL`. Mudar `TERMS_VERSION` obriga novos cadastros a aceitar a versão nova.
+- **Exclusão de conta pela web** (exigida pelo Google Play): a página `https://<backend>/conta/excluir` explica como excluir pelo app; com `SUPPORT_EMAIL` ela também mostra o e-mail para quem não tem mais o app. Informe esse endereço no Play Console.
   No painel da Stripe crie o webhook `https://api.seudominio.com/api/v1/billing/webhook` para **eventos de contas conectadas** com:
   `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`, `account.updated`.
   Teste antes com o Stripe CLI e chaves de teste (`sk_test_…`); só então use as chaves reais.
@@ -68,9 +69,11 @@ Pendente para as lojas (não feito): ícone/nome finais, assinatura de release (
 - [ ] Stripe: modo teste validado ponta a ponta (onboarding do personal, assinatura, atraso → bloqueio, cancelamento).
 - [ ] Monitoramento externo em `/actuator/health` (ex.: UptimeRobot) com alerta por e-mail.
 - [ ] Termos de uso e política de privacidade (LGPD: dados de saúde/treino e de pagamento).
+- [ ] `MAIL_HOST` configurado (sem ele, ninguém recebe o código de confirmação nem de troca de senha).
+- [ ] `SUPPORT_EMAIL` definido e a página `/conta/excluir` aberta no navegador.
 
 ## 9. Limites conhecidos
-- **Uma instância do backend.** O limitador de tentativas de login e o limite diário da IA (este é gravado no banco) funcionam assim; o limitador de login é em memória e reseta ao reiniciar. Para escalar horizontalmente, mover o limitador para armazenamento compartilhado.
+- **Uma instância do backend.** O limitador de tentativas de login, o limite por IP do cadastro e o limite diário da IA (este é gravado no banco) funcionam assim; os dois primeiros são em memória e resetam ao reiniciar. Para escalar horizontalmente, mover o limitador para armazenamento compartilhado.
 - **Fuso horário único.** A API grava horários sem fuso (`LocalDateTime`) e o app os lê como hora local; por isso o container do backend roda com `TZ=America/Sao_Paulo` (variável `APP_TIMEZONE` no `.env.prod`). Alunos em outro fuso veriam dias e cronômetro deslocados. Trocar o fuso depois de haver treinos gravados desloca os horários antigos.
-- Sem envio de e-mail (recuperação de senha, avisos de cobrança) e sem push notifications.
+- Sem avisos de cobrança por e-mail e sem push notifications.
 - Imagens Docker e este roteiro **não foram executados** no ambiente de desenvolvimento (sem Docker instalado); o jar, o perfil `prod` e o build do painel foram verificados localmente.

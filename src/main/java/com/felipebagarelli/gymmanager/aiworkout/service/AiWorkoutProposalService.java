@@ -158,6 +158,9 @@ public class AiWorkoutProposalService {
         if (screening.isEmpty()) {
             return new String[]{"NO_SCREENING", "Responda a triagem de saúde primeiro."};
         }
+        if (com.felipebagarelli.gymmanager.onboarding.service.OnboardingService.expired(screening.get())) {
+            return new String[]{"SCREENING_EXPIRED", "Sua triagem de saúde tem mais de 12 meses. Responda de novo para continuar."};
+        }
         if (screening.get().isRisk()) {
             return new String[]{"HEALTH_RISK",
                     "Pela sua triagem de saúde, o app não monta treinos automáticos. Procure uma avaliação médica ou de um profissional de educação física."};

@@ -17,6 +17,10 @@ class OnboardingRepository {
   Future<void> saveTrainingProfile(TrainingProfile profile) =>
       _guard(() => _dio.put<void>('/api/v1/students/me/training-profile', data: profile.toJson()));
 
+  /// O aluno escolhe se o personal pode ver a triagem e o perfil de treino.
+  Future<void> setSharing(bool share) =>
+      _guard(() => _dio.put<void>('/api/v1/students/me/health-sharing', data: {'share': share}));
+
   /// Retorna se houve alguma resposta "sim" (risco).
   Future<bool> answerScreening(List<bool> answers) => _guard(() async {
         final response = await _dio.post<Map<String, dynamic>>(

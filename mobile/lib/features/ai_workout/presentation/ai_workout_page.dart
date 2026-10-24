@@ -345,8 +345,12 @@ class _Blocked extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final code = eligibility.reasonCode;
     final (String? label, VoidCallback? action) = switch (code) {
-      'NO_PROFILE' || 'NO_SCREENING' || 'HEALTH_RISK' => (
-          code == 'HEALTH_RISK' ? 'Rever a triagem de saúde' : 'Completar o perfil',
+      'NO_PROFILE' || 'NO_SCREENING' || 'HEALTH_RISK' || 'SCREENING_EXPIRED' => (
+          switch (code) {
+            'HEALTH_RISK' => 'Rever a triagem de saúde',
+            'SCREENING_EXPIRED' => 'Responder a triagem de novo',
+            _ => 'Completar o perfil',
+          },
           () => context.push('/onboarding'),
         ),
       'FREE_LIMIT' => (
@@ -364,7 +368,7 @@ class _Blocked extends ConsumerWidget {
       children: [
         InfoAlert(
           kind: AlertKind.warn,
-          icon: code == 'HEALTH_RISK' ? LucideIcons.stethoscope : LucideIcons.info,
+          icon: code == 'HEALTH_RISK' || code == 'SCREENING_EXPIRED' ? LucideIcons.stethoscope : LucideIcons.info,
           text: eligibility.reason ?? 'Não é possível montar uma proposta agora.',
         ),
         if (label != null) ...[

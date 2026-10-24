@@ -217,6 +217,15 @@ public class StripePaymentProvider implements PaymentProvider {
     }
 
     @Override
+    public void cancelPlatformSubscription(String externalSubscriptionId) {
+        try {
+            Subscription.retrieve(externalSubscriptionId, platform()).cancel();
+        } catch (StripeException e) {
+            throw failure(e);
+        }
+    }
+
+    @Override
     public Optional<String> createPlatformRegularizationLink(String externalSubscriptionId) {
         try {
             InvoiceCollection open = Invoice.list(InvoiceListParams.builder()

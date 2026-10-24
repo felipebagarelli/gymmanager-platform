@@ -71,6 +71,18 @@ class AccountRepository {
 
   final Dio _dio;
 
+  /// Exclusão da conta pelo próprio usuário (com a senha). Depois disso o login antigo deixa de valer.
+  Future<void> deleteMyAccount(String password) =>
+      _guard(() => _dio.post<void>('/api/v1/me/delete', data: {'password': password}));
+
+  /// O aluno corrige os próprios dados.
+  Future<void> updateStudentData({required String name, String? phone, double? height, double? weight}) => _guard(
+      () => _dio.put<void>('/api/v1/students/me', data: {'name': name, 'phone': phone, 'height': height, 'weight': weight}));
+
+  /// O personal corrige os próprios dados.
+  Future<void> updateTrainerData({required String displayName, String? phone}) =>
+      _guard(() => _dio.put<void>('/api/v1/trainers/me', data: {'displayName': displayName, 'phone': phone}));
+
   Future<LegalInfo> legal() => _guard(() async {
         final response = await _dio.get<Map<String, dynamic>>('/api/v1/legal');
         return LegalInfo.fromJson(response.data!);

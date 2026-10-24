@@ -17,9 +17,12 @@ import org.springframework.web.bind.annotation.*;
 public class OnboardingController {
 
     private final OnboardingService onboardingService;
+    private final com.felipebagarelli.gymmanager.student.repository.TrainerStudentRepository trainerStudentRepository;
 
-    public OnboardingController(OnboardingService onboardingService) {
+    public OnboardingController(OnboardingService onboardingService,
+                                com.felipebagarelli.gymmanager.student.repository.TrainerStudentRepository trainerStudentRepository) {
         this.onboardingService = onboardingService;
+        this.trainerStudentRepository = trainerStudentRepository;
     }
 
     @GetMapping("/api/v1/students/me/onboarding")
@@ -31,6 +34,18 @@ public class OnboardingController {
     public TrainingProfileResponse saveTrainingProfile(@RequestBody @Valid TrainingProfileRequest request,
                                                        @AuthenticationPrincipal Jwt jwt) {
         return onboardingService.saveTrainingProfile(request, jwt.getSubject());
+    }
+
+    @PutMapping("/api/v1/students/me/health-sharing")
+    public OnboardingResponse setSharing(@RequestBody com.felipebagarelli.gymmanager.onboarding.dto.OnboardingDtos.ShareRequest request,
+                                         @AuthenticationPrincipal Jwt jwt) {
+        return onboardingService.setSharing(request.share(), jwt.getSubject());
+    }
+
+    @GetMapping("/api/v1/students/{id}/health")
+    public com.felipebagarelli.gymmanager.onboarding.dto.OnboardingDtos.TrainerHealthView forTrainer(@PathVariable Long id,
+                                                                                                     @AuthenticationPrincipal Jwt jwt) {
+        return onboardingService.forTrainer(id, jwt.getSubject(), trainerStudentRepository);
     }
 
     @PostMapping("/api/v1/students/me/health-screening")

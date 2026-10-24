@@ -1,3 +1,4 @@
+import '../../../onboarding/domain/onboarding.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/errors/app_exception.dart';
@@ -39,6 +40,12 @@ class StudentsRepository {
           data: {...draft.toJson(), 'weeklyGoal': draft.weeklyGoal, 'clearWeeklyGoal': draft.weeklyGoal == null},
         );
         return ManagedStudent.fromJson(response.data!);
+      });
+
+  /// Triagem e perfil de treino (vazio se o aluno não autorizou).
+  Future<StudentHealth> health(int studentId) => _guard(() async {
+        final response = await _dio.get<Map<String, dynamic>>('/api/v1/students/$studentId/health');
+        return StudentHealth.fromJson(response.data ?? const {});
       });
 
   Future<void> deactivate(int studentId) => _guard(() => _dio.delete<void>('/api/v1/students/$studentId'));

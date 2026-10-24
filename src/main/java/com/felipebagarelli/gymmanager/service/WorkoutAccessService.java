@@ -66,13 +66,33 @@ public class WorkoutAccessService {
         throw new AccessDeniedException(DENIED_WORKOUT);
     }
 
+    /** O personal acompanha (ativo ou pausado) este aluno. */
+    public boolean isCurrentTrainerOf(Long studentId, Long trainerId) {
+        return trainerStudentRepository.findByStudentId(studentId)
+                .filter(link -> link.getStatus() == com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.ACTIVE
+                        || link.getStatus() == com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.PAUSED)
+                .map(link -> link.getTrainer().getId().equals(trainerId))
+                .orElse(false);
+    }
+
+    /** O proprio aluno (nao o personal dele) e dono deste treino. */
+    public boolean isStudentOwner(Workout workout, String email) {
+        return workout.getStudentOwner() != null && workout.getStudentOwner().getUser().getEmail().equalsIgnoreCase(email);
+    }
+
     /** Dono: o personal que montou ou, no treino do aluno sem personal, o proprio aluno. */
     private boolean isWorkoutOwner(Workout workout, String email) {
         if (workout.getTrainer() != null) {
             return workout.getTrainer().getUser().getEmail().equalsIgnoreCase(email);
         }
-        return workout.getStudentOwner() != null
-                && workout.getStudentOwner().getUser().getEmail().equalsIgnoreCase(email);
+        if (workout.getStudentOwner() == null) return false;
+        if (workout.getStudentOwner().getUser().getEmail().equalsIgnoreCase(email)) return true;
+        // o personal do aluno tambem pode editar os treinos que o aluno montou
+        return trainerStudentRepository.findByStudentId(workout.getStudentOwner().getId())
+                .filter(link -> link.getStatus() == com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.ACTIVE
+                        || link.getStatus() == com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.PAUSED)
+                .map(link -> link.getTrainer().getUser().getEmail().equalsIgnoreCase(email))
+                .orElse(false);
     }
 
     private boolean isOwningTrainer(Long studentId, String email) {
