@@ -43,6 +43,7 @@ Evoluir o GymManager atual para uma plataforma de personal trainers e alunos, pr
 - billing
 - ai
 - notification
+- social (futuro: grupos, desafios, ranking)
 - admin
 - common
 
@@ -100,6 +101,8 @@ ExercisePerformance
 ```
 
 O plano representa o planejado; a sessão representa o executado.
+
+A agenda (dias da semana ou esquema rotativo, Fase F) fica na atribuição/rotina do aluno, nunca no treino nem no exercício: o mesmo treino pode cair em dias diferentes para alunos diferentes. Pastas de treino são só organização do personal.
 
 ## 7. IA
 

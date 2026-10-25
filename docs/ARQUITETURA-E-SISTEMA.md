@@ -1796,7 +1796,7 @@ A arquitetura deve tornar esse relacionamento seguro, simples, observável e esc
 
 # 47. Expansão: app do personal, aluno independente, IA com confirmação e hub
 
-Decisões de 13/10/2026. Plano em fases, status e decisões pendentes: `docs/ROADMAP.md`. Nada desta seção está implementado ainda.
+Decisões de 13/10/2026, completadas em 24/10/2026. Plano em fases, status e decisões pendentes: `docs/ROADMAP.md`. As seções 47.1 a 47.6 já estão implementadas (fases B a E); 47.7 a 47.9 são as próximas.
 
 ## 47.1 Um único app, dois modos
 
@@ -1864,9 +1864,32 @@ Conceitos novos (nomes a confirmar na implementação): proposta de treino da IA
 ## 47.6 Hub de personais (futuro)
 
 - Perfil público do personal (o que é público é decidido pelo próprio personal), busca e filtros.
-- Contratar = assinar o plano do personal pelo app, criando o vínculo ativo.
+- Contratar = assinar o plano do personal pelo app, criando o vínculo ativo (também pelo link de convite do plano, 47.7).
 - O aluno independente mantém o histórico e os treinos anteriores; os novos treinos passam a ser do personal.
 - Comissão, cancelamento, reembolso, avaliações e moderação a definir antes da implementação.
+
+---
+
+## 47.7 Conta do aluno e convite do personal (Fase F)
+
+- Toda conta de aluno nasce do cadastro aberto (47.2), com e-mail confirmado, aceites e regras de idade. O personal não cria contas nem define senhas.
+- O aluno vira aluno de um personal **assinando um plano dele**: pelo hub ou por um link de convite do plano. O vínculo nasce pendente e só fica ativo com o pagamento confirmado pelo webhook (mesma regra do hub).
+- O link de convite carrega só um código aleatório e revogável do plano; nenhum dado pessoal vai na URL.
+- Cada plano tem uma regra de quem pode contratar (todos, só pelo link, só alunos escolhidos), conferida no backend no momento do checkout.
+
+## 47.8 Agenda de treinos do aluno (Fase F)
+
+- A atribuição (treino × aluno) pode ter **dias da semana**; sem dias, o treino é "livre" como antes.
+- Alternativa por aluno: **esquema rotativo**, uma sequência ordenada de treinos em que o próximo é o seguinte ao último concluído, independente do dia.
+- Só o personal dono do vínculo define a agenda; o aluno sem personal define a própria agenda dos treinos que montou.
+- A agenda é planejamento: o aluno pode fazer outro treino no dia; o histórico registra o que foi feito e compara com o planejado.
+- Pastas de treinos são só organização do personal (não mudam permissão nem o que o aluno vê).
+
+## 47.9 Social e competição (Fase G, futuro)
+
+- Grupos de amigos, desafios com ranking e feed de treinos concluídos, inspirados em apps como o GymRat, com compartilhamento em redes sociais.
+- Opt-in e privado por padrão; nunca expõe dados de saúde nem a triagem; regras próprias para menores (ECA Digital); denúncia, bloqueio e moderação antes de abrir.
+- Domínio novo (`social`), separado de treino e cobrança.
 
 ---
 

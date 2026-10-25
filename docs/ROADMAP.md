@@ -1,7 +1,7 @@
 # GymManager — Roadmap e base de trabalho
 
-> **Atualizado em:** 13/10/2026
-> **Status:** decisões de produto registradas; **nenhuma implementação desta expansão começou**.
+> **Atualizado em:** 24/10/2026
+> **Status:** fases B (menos B6), C, D e E (menos E5) feitas; **próxima: Fase F** (pedidos do personal de 24/10/2026). Lançamento (A) por último.
 > **Regras de produto e arquitetura:** `docs/ARQUITETURA-E-SISTEMA.md` (fonte de verdade).
 > **Regras operacionais para o Claude Code:** `docs/CLAUDE.md`.
 
@@ -18,6 +18,13 @@ Este documento é a base para seguirmos: o que já existe, para onde vamos, em q
 5. **IA que monta e ajusta treino, sempre com confirmação.** A IA passa a poder **propor** criação e alteração de treino. Nada é gravado sem a **confirmação explícita** do usuário dono do treino. A IA nunca grava sozinha.
 6. **Segurança e responsabilidade antes de liberar a IA de treino:** questionário de saúde, limites de geração, prévia e aceite, avisos, termos aceitos e LGPD (detalhes na seção 5).
 7. **Futuro: hub de personais.** O aluno poderá buscar e contratar um personal dentro do app. O aluno independente é a porta de entrada para esse hub.
+
+**Decisões de 24/10/2026 (pedidos do dono, Fase F):**
+
+8. **Toda conta de aluno nasce do cadastro normal.** O personal deixa de criar conta para o aluno (com e-mail e senha provisória). O aluno cria a própria conta como qualquer usuário e vira aluno do personal **assinando um plano dele**: pelo hub ou por um **link de convite** que o personal compartilha na aba Planos.
+9. **O personal organiza o trabalho dele:** pastas na aba Treinos, busca de alunos ao atribuir, **dias da semana** de cada treino por aluno (imprescindível) e, depois, **esquema rotativo** (AB, ABC, ABCD...) para quem não treina em dias fixos.
+10. **Planos direcionados:** o personal escolhe quem pode contratar cada plano (planos diferentes para alunos diferentes).
+11. **Futuro: social e competição entre amigos** (inspirado no GymRat): grupos, desafios e ranking com o progresso dos treinos, com integração a redes sociais. Fica depois do lançamento.
 
 ---
 
@@ -51,15 +58,19 @@ A ordem evita dependências quebradas. Fases podem ser antecipadas por decisão 
 **Decisão de 15/10/2026:** o lançamento (Fase A) fica **por último**; seguimos primeiro com o app do personal (Fase B).
 
 ```text
-FASE B  App do personal (mesmo app, modo personal)      ← em andamento
+FASE B  App do personal (mesmo app, modo personal)      ✔ (B6 adiado)
    ↓
-FASE C  Cadastro aberto + aluno independente + plano da plataforma
+FASE C  Cadastro aberto + aluno independente + plano da plataforma   ✔
    ↓
-FASE D  IA que propõe treinos com confirmação
+FASE D  IA que propõe treinos com confirmação           ✔
    ↓
-FASE E  Hub de personais (buscar e contratar dentro do app)
+FASE E  Hub de personais (buscar e contratar dentro do app)   ✔ (E5 adiado)
+   ↓
+FASE F  Rotina do personal: agenda, pastas, convite por link, planos por aluno   ← próxima
    ↓
 FASE A  Lançamento (lojas, servidor, documentos legais)
+   ↓
+FASE G  Social: grupos e competição entre amigos (depois do lançamento)
 ```
 
 B e C são independentes entre si e podem ser trocadas de ordem. D depende de C (é o aluno independente que mais precisa dela). E depende de B e C. A pode ser antecipada a qualquer momento (por exemplo, um teste fechado na Google Play), mas fica por último por decisão do produto.
@@ -71,8 +82,10 @@ Objetivo: colocar o app nas mãos de usuários reais (começando por teste fecha
 - [ ] Validar Stripe em modo teste ponta a ponta (inclui atraso e regularização).
 - [ ] Validar o Personal IA com chave real e conferir `AI_MODEL`.
 - [ ] Android: chave de assinatura de release, nome e ícone finais, identificador definitivo.
-- [ ] Política de privacidade e termos de uso publicados (URL) e ligados ao item "Privacidade e termos" do Perfil.
-- [ ] Exclusão de conta pelo app (exigência das lojas): endpoint + tela.
+- [ ] Política de privacidade e termos de uso publicados (URL). O item "Privacidade e termos" do Perfil já abre `TERMS_URL`/`PRIVACY_URL` (24/10/2026).
+- [x] Exclusão de conta pelo app (exigência das lojas): `POST /api/v1/me/delete` + tela, e a página `/conta/excluir` para o Google Play. *(24/10/2026)*
+- [ ] Nome final, domínio/identificador do app, ícone e e-mail de suporte (`SUPPORT_EMAIL`): **aguardando o dono**.
+- [ ] Decidir se o hub (Fase E) já aparece no lançamento ou fica escondido até ter personais cadastrados.
 - [ ] Teste fechado na Google Play. iOS depois (exige Mac e conta Apple).
 
 ### Fase B — App do personal (modo personal no mesmo app)
@@ -113,6 +126,40 @@ Objetivo: o aluno encontra e contrata um personal dentro do app.
 - [x] E3. Contratar: "Assinar" cria o vínculo como pendente (`INVITED`) e abre o checkout do plano do personal; **o webhook do pagamento confirmado ativa o vínculo**. Enquanto pendente, o personal não vê nada do aluno (lista, perfil, treinos, sessões, chat). O app confere de novo ao voltar do navegador. *(18/10/2026)*
 - [x] E4. Transição: com o vínculo ativo, o app vira o modo "com personal" (Mensagens com ele, mensalidade dele no Perfil, sem onboarding/IA); histórico e treinos próprios continuam. *(18/10/2026)*
 - [ ] E5. Avaliações e moderação — **adiado para uma próxima atualização** (decisão do dono, 24/10/2026).
+
+### Fase F — Rotina do personal (pedidos de 24/10/2026)
+Objetivo: o personal organiza treinos e alunos do jeito dele, define em que dia cada aluno faz cada treino e traz alunos novos por link. Ordem sugerida: do mais simples e mais urgente para o maior.
+- [ ] F1. **Busca de alunos ao atribuir um treino:** campo de busca (nome/e-mail, sem diferenciar acento) na lista de alunos do "Atribuir", com marcar vários. Só app.
+- [ ] F2. **Dias da semana (imprescindível):** cada atribuição (treino × aluno) ganha os dias da semana em que o aluno faz aquele treino (ex.: Peito e tríceps → segunda). Dá para definir de dois jeitos:
+  - **por aluno:** no perfil do aluno, uma "semana" com os 7 dias e o treino de cada dia (um dia pode ter mais de um treino ou ser descanso);
+  - **por treino:** no editor do treino, escolher os dias e marcar vários alunos de uma vez (cada aluno pode depois ser ajustado sozinho).
+  - App do aluno: "Treino de hoje" segue os dias; os outros treinos continuam acessíveis (o aluno pode trocar o dia). Histórico mostra o planejado × feito na semana. Meta semanal sugerida = número de dias marcados.
+  - Backend: dias guardados na atribuição (ex.: `workout_assignments.weekdays`, conjunto de 1–7); a API valida que só o personal dono do vínculo edita; atribuição sem dias continua valendo como hoje (treino "livre").
+- [ ] F3. **Esquema rotativo (AB, ABC, ABCD...):** em vez de dias fixos, o personal monta uma **sequência** de treinos para o aluno; o "treino de hoje" é o próximo da sequência depois do último **concluído**, não importa o dia da semana (bom para quem treina dia sim, dia não). Pode ser adiado se der muito trabalho (decisão do dono).
+  - Backend: uma "rotina" por aluno com modo `WEEKDAYS` ou `ROTATION`, a ordem dos treinos e o ponto atual (calculado pelas sessões concluídas, com "pular" e "voltar" manuais).
+  - Também por aluno ou montando a sequência e escolhendo vários alunos.
+- [ ] F4. **Pastas na aba Treinos:** o personal cria, renomeia e exclui pastas, e move treinos para dentro ou deixa fora (raiz). Um nível de pasta no começo (subpastas depois, se pedirem). Excluir pasta não apaga treinos: eles voltam para a raiz. Busca continua achando treinos em qualquer pasta.
+  - Backend: `workout_folders` (dono = personal, nome, ordem) e `workout.folder_id` opcional.
+- [ ] F5. **Aluno novo só pelo cadastro normal + link de convite:**
+  - Personal: botão **"Compartilhar link"** em cada plano (aba Planos), que abre o compartilhamento do celular (WhatsApp etc.) com um link do plano.
+  - Link: abre o app se instalado (deep link) ou uma página do servidor com o plano, o personal e os botões para baixar o app; depois do cadastro/login o aluno cai direto no plano e assina (mesmo fluxo do hub: vínculo `INVITED` ativado pelo pagamento).
+  - Sai do app (e do painel) o "Novo aluno" com e-mail e senha provisória; alunos já criados assim continuam funcionando (podem trocar a senha pelo "esqueci a senha").
+  - Aluno: precisa da conta confirmada; menores de 18 só com a aprovação do responsável (como no hub).
+  - Backend: código do convite por plano (aleatório, revogável, sem dados pessoais no link), endpoint público para ver o plano pelo código, e o checkout aceita o código.
+- [ ] F6. **Planos por aluno:** cada plano ganha "quem pode contratar":
+  - **todos** (aparece no hub e funciona pelo link);
+  - **só pelo link** (não aparece no hub);
+  - **só alunos escolhidos** (já são alunos do personal; ex.: renovação com outro valor). O aluno escolhido vê o plano no Perfil, na mensalidade.
+  - O servidor confere a regra no checkout (não só o app). Trocar a regra não afeta quem já assina.
+  - Ponto a decidir: plano "só alunos escolhidos" para quem **ainda não é aluno** — hoje a proposta é usar "só pelo link" para esse caso.
+
+### Fase G — Social e competição entre amigos (depois do lançamento)
+Ideia do dono (24/10/2026), inspirada no GymRat: amigos formam um grupo e competem com o progresso dos treinos. A definir antes de começar:
+- [ ] G1. Grupos: criar, convidar por link, entrar e sair; quem vê o quê (só o grupo; nada de dados de saúde).
+- [ ] G2. Desafios com período e regra de pontos (treinos feitos, dias seguidos, volume, check-in com foto); ranking do grupo.
+- [ ] G3. Feed do grupo: treinos concluídos, recordes e fotos, com reações e comentários; denúncia e moderação.
+- [ ] G4. Compartilhar em redes sociais (imagem pronta do treino/recorde para Instagram/WhatsApp) e, se fizer sentido, login social.
+- [ ] G5. Privacidade e menores: tudo opt-in, perfil privado por padrão, regras do ECA Digital para 12–17 anos, bloqueio de usuários.
 
 ---
 
@@ -282,3 +329,11 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - **Triagem vencida:** o app só avisa quando a IA bloqueia; mostrar o aviso também no Perfil/Home antes de vencer.
 - **Compartilhamento da saúde:** o aluno não vê quando o personal consultou; registrar acessos se a revisão jurídica pedir.
 - **Mensalidade ao reativar:** "Reativar" religa o vínculo, mas a assinatura cancelada não volta; o aluno assina de novo pelo app.
+
+### Fase F — anotado antes de começar (24/10/2026)
+- **Hub já existe:** as telas do hub (E1–E4) estão prontas; o dono pensa nele como "lançado no futuro". Decidir na Fase A se aparece desde o lançamento ou fica escondido (ex.: por configuração) até ter personais cadastrados.
+- **Dias da semana × meta semanal:** hoje a meta é um número livre; com os dias marcados, decidir se a meta vira automática ou continua editável.
+- **Fuso:** "treino de hoje" depende do dia local; o servidor grava sem fuso (ver DEPLOY, limites). Com alunos fora do fuso de São Paulo, o dia pode virar errado.
+- **Link de convite e lojas:** deep link exige domínio próprio e os arquivos de verificação (Android App Links / iOS Universal Links); sem isso, o link abre a página do servidor.
+- **B2 "Reenviar acesso / senha provisória":** deixa de existir com o F5 (o aluno cria a própria senha).
+- **B4 "Organização: divisão por dias (A/B/C)":** passa a ser o F2/F3.
