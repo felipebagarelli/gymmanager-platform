@@ -1875,7 +1875,8 @@ Conceitos novos (nomes a confirmar na implementação): proposta de treino da IA
 - Toda conta de aluno nasce do cadastro aberto (47.2), com e-mail confirmado, aceites e regras de idade. O personal não cria contas nem define senhas.
 - O aluno vira aluno de um personal **assinando um plano dele**: pelo hub ou por um link de convite do plano. O vínculo nasce pendente e só fica ativo com o pagamento confirmado pelo webhook (mesma regra do hub).
 - O link de convite carrega só um código aleatório e revogável do plano; nenhum dado pessoal vai na URL.
-- Cada plano tem uma regra de quem pode contratar (todos, só pelo link, só alunos escolhidos), conferida no backend no momento do checkout.
+- Cada plano tem uma visibilidade: **para todos** (hub e alunos atuais), **só para novos alunos** (hub) ou **privado** (só por link de convite ou liberado pelo personal para alunos específicos). Qualquer plano pode ser enviado por link ou liberado para um aluno.
+- Aluno atual troca de plano (para um plano visível para ele ou liberado para ele) com confirmação no app; a troca de preço é feita na assinatura existente, sem novo vínculo. A regra é conferida no backend no checkout e na troca.
 
 ## 47.8 Agenda de treinos do aluno (Fase F)
 

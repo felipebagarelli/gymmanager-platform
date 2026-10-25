@@ -146,12 +146,15 @@ Objetivo: o personal organiza treinos e alunos do jeito dele, define em que dia 
   - Sai do app (e do painel) o "Novo aluno" com e-mail e senha provisória; alunos já criados assim continuam funcionando (podem trocar a senha pelo "esqueci a senha").
   - Aluno: precisa da conta confirmada; menores de 18 só com a aprovação do responsável (como no hub).
   - Backend: código do convite por plano (aleatório, revogável, sem dados pessoais no link), endpoint público para ver o plano pelo código, e o checkout aceita o código.
-- [ ] F6. **Planos por aluno:** cada plano ganha "quem pode contratar":
-  - **todos** (aparece no hub e funciona pelo link);
-  - **só pelo link** (não aparece no hub);
-  - **só alunos escolhidos** (já são alunos do personal; ex.: renovação com outro valor). O aluno escolhido vê o plano no Perfil, na mensalidade.
-  - O servidor confere a regra no checkout (não só o app). Trocar a regra não afeta quem já assina.
-  - Ponto a decidir: plano "só alunos escolhidos" para quem **ainda não é aluno** — hoje a proposta é usar "só pelo link" para esse caso.
+- [ ] F6. **Visibilidade dos planos e troca de plano** (ideia revista pelo dono em 24/10/2026). Cada plano tem uma visibilidade:
+  - **Para todos:** aparece no hub (para quem ainda não é aluno) **e** para os alunos atuais do personal, que podem trocar para ele pelo Perfil (mensalidade).
+  - **Só para novos alunos:** aparece no hub, mas não é oferecido a quem já é aluno.
+  - **Privado:** não aparece em lugar nenhum. O personal oferece de dois jeitos:
+    - **link de convite** (F5) para qualquer pessoa;
+    - **"Liberar para um aluno"** no app: escolhe um aluno que já paga outro plano, e esse aluno passa a ver o plano no Perfil e pode **trocar** para ele.
+  - Todo plano (qualquer visibilidade) pode ser compartilhado por link e liberado para alunos.
+  - **Troca de plano** de quem já é aluno: o aluno confirma no app; a assinatura no Stripe troca de preço (decidir: na hora, com cobrança proporcional, ou só a partir da próxima mensalidade — proposta: próxima mensalidade, mais simples e sem cobrança surpresa). Trocar a visibilidade ou desliberar um plano não afeta quem já assina.
+  - O servidor confere a regra no checkout e na troca (não só o app).
 
 ### Fase G — Social e competição entre amigos (depois do lançamento)
 Ideia do dono (24/10/2026), inspirada no GymRat: amigos formam um grupo e competem com o progresso dos treinos. A definir antes de começar:
