@@ -153,7 +153,7 @@ Objetivo: o personal organiza treinos e alunos do jeito dele, define em que dia 
     - **link de convite** (F5) para qualquer pessoa;
     - **"Liberar para um aluno"** no app: escolhe um aluno que já paga outro plano, e esse aluno passa a ver o plano no Perfil e pode **trocar** para ele.
   - Todo plano (qualquer visibilidade) pode ser compartilhado por link e liberado para alunos.
-  - **Troca de plano** de quem já é aluno: o aluno confirma no app; a assinatura no Stripe troca de preço (decidir: na hora, com cobrança proporcional, ou só a partir da próxima mensalidade — proposta: próxima mensalidade, mais simples e sem cobrança surpresa). Trocar a visibilidade ou desliberar um plano não afeta quem já assina.
+  - **Troca de plano** de quem já é aluno: o aluno confirma no app; a assinatura no Stripe troca de preço **a partir da próxima mensalidade** (decidido pelo dono em 24/10/2026: sem cobrança proporcional nem surpresa). Trocar a visibilidade ou desliberar um plano não afeta quem já assina.
   - O servidor confere a regra no checkout e na troca (não só o app).
 
 ### Fase G — Social e competição entre amigos (depois do lançamento)
