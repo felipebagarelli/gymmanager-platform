@@ -203,6 +203,11 @@ public class HubService {
                 t.isOnline(), t.isInPerson(), specialties(t.getSpecialties()), plans);
     }
 
+    /** O personal pode receber pagamentos (para o convite mostrar se da para assinar agora). */
+    public boolean canHire(TrainerProfile trainer) {
+        return trainer.getUser().isActive() && canReceive(trainer);
+    }
+
     /**
      * Contratar pelo app: cria (ou reaproveita) o vinculo como pendente e abre o checkout do plano.
      * O vinculo so fica ativo quando o webhook confirmar o pagamento.
@@ -218,7 +223,28 @@ public class HubService {
         Plan plan = planRepository.findById(planId)
                 .filter(p -> p.isActive() && p.getTrainer().getId().equals(trainer.getId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Plano não encontrado!"));
+        return contract(student, trainer, plan, email);
+    }
 
+    /**
+     * Contratar pelo link de convite do plano: o personal nao precisa aparecer no hub, mas precisa
+     * receber pagamentos. Mesmas regras do hub (maior de 18, sem personal ativo).
+     */
+    @Transactional
+    public UrlResponse hireByInvite(Plan plan, String email) {
+        StudentProfile student = studentProfileRepository.findByUserEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado!"));
+        if (student.getBirthDate() == null || Period.between(student.getBirthDate(), LocalDate.now(clock)).getYears() < ADULT_AGE) {
+            throw new ConflictException("Para menores de 18 anos, a contratação depende da aprovação do responsável (em breve).");
+        }
+        TrainerProfile trainer = plan.getTrainer();
+        if (!plan.isActive() || !trainer.getUser().isActive() || !canReceive(trainer)) {
+            throw new ConflictException("Este plano não está disponível no momento. Fale com o seu personal.");
+        }
+        return contract(student, trainer, plan, email);
+    }
+
+    private UrlResponse contract(StudentProfile student, TrainerProfile trainer, Plan plan, String email) {
         Optional<TrainerStudent> existing = trainerStudentRepository.findByStudentId(student.getId());
         if (existing.isPresent() && (existing.get().getStatus() == TrainerStudentStatus.ACTIVE
                 || existing.get().getStatus() == TrainerStudentStatus.PAUSED)) {

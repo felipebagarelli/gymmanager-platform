@@ -49,37 +49,6 @@ void main() {
     expect(s.lastWorkoutAt, DateTime(2026, 10, 14, 7, 30));
   });
 
-  test('cadastrar envia e-mail e senha; com meta semanal, grava a meta em seguida', () async {
-    adapter.body = (_) => _student;
-
-    await repository.create(
-      5,
-      StudentDraft(name: 'Ana', birthDate: DateTime(1995, 3, 21), height: 1.68, weeklyGoal: 3),
-      email: 'ana@example.com',
-      password: 'senha1234',
-    );
-
-    expect(adapter.requests, hasLength(2));
-    final create = adapter.requests[0];
-    expect(create.method, 'POST');
-    expect(create.path, '/api/v1/trainers/5/students');
-    expect(create.data, containsPair('email', 'ana@example.com'));
-    expect(create.data, containsPair('password', 'senha1234'));
-    expect(create.data, containsPair('birthDate', '1995-03-21'));
-    final goal = adapter.requests[1];
-    expect(goal.method, 'PUT');
-    expect(goal.path, '/api/v1/students/7');
-    expect(goal.data, containsPair('weeklyGoal', 3));
-  });
-
-  test('cadastrar sem meta semanal faz uma requisição só', () async {
-    adapter.body = (_) => _student;
-
-    await repository.create(5, const StudentDraft(name: 'Ana'), email: 'ana@example.com', password: 'senha1234');
-
-    expect(adapter.requests, hasLength(1));
-  });
-
   test('editar sem meta pede para removê-la; com meta, envia o valor', () async {
     adapter.body = (_) => _student;
 

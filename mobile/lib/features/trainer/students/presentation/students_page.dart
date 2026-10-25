@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../billing/domain/billing.dart';
+import '../../../invite/presentation/share_invite_sheet.dart';
+import '../../plans/application/trainer_billing_providers.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text.dart';
@@ -99,11 +102,11 @@ class _StudentsPageState extends ConsumerState<StudentsPage> {
                     ),
                     Semantics(
                       button: true,
-                      label: 'Cadastrar aluno',
+                      label: 'Convidar aluno',
                       excludeSemantics: true,
                       child: GestureDetector(
-                        key: const Key('new-student'),
-                        onTap: () => context.push('/trainer/students/new'),
+                        key: const Key('invite-student'),
+                        onTap: () => _invite(context, ref),
                         child: Container(
                           width: 48,
                           height: 48,
@@ -158,7 +161,7 @@ class _StudentsPageState extends ConsumerState<StudentsPage> {
                     padding: EdgeInsets.only(top: 60),
                     child: EmptyState(
                       icon: LucideIcons.users,
-                      message: 'Você ainda não tem alunos.\nToque em + para cadastrar o primeiro.',
+                      message: 'Você ainda não tem alunos.\nToque em + e mande o link de um plano: a pessoa cria a conta e assina pelo app.',
                     ),
                   )
                 else if (visible.isEmpty)
@@ -255,4 +258,47 @@ class _StudentTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Aluno novo entra pelo link de um plano: escolher o plano e compartilhar.
+Future<void> _invite(BuildContext context, WidgetRef ref) async {
+  final plans = [for (final p in await ref.read(trainerPlansProvider.future)) if (p.active) p];
+  if (!context.mounted) return;
+  if (plans.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Crie um plano ativo na aba Planos para convidar alunos.')),
+    );
+    return;
+  }
+  final plan = plans.length == 1
+      ? plans.single
+      : await showModalBottomSheet<Plan>(
+          context: context,
+          useSafeArea: true,
+          backgroundColor: AppColors.elevated,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+          builder: (context) => Padding(
+            key: const Key('invite-pick-plan'),
+            padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('CONVIDAR PARA QUAL PLANO?', style: AppText.display(24)),
+                ),
+                for (final p in plans)
+                  ListTile(
+                    key: Key('invite-plan-${p.id}'),
+                    title: Text(p.name),
+                    trailing: Text(formatPrice(p.priceCents)),
+                    onTap: () => Navigator.of(context).pop(p),
+                  ),
+              ],
+            ),
+          ),
+        );
+  if (plan == null || !context.mounted) return;
+  await showShareInviteSheet(context, plan: plan);
 }

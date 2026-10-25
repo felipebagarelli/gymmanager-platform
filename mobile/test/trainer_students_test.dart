@@ -6,7 +6,6 @@ import 'package:gymmanager_mobile/features/workouts/data/workout_repository.dart
 import 'package:gymmanager_mobile/features/workouts/domain/routine.dart';
 import 'package:gymmanager_mobile/features/workouts/domain/workout.dart';
 import 'package:gymmanager_mobile/features/trainer/workouts/application/trainer_workouts_providers.dart';
-import 'package:gymmanager_mobile/core/errors/app_exception.dart';
 import 'package:gymmanager_mobile/core/providers.dart';
 import 'package:gymmanager_mobile/core/routing/app_router.dart';
 import 'package:gymmanager_mobile/core/storage/token_storage.dart';
@@ -32,9 +31,7 @@ class FakeStudentsRepository extends StudentsRepository {
   final List<ManagedStudent> students;
   final Map<int, TuitionStatus> tuitionMap;
   final calls = <String>[];
-  AppException? createError;
   StudentDraft? lastDraft;
-  int _nextId = 100;
 
   @override
   Future<List<ManagedStudent>> list(int trainerId) async {
@@ -58,16 +55,6 @@ class FakeStudentsRepository extends StudentsRepository {
         weeklyGoal: d.weeklyGoal,
         linkStatus: LinkStatus.active,
       );
-
-  @override
-  Future<ManagedStudent> create(int trainerId, StudentDraft draft, {required String email, required String password}) async {
-    if (createError != null) throw createError!;
-    calls.add('create:$trainerId:$email:${password.length}');
-    lastDraft = draft;
-    final created = _from(_nextId++, email, draft);
-    students.add(created);
-    return created;
-  }
 
   @override
   Future<ManagedStudent> update(int studentId, StudentDraft draft) async {
@@ -421,64 +408,5 @@ void main() {
       expect(repo.lastDraft!.weeklyGoal, isNull);
     });
 
-    testWidgets('cadastro valida os campos antes de chamar a API', (tester) async {
-      final repo = FakeStudentsRepository(_students());
-      await _pump(tester, _app(repo));
-      await tester.tap(find.byKey(const Key('new-student')));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const Key('field-email')), 'sem-arroba');
-      await tester.enterText(find.byKey(const Key('field-password')), '123');
-      await tester.enterText(find.byKey(const Key('field-birth')), '31/02/1990');
-      await tester.enterText(find.byKey(const Key('field-height')), '170');
-      await tester.tap(find.byKey(const Key('save-student')));
-      await tester.pump();
-
-      expect(find.text('Informe o nome'), findsOneWidget);
-      expect(find.text('E-mail inválido'), findsOneWidget);
-      expect(find.text('Mínimo de 8 caracteres'), findsOneWidget);
-      expect(find.text('Use dd/mm/aaaa'), findsOneWidget);
-      expect(find.text('Altura em metros (ex.: 1,70)'), findsOneWidget);
-      expect(repo.calls.where((c) => c.startsWith('create')), isEmpty);
-    });
-
-    testWidgets('cadastro válido cria o aluno e ele aparece na lista', (tester) async {
-      final repo = FakeStudentsRepository(_students());
-      await _pump(tester, _app(repo));
-      await tester.tap(find.byKey(const Key('new-student')));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const Key('field-name')), 'Diego Lima');
-      await tester.enterText(find.byKey(const Key('field-email')), 'diego@example.com');
-      await tester.enterText(find.byKey(const Key('field-password')), 'provisoria1');
-      await tester.enterText(find.byKey(const Key('field-birth')), '05/10/1990');
-      await tester.tap(find.byKey(const Key('weekly-goal-plus')));
-      await tester.pump();
-      await tester.tap(find.byKey(const Key('save-student')));
-      await tester.pumpAndSettle();
-
-      expect(repo.calls, contains('create:5:diego@example.com:11'));
-      expect(repo.lastDraft!.birthDate, DateTime(1990, 10, 5));
-      expect(repo.lastDraft!.weeklyGoal, 1);
-      expect(find.text('Aluno cadastrado'), findsOneWidget);
-      expect(find.byKey(const Key('student-100')), findsOneWidget);
-      expect(find.text('3 alunos ativos'), findsOneWidget);
-    });
-
-    testWidgets('erro do servidor (e-mail já usado) aparece e o formulário continua aberto', (tester) async {
-      final repo = FakeStudentsRepository(_students())..createError = AppException('E-mail já está em uso!', statusCode: 409);
-      await _pump(tester, _app(repo));
-      await tester.tap(find.byKey(const Key('new-student')));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(find.byKey(const Key('field-name')), 'Diego');
-      await tester.enterText(find.byKey(const Key('field-email')), 'maria@example.com');
-      await tester.enterText(find.byKey(const Key('field-password')), 'provisoria1');
-      await tester.tap(find.byKey(const Key('save-student')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('E-mail já está em uso!'), findsOneWidget);
-      expect(find.text('NOVO ALUNO'), findsOneWidget);
-    });
   });
 }

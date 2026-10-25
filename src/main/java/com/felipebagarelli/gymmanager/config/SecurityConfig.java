@@ -49,6 +49,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/trainers/me").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/students/*/health").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.GET, "/conta/excluir").permitAll()
+                        // convite do plano (F5): ver e a pagina sao publicos; aceitar so o aluno; gerar so o personal
+                        .requestMatchers(HttpMethod.GET, "/api/v1/invites/*", "/convite/*").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/invites/*/accept").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/plans/*/invite", "/api/v1/plans/*/invite/reset").hasRole("TRAINER")
                         .requestMatchers("/api/v1/trainers/*/students").hasRole("TRAINER")
                         .requestMatchers("/api/v1/trainers/me/public-profile").hasRole("TRAINER")
                         .requestMatchers("/api/v1/hub/**").hasRole("STUDENT")

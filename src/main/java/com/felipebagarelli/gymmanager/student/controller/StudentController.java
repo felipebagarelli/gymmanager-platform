@@ -1,6 +1,5 @@
 package com.felipebagarelli.gymmanager.student.controller;
 
-import com.felipebagarelli.gymmanager.student.dto.request.CreateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.request.UpdateLinkStatusRequest;
 import com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.response.StudentProfileResponse;
@@ -19,13 +18,6 @@ public class StudentController {
 
     public StudentController(StudentService studentService) {
         this.studentService = studentService;
-    }
-
-    @PostMapping("/api/v1/trainers/{trainerId}/students")
-    public StudentProfileResponse createStudent(@PathVariable Long trainerId,
-                                                 @RequestBody @Valid CreateStudentRequest request,
-                                                 @AuthenticationPrincipal Jwt jwt) {
-        return studentService.createStudent(trainerId, request, jwt.getSubject());
     }
 
     @GetMapping("/api/v1/trainers/{trainerId}/students")

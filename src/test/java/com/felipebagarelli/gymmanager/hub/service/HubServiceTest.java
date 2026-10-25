@@ -175,4 +175,20 @@ class HubServiceTest {
         assertThat(old.getStatus()).isEqualTo(TrainerStudentStatus.INVITED);
         verify(links).save(eq(old));
     }
+
+    @Test
+    void hireByInvite_worksEvenIfTheTrainerIsNotInTheHub_sameRulesOtherwise() {
+        joao.setListed(false);
+        Plan mensal = plans.findById(50L).orElseThrow();
+
+        assertThat(service.hireByInvite(mensal, "ana@example.com").url()).isEqualTo("https://checkout.stripe.test/x");
+        verify(subscriptions).subscribe(50L, "ana@example.com");
+
+        mensal.setActive(false);
+        assertThatThrownBy(() -> service.hireByInvite(mensal, "ana@example.com")).isInstanceOf(ConflictException.class);
+        mensal.setActive(true);
+        when(links.findByStudentId(9L)).thenReturn(Optional.of(TrainerStudent.builder().student(ana).trainer(bia)
+                .status(TrainerStudentStatus.ACTIVE).build()));
+        assertThatThrownBy(() -> service.hireByInvite(mensal, "ana@example.com")).isInstanceOf(ConflictException.class);
+    }
 }

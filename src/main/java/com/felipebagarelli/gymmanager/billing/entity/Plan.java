@@ -37,4 +37,8 @@ public class Plan {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    /** Codigo do link de convite (null = ainda nao gerado). Trocar o codigo invalida o link antigo. */
+    @Column(length = 24, unique = true)
+    private String inviteCode;
 }

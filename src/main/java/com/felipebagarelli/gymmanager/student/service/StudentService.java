@@ -1,15 +1,10 @@
 package com.felipebagarelli.gymmanager.student.service;
 
-import com.felipebagarelli.gymmanager.auth.entity.Role;
-import com.felipebagarelli.gymmanager.auth.entity.User;
-import com.felipebagarelli.gymmanager.auth.repository.UserRepository;
-import com.felipebagarelli.gymmanager.exception.EmailAlreadyInUseException;
 import com.felipebagarelli.gymmanager.exception.BadRequestException;
 import com.felipebagarelli.gymmanager.exception.ConflictException;
 import com.felipebagarelli.gymmanager.exception.ResourceNotFoundException;
 import com.felipebagarelli.gymmanager.session.entity.WorkoutSession;
 import com.felipebagarelli.gymmanager.session.repository.WorkoutSessionRepository;
-import com.felipebagarelli.gymmanager.student.dto.request.CreateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.request.UpdateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.response.StudentProfileResponse;
 import com.felipebagarelli.gymmanager.student.entity.StudentProfile;
@@ -20,7 +15,6 @@ import com.felipebagarelli.gymmanager.student.repository.TrainerStudentRepositor
 import com.felipebagarelli.gymmanager.trainer.entity.TrainerProfile;
 import com.felipebagarelli.gymmanager.trainer.repository.TrainerProfileRepository;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +28,6 @@ public class StudentService {
     private final StudentProfileRepository studentProfileRepository;
     private final TrainerStudentRepository trainerStudentRepository;
     private final TrainerProfileRepository trainerProfileRepository;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final WorkoutSessionRepository sessionRepository;
     private StudentLinkService linkService;
 
@@ -47,14 +39,10 @@ public class StudentService {
     public StudentService(StudentProfileRepository studentProfileRepository,
                            TrainerStudentRepository trainerStudentRepository,
                            TrainerProfileRepository trainerProfileRepository,
-                           UserRepository userRepository,
-                           PasswordEncoder passwordEncoder,
                            WorkoutSessionRepository sessionRepository) {
         this.studentProfileRepository = studentProfileRepository;
         this.trainerStudentRepository = trainerStudentRepository;
         this.trainerProfileRepository = trainerProfileRepository;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
         this.sessionRepository = sessionRepository;
     }
 
@@ -90,53 +78,6 @@ public class StudentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado!"));
         assertOwnership(link.getTrainer(), authenticatedEmail);
         return link;
-    }
-
-    @Transactional
-    public StudentProfileResponse createStudent(Long trainerId, CreateStudentRequest request, String authenticatedEmail) {
-        TrainerProfile trainer = trainerProfileRepository.findById(trainerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Personal não encontrado!"));
-        assertOwnership(trainer, authenticatedEmail);
-
-        String email = request.email().trim().toLowerCase(java.util.Locale.ROOT);
-        if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new EmailAlreadyInUseException("E-mail já está em uso!");
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        User user = User.builder()
-                .email(email)
-                .passwordHash(passwordEncoder.encode(request.password()))
-                .role(Role.STUDENT)
-                .active(true)
-                .createdAt(now)
-                .updatedAt(now)
-                // cadastro feito pelo personal/painel: nao passa pela confirmacao de e-mail do app
-                .emailVerifiedAt(now)
-                .build();
-        userRepository.save(user);
-
-        StudentProfile student = StudentProfile.builder()
-                .user(user)
-                .name(request.name())
-                .birthDate(request.birthDate())
-                .phone(request.phone())
-                .goal(request.goal())
-                .height(request.height())
-                .weight(request.weight())
-                .active(true)
-                .build();
-        studentProfileRepository.save(student);
-
-        TrainerStudent trainerStudent = TrainerStudent.builder()
-                .trainer(trainer)
-                .student(student)
-                .status(TrainerStudentStatus.ACTIVE)
-                .createdAt(now)
-                .build();
-        trainerStudentRepository.save(trainerStudent);
-
-        return toResponse(student, trainerStudent.getStatus());
     }
 
     public List<StudentProfileResponse> listByTrainer(Long trainerId, String authenticatedEmail) {

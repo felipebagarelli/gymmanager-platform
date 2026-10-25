@@ -12,6 +12,8 @@ import '../../features/account/presentation/verify_email_page.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/hub/presentation/public_profile_page.dart';
 import '../../features/hub/presentation/trainer_public_page.dart';
+import '../../features/invite/application/invite_providers.dart';
+import '../../features/invite/presentation/invite_page.dart';
 import '../../features/onboarding/application/onboarding_providers.dart';
 import '../../features/onboarding/presentation/onboarding_page.dart';
 import '../../features/auth/domain/app_user.dart';
@@ -53,11 +55,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       final user = auth.value;
       // cadastro, código e senha: abertos para quem ainda não entrou
       final publicPage = location == '/login' || _accountPages.contains(location);
-      if (user == null) return publicPage ? null : '/login';
+      final inviteCode = location.startsWith('/convite/') ? state.pathParameters['code'] : null;
+      if (user == null) {
+        // link de convite antes de entrar: guarda e mostra depois do login ou do cadastro
+        if (inviteCode != null) ref.read(pendingInviteProvider.notifier).set(inviteCode);
+        return publicPage ? null : '/login';
+      }
       if (publicPage || location == '/splash') return '/';
       // cada papel só navega pelas próprias telas
       if (user is TrainerUser && location.startsWith('/workouts')) return '/';
       if (user is StudentUser && location.startsWith('/trainer')) return '/';
+      if (user is TrainerUser && inviteCode != null) return '/';
+      // convite aberto antes de entrar: vem antes do onboarding (quem assina ganha um personal)
+      final pending = ref.read(pendingInviteProvider);
+      if (user is StudentUser && pending != null && inviteCode == null) return '/convite/$pending';
+      if (inviteCode != null) return null;
       // aluno sem personal: antes de tudo, objetivo, rotina e triagem de saúde
       if (user is StudentUser && location != '/onboarding' && ref.read(needsOnboardingProvider)) return '/onboarding';
       return null;
@@ -72,6 +84,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
       GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
       GoRoute(path: '/ai-workout', builder: (context, state) => const AiWorkoutPage()),
+      GoRoute(path: '/convite/:code', builder: (context, state) => InvitePage(code: state.pathParameters['code']!)),
       GoRoute(
         path: '/hub/trainers/:id',
         builder: (context, state) => TrainerPublicPage(trainerId: int.parse(state.pathParameters['id']!)),
@@ -122,7 +135,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/trainer/messages/:id',
         builder: (context, state) => TrainerConversationPage(conversationId: int.parse(state.pathParameters['id']!)),
       ),
-      GoRoute(path: '/trainer/students/new', builder: (context, state) => const StudentFormPage()),
       GoRoute(
         path: '/trainer/students/:id',
         builder: (context, state) => StudentDetailPage(studentId: int.parse(state.pathParameters['id']!)),

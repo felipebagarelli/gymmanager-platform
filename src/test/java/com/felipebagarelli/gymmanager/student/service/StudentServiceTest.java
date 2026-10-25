@@ -2,10 +2,8 @@ package com.felipebagarelli.gymmanager.student.service;
 
 import com.felipebagarelli.gymmanager.auth.entity.Role;
 import com.felipebagarelli.gymmanager.auth.entity.User;
-import com.felipebagarelli.gymmanager.auth.repository.UserRepository;
 import com.felipebagarelli.gymmanager.exception.EmailAlreadyInUseException;
 import com.felipebagarelli.gymmanager.exception.ResourceNotFoundException;
-import com.felipebagarelli.gymmanager.student.dto.request.CreateStudentRequest;
 import com.felipebagarelli.gymmanager.student.dto.response.StudentProfileResponse;
 import com.felipebagarelli.gymmanager.session.entity.WorkoutSession;
 import com.felipebagarelli.gymmanager.session.repository.WorkoutSessionRepository;
@@ -23,7 +21,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -48,11 +45,6 @@ class StudentServiceTest {
     private TrainerProfileRepository trainerProfileRepository;
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
-    @Mock
     private WorkoutSessionRepository sessionRepository;
 
     @InjectMocks
@@ -61,78 +53,6 @@ class StudentServiceTest {
     private TrainerProfile trainer() {
         User trainerUser = User.builder().email("trainer@example.com").role(Role.TRAINER).build();
         return TrainerProfile.builder().id(1L).user(trainerUser).displayName("João Personal").build();
-    }
-
-    @Test
-    void createStudent_throwsResourceNotFoundException_whenTrainerNotFound() {
-        CreateStudentRequest request = new CreateStudentRequest(
-                "aluno@example.com", "senhaSegura123", "Maria Aluna", LocalDate.of(2000, 1, 1), "11988888888", "hipertrofia", 1.65, 60.0);
-
-        when(trainerProfileRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> studentService.createStudent(1L, request, "trainer@example.com"))
-                .isInstanceOf(ResourceNotFoundException.class);
-
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_throwsAccessDeniedException_whenAuthenticatedEmailIsNotTheTrainerOwner() {
-        CreateStudentRequest request = new CreateStudentRequest(
-                "aluno@example.com", "senhaSegura123", "Maria Aluna", LocalDate.of(2000, 1, 1), "11988888888", "hipertrofia", 1.65, 60.0);
-
-        when(trainerProfileRepository.findById(1L)).thenReturn(Optional.of(trainer()));
-
-        assertThatThrownBy(() -> studentService.createStudent(1L, request, "outro-trainer@example.com"))
-                .isInstanceOf(AccessDeniedException.class);
-
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_throwsEmailAlreadyInUseException_whenEmailExists() {
-        CreateStudentRequest request = new CreateStudentRequest(
-                "aluno@example.com", "senhaSegura123", "Maria Aluna", LocalDate.of(2000, 1, 1), "11988888888", "hipertrofia", 1.65, 60.0);
-
-        when(trainerProfileRepository.findById(1L)).thenReturn(Optional.of(trainer()));
-        when(userRepository.existsByEmailIgnoreCase(request.email())).thenReturn(true);
-
-        assertThatThrownBy(() -> studentService.createStudent(1L, request, "trainer@example.com"))
-                .isInstanceOf(EmailAlreadyInUseException.class);
-
-        verify(userRepository, never()).save(any());
-        verify(studentProfileRepository, never()).save(any());
-        verify(trainerStudentRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_savesUserStudentProfileAndActiveLink_whenValid() {
-        CreateStudentRequest request = new CreateStudentRequest(
-                "aluno@example.com", "senhaSegura123", "Maria Aluna", LocalDate.of(2000, 1, 1), "11988888888", "hipertrofia", 1.65, 60.0);
-
-        when(trainerProfileRepository.findById(1L)).thenReturn(Optional.of(trainer()));
-        when(userRepository.existsByEmailIgnoreCase(request.email())).thenReturn(false);
-        when(passwordEncoder.encode(request.password())).thenReturn("hashed-password");
-        when(studentProfileRepository.save(any(StudentProfile.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(trainerStudentRepository.save(any(TrainerStudent.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        StudentProfileResponse response = studentService.createStudent(1L, request, "trainer@example.com");
-
-        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(userCaptor.capture());
-        assertThat(userCaptor.getValue().getRole()).isEqualTo(Role.STUDENT);
-        assertThat(userCaptor.getValue().getPasswordHash()).isEqualTo("hashed-password");
-
-        ArgumentCaptor<TrainerStudent> linkCaptor = ArgumentCaptor.forClass(TrainerStudent.class);
-        verify(trainerStudentRepository).save(linkCaptor.capture());
-        assertThat(linkCaptor.getValue().getStatus()).isEqualTo(TrainerStudentStatus.ACTIVE);
-        assertThat(linkCaptor.getValue().getTrainer().getId()).isEqualTo(1L);
-
-        assertThat(response.email()).isEqualTo("aluno@example.com");
-        assertThat(response.name()).isEqualTo("Maria Aluna");
-        assertThat(response.status()).isEqualTo(TrainerStudentStatus.ACTIVE);
     }
 
     @Test

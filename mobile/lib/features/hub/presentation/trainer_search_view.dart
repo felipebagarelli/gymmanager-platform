@@ -10,6 +10,7 @@ import '../../../core/utils/async_widgets.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/skeleton.dart';
 import '../../billing/domain/billing.dart';
+import '../../invite/presentation/invite_page.dart';
 import '../application/hub_providers.dart';
 import '../data/hub_repository.dart';
 
@@ -60,6 +61,16 @@ class _TrainerSearchViewState extends ConsumerState<TrainerSearchView> {
             Text('ENCONTRE UM PERSONAL', style: AppText.display(32).copyWith(letterSpacing: 0.5)),
             Text('Treine com acompanhamento: treinos montados por um profissional e conversa direta pelo app.',
                 style: AppText.body(size: 13.5, color: AppColors.textSecondary)),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('enter-invite-code'),
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                icon: const Icon(LucideIcons.ticket, size: 18),
+                label: const Text('Tenho um código de convite'),
+                onPressed: () => enterInviteCode(context),
+              ),
+            ),
             const SizedBox(height: 14),
             TextField(
               key: const Key('hub-search'),

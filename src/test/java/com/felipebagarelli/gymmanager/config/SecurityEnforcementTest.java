@@ -14,7 +14,6 @@ import com.felipebagarelli.gymmanager.service.ExerciseService;
 import com.felipebagarelli.gymmanager.service.WorkoutExerciseService;
 import com.felipebagarelli.gymmanager.service.WorkoutService;
 import com.felipebagarelli.gymmanager.student.controller.StudentController;
-import com.felipebagarelli.gymmanager.student.dto.request.CreateStudentRequest;
 import com.felipebagarelli.gymmanager.student.service.StudentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,35 +157,6 @@ class SecurityEnforcementTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"a@b.com\",\"code\":\"12\"}"))
                 .andExpect(status().isBadRequest()); // codigo de 6 numeros
-    }
-
-    @Test
-    void createStudent_withoutToken_returns401() throws Exception {
-        mockMvc.perform(post("/api/v1/trainers/1/students")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validStudentPayload()))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void createStudent_withStudentRoleToken_returns403() throws Exception {
-        mockMvc.perform(post("/api/v1/trainers/1/students")
-                        .header("Authorization", "Bearer " + tokenFor(Role.STUDENT))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validStudentPayload()))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void createStudent_withTrainerTokenButNotTheOwner_returns403() throws Exception {
-        when(studentService.createStudent(anyLong(), any(CreateStudentRequest.class), anyString()))
-                .thenThrow(new AccessDeniedException("Você não tem permissão para acessar os dados deste personal."));
-
-        mockMvc.perform(post("/api/v1/trainers/1/students")
-                        .header("Authorization", "Bearer " + tokenFor(Role.TRAINER))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validStudentPayload()))
-                .andExpect(status().isForbidden());
     }
 
     private String validStudentPayload() {

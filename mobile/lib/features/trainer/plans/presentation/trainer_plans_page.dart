@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../invite/presentation/share_invite_sheet.dart';
 import '../../../../core/providers.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text.dart';
@@ -395,6 +396,14 @@ class _PlanTile extends StatelessWidget {
               children: [
                 Text(formatPrice(plan.priceCents), style: AppText.display(24, color: plan.active ? AppColors.volt : AppColors.textMuted)),
                 Text('por mês', style: AppText.body(size: 12, color: AppColors.textMuted)),
+                if (plan.active)
+                  TextButton.icon(
+                    key: Key('share-plan-${plan.id}'),
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), visualDensity: VisualDensity.compact),
+                    icon: const Icon(LucideIcons.share2, size: 16),
+                    label: const Text('Convidar'),
+                    onPressed: () => showShareInviteSheet(context, plan: plan),
+                  ),
               ],
             ),
           ],

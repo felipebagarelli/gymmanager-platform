@@ -140,7 +140,7 @@ Objetivo: o personal organiza treinos e alunos do jeito dele, define em que dia 
   - Também por aluno ou montando a sequência e escolhendo vários alunos.
 - [ ] F4. **Pastas na aba Treinos:** o personal cria, renomeia e exclui pastas, e move treinos para dentro ou deixa fora (raiz). Um nível de pasta no começo (subpastas depois, se pedirem). Excluir pasta não apaga treinos: eles voltam para a raiz. Busca continua achando treinos em qualquer pasta.
   - Backend: `workout_folders` (dono = personal, nome, ordem) e `workout.folder_id` opcional.
-- [ ] F5. **Aluno novo só pelo cadastro normal + link de convite:**
+- [x] F5. **Aluno novo só pelo cadastro normal + link de convite** — feito em 25/10/2026 (V19: `plans.invite_code`). Feito: "Convidar" em cada plano ativo (aba Planos) e o "+" da aba Alunos abrem o link para compartilhar (WhatsApp etc.), copiar ou trocar por um novo; a página `/convite/{código}` do servidor mostra o plano, o botão "Abrir no app" e o código; no app, `/convite/{código}` mostra o plano e "Assinar e começar" (mesmas regras do hub: maior de 18, sem personal ativo; o vínculo só fica ativo com o pagamento); quem ainda não entrou vê o convite logo depois do login ou do cadastro; "Tenho um código de convite" em Mensagens. Saíram do app e do painel o "Novo aluno" com senha provisória e o endpoint `POST /api/v1/trainers/{id}/students`. Pedido original:
   - Personal: botão **"Compartilhar link"** em cada plano (aba Planos), que abre o compartilhamento do celular (WhatsApp etc.) com um link do plano.
   - Link: abre o app se instalado (deep link) ou uma página do servidor com o plano, o personal e os botões para baixar o app; depois do cadastro/login o aluno cai direto no plano e assina (mesmo fluxo do hub: vínculo `INVITED` ativado pelo pagamento).
   - Sai do app (e do painel) o "Novo aluno" com e-mail e senha provisória; alunos já criados assim continuam funcionando (podem trocar a senha pelo "esqueci a senha").
@@ -359,3 +359,13 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - **Montar a sequência a partir do treino** (no editor, escolhendo vários alunos) não foi feito: hoje é pelo perfil de um aluno + "copiar para outros".
 - O Histórico ainda não mostra "planejado × feito" na sequência.
 - Painel web não mostra nem edita (entra no B6).
+
+### F5 — Convite por link (25/10/2026)
+- **Link que abre o app direto** (Android App Links / iOS Universal Links) precisa do domínio final e de arquivos de verificação no servidor. Hoje o link abre a página do servidor, que tem o botão "Abrir no app" (`gymmanager://app/convite/<código>`) e o código para digitar.
+- **Links das lojas** na página do convite: entram quando o app estiver publicado.
+- **Convite guardado só em memória:** se a pessoa fechar o app antes de entrar, precisa abrir o link de novo.
+- **Menores de 18** não assinam pelo convite (como no hub) até existir a aprovação do responsável para pagamento.
+- **Aluno que já tem personal** vê o convite, mas não assina: a troca de plano/personal é o F6 (e decidir o que acontece com o personal atual).
+- **Alunos criados antes pelo personal** (com senha provisória) continuam funcionando; podem trocar a senha pelo "esqueci a senha".
+- **Pedido "Reenviar acesso / senha provisória" (B2)** deixa de existir.
+- O código do convite vale até o personal gerar outro ou desativar o plano; não expira sozinho (avaliar validade).

@@ -9,4 +9,5 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
     List<Plan> findByTrainerIdOrderByPriceCentsAsc(Long trainerId);
 
     List<Plan> findByTrainerIdAndActiveTrueOrderByPriceCentsAsc(Long trainerId);
+    java.util.Optional<Plan> findByInviteCode(String inviteCode);
 }

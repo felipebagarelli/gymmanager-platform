@@ -11,20 +11,19 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/pill_button.dart';
 import '../../../../core/widgets/skeleton.dart';
-import '../../../auth/application/auth_controller.dart';
 import '../application/students_providers.dart';
 import '../domain/managed_student.dart';
 
-/// Cadastro (sem [studentId]) ou edição de um aluno pelo personal.
+/// Edição dos dados de um aluno pelo personal. Aluno novo não é cadastrado aqui: entra pelo link de
+/// convite de um plano e cria a própria conta.
 class StudentFormPage extends ConsumerWidget {
-  const StudentFormPage({super.key, this.studentId});
+  const StudentFormPage({super.key, required this.studentId});
 
-  final int? studentId;
+  final int studentId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final id = studentId;
-    if (id == null) return const _StudentForm(initial: null);
     final student = ref.watch(managedStudentProvider(id));
     return student.when(
       loading: () => const Scaffold(body: SafeArea(child: SkeletonList())),
@@ -39,38 +38,34 @@ class StudentFormPage extends ConsumerWidget {
 class _StudentForm extends ConsumerStatefulWidget {
   const _StudentForm({required this.initial});
 
-  final ManagedStudent? initial;
+  final ManagedStudent initial;
 
   @override
   ConsumerState<_StudentForm> createState() => _StudentFormState();
 }
 
 class _StudentFormState extends ConsumerState<_StudentForm> {
-  late final _name = TextEditingController(text: widget.initial?.name ?? '');
-  final _email = TextEditingController();
-  final _password = TextEditingController();
-  late final _phone = TextEditingController(text: widget.initial?.phone ?? '');
+  late final _name = TextEditingController(text: widget.initial.name);
+  late final _phone = TextEditingController(text: widget.initial.phone ?? '');
   late final _birth = TextEditingController(
-    text: widget.initial?.birthDate == null ? '' : formatBirthDate(widget.initial!.birthDate!),
+    text: widget.initial.birthDate == null ? '' : formatBirthDate(widget.initial.birthDate!),
   );
-  late final _goal = TextEditingController(text: widget.initial?.goal ?? '');
+  late final _goal = TextEditingController(text: widget.initial.goal ?? '');
   late final _height = TextEditingController(
-    text: widget.initial?.height == null ? '' : formatNumber(widget.initial!.height!),
+    text: widget.initial.height == null ? '' : formatNumber(widget.initial.height!),
   );
   late final _weight = TextEditingController(
-    text: widget.initial?.weight == null ? '' : formatNumber(widget.initial!.weight!),
+    text: widget.initial.weight == null ? '' : formatNumber(widget.initial.weight!),
   );
 
   /// 0 = sem meta.
-  late int _weeklyGoal = widget.initial?.weeklyGoal ?? 0;
+  late int _weeklyGoal = widget.initial.weeklyGoal ?? 0;
   final _errors = <String, String>{};
   bool _saving = false;
 
-  bool get _creating => widget.initial == null;
-
   @override
   void dispose() {
-    for (final c in [_name, _email, _password, _phone, _birth, _goal, _height, _weight]) {
+    for (final c in [_name, _phone, _birth, _goal, _height, _weight]) {
       c.dispose();
     }
     super.dispose();
@@ -82,15 +77,6 @@ class _StudentFormState extends ConsumerState<_StudentForm> {
   StudentDraft? _validate() {
     _errors.clear();
     if (_name.text.trim().isEmpty) _errors['name'] = 'Informe o nome';
-    if (_creating) {
-      final email = _email.text.trim();
-      if (email.isEmpty) {
-        _errors['email'] = 'Informe o e-mail';
-      } else if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
-        _errors['email'] = 'E-mail inválido';
-      }
-      if (_password.text.length < 8) _errors['password'] = 'Mínimo de 8 caracteres';
-    }
     DateTime? birth;
     if (_birth.text.trim().isNotEmpty) {
       birth = parseBirthDate(_birth.text);
@@ -125,19 +111,16 @@ class _StudentFormState extends ConsumerState<_StudentForm> {
     if (draft == null) return;
     setState(() => _saving = true);
     final repository = ref.read(studentsRepositoryProvider);
-    final trainerId = ref.read(currentTrainerProvider)?.id;
     ManagedStudent? saved;
     final ok = await runAction(context, () async {
-      saved = _creating
-          ? await repository.create(trainerId!, draft, email: _email.text.trim(), password: _password.text)
-          : await repository.update(widget.initial!.id, draft);
+      saved = await repository.update(widget.initial.id, draft);
     });
     if (!mounted) return;
     setState(() => _saving = false);
     if (!ok || saved == null) return;
     refreshStudent(ref, saved!.id);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_creating ? 'Aluno cadastrado' : 'Dados salvos')),
+      const SnackBar(content: Text('Dados salvos')),
     );
     context.pop();
   }
@@ -171,7 +154,7 @@ class _StudentFormState extends ConsumerState<_StudentForm> {
                   CircleIconButton(icon: LucideIcons.x, tooltip: 'Cancelar', onPressed: () => context.pop()),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(_creating ? 'NOVO ALUNO' : 'EDITAR ALUNO', style: AppText.display(26)),
+                    child: Text('EDITAR ALUNO', style: AppText.display(26)),
                   ),
                 ],
               ),
@@ -181,11 +164,6 @@ class _StudentFormState extends ConsumerState<_StudentForm> {
                 padding: const EdgeInsets.fromLTRB(kScreenPadding, 16, kScreenPadding, 16),
                 children: [
                   _field('name', 'Nome', _name),
-                  if (_creating) ...[
-                    _field('email', 'E-mail', _email, keyboard: TextInputType.emailAddress),
-                    _field('password', 'Senha provisória', _password,
-                        obscure: true, helper: 'O aluno usa este e-mail e esta senha para entrar no app.'),
-                  ],
                   _field('phone', 'Telefone (opcional)', _phone, keyboard: TextInputType.phone),
                   _field('birth', 'Nascimento (opcional)', _birth, hint: 'dd/mm/aaaa', keyboard: TextInputType.datetime),
                   _field('goal', 'Objetivo (opcional)', _goal, hint: 'Ex.: hipertrofia, emagrecimento'),
@@ -211,7 +189,7 @@ class _StudentFormState extends ConsumerState<_StudentForm> {
               padding: const EdgeInsets.fromLTRB(kScreenPadding, 8, kScreenPadding, 16),
               child: PillButton(
                 key: const Key('save-student'),
-                label: _saving ? 'Salvando…' : (_creating ? 'Cadastrar aluno' : 'Salvar'),
+                label: _saving ? 'Salvando…' : 'Salvar',
                 onPressed: _saving ? null : _save,
               ),
             ),

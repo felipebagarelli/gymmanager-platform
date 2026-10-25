@@ -21,18 +21,6 @@ class StudentsRepository {
       });
 
   /// Cria a conta do aluno (e-mail e senha provisória) já vinculada ao personal.
-  Future<ManagedStudent> create(int trainerId, StudentDraft draft, {required String email, required String password}) =>
-      _guard(() async {
-        final response = await _dio.post<Map<String, dynamic>>(
-          '/api/v1/trainers/$trainerId/students',
-          data: {...draft.toJson(), 'email': email, 'password': password},
-        );
-        final created = ManagedStudent.fromJson(response.data!);
-        // a criação não recebe a meta semanal: grava em seguida, se houver
-        final goal = draft.weeklyGoal;
-        return goal == null ? created : update(created.id, draft);
-      });
-
   /// Atualiza os dados. Sem meta semanal no rascunho, pede explicitamente para removê-la.
   Future<ManagedStudent> update(int studentId, StudentDraft draft) => _guard(() async {
         final response = await _dio.put<Map<String, dynamic>>(
