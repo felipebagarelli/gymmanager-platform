@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gymmanager_mobile/features/workouts/data/workout_repository.dart';
+import 'package:gymmanager_mobile/features/workouts/domain/routine.dart';
 import 'package:gymmanager_mobile/features/workouts/domain/workout.dart';
+import 'package:gymmanager_mobile/features/trainer/workouts/application/trainer_workouts_providers.dart';
 import 'package:gymmanager_mobile/core/errors/app_exception.dart';
 import 'package:gymmanager_mobile/core/providers.dart';
 import 'package:gymmanager_mobile/core/routing/app_router.dart';
@@ -18,6 +20,7 @@ import 'package:gymmanager_mobile/features/trainer/students/domain/managed_stude
 import 'package:gymmanager_mobile/features/workouts/application/workout_providers.dart';
 
 import 'support/fake_repositories.dart';
+import 'support/fake_trainer_workouts.dart';
 import 'support/fakes.dart';
 
 final _now = DateTime(2026, 10, 15, 12); // quinta
@@ -152,9 +155,31 @@ class _ScheduleWorkouts extends FakeWorkoutRepository {
     this.days.addAll(days);
     return myWorkouts(studentId);
   }
+
+  final routines = <int, List<int>>{};
+
+  @override
+  Future<Routine> routine(int studentId) async {
+    final ids = routines[studentId] ?? const <int>[];
+    return ids.isEmpty
+        ? Routine.weekdays
+        : Routine(
+            rotation: true,
+            sequence: [for (var i = 0; i < ids.length; i++) RoutineItem(workoutId: ids[i], name: ids[i] == 10 ? 'Treino A' : 'Treino B', order: i + 1)],
+            nextWorkoutId: ids.first,
+          );
+  }
+
+  @override
+  Future<Routine> setRoutine(int studentId, List<int> workoutIds) async {
+    routines[studentId] = workoutIds;
+    return routine(studentId);
+  }
 }
 
-Widget _app(FakeStudentsRepository students, {List<WorkoutSession> sessions = const [], WorkoutRepository? workouts}) => ProviderScope(
+Widget _app(FakeStudentsRepository students,
+        {List<WorkoutSession> sessions = const [], WorkoutRepository? workouts, FakeTrainerWorkoutsRepository? trainerWorkouts}) =>
+    ProviderScope(
       retry: (retryCount, error) => null,
       overrides: [
         tokenStorageProvider.overrideWithValue(InMemoryTokenStorage(
@@ -164,6 +189,7 @@ Widget _app(FakeStudentsRepository students, {List<WorkoutSession> sessions = co
         studentsRepositoryProvider.overrideWithValue(students),
         sessionRepositoryProvider.overrideWithValue(FakeSessionRepository(initial: sessions)),
         workoutRepositoryProvider.overrideWithValue(workouts ?? FakeWorkoutRepository()),
+        if (trainerWorkouts != null) trainerWorkoutsRepositoryProvider.overrideWithValue(trainerWorkouts),
         clockProvider.overrideWithValue(() => _now),
       ],
       child: Consumer(
@@ -285,6 +311,33 @@ void main() {
       expect(workouts.saved.single, {10: {1}, 11: {4}});
       expect(_in('student-workout-10', find.text('Seg')), findsOneWidget);
       expect(_in('student-workout-11', find.text('Qui')), findsOneWidget);
+    });
+
+    testWidgets('montar sequência no perfil do aluno e copiar para outro aluno', (tester) async {
+      final workouts = _ScheduleWorkouts();
+      final trainerWorkouts = FakeTrainerWorkoutsRepository();
+      await _pump(tester, _app(FakeStudentsRepository(_students()), workouts: workouts, trainerWorkouts: trainerWorkouts));
+      await tester.tap(find.byKey(const Key('student-2')));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byKey(const Key('edit-sequence')));
+      await tester.tap(find.byKey(const Key('edit-sequence')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('save-sequence-others')));
+      await tester.pumpAndSettle();
+      expect(workouts.routines[2], [10, 11]);
+
+      // copiar: a própria aluna não aparece na lista
+      expect(find.byKey(const Key('pick-student-2')), findsNothing);
+      await tester.tap(find.byKey(const Key('pick-student-3')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('pick-confirm')));
+      await tester.pumpAndSettle();
+      expect(trainerWorkouts.calls, contains('routine:3:10,11'));
+
+      expect(find.byKey(const Key('student-sequence')), findsOneWidget);
+      expect(find.textContaining('Treino A → Treino B'), findsOneWidget);
+      expect(_in('student-workout-11', find.text('2º da sequência')), findsOneWidget);
     });
 
     testWidgets('sem treinos e sem sessões, explica em vez de mostrar vazio', (tester) async {

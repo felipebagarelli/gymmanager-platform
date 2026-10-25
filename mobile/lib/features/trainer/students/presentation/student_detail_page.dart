@@ -18,6 +18,9 @@ import '../../../sessions/domain/training_stats.dart';
 import '../../../sessions/domain/workout_session.dart';
 import '../../../sessions/presentation/session_detail_sheet.dart';
 import '../../../workouts/application/workout_providers.dart';
+import '../../../workouts/domain/routine.dart';
+import '../../../workouts/presentation/sequence_sheet.dart';
+import '../../workouts/application/trainer_workouts_providers.dart';
 import '../../../workouts/domain/workout.dart';
 import '../../../workouts/presentation/weekdays.dart';
 import '../../../chat/application/chat_providers.dart';
@@ -410,12 +413,38 @@ class _Workouts extends ConsumerWidget {
     final days = await showWeekScheduleSheet(context, workouts: workouts);
     if (days == null || !context.mounted) return;
     final ok = await runAction(context, () => ref.read(workoutRepositoryProvider).setSchedule(studentId, days));
-    if (ok) ref.invalidate(studentWorkoutsProvider(studentId));
+    if (ok) {
+      ref.invalidate(studentWorkoutsProvider(studentId));
+      ref.invalidate(routineProvider(studentId)); // organizar a semana volta para os dias da semana
+    }
+  }
+
+  Future<void> _editSequence(BuildContext context, WidgetRef ref, List<Workout> workouts, Routine current) async {
+    final choice = await showSequenceSheet(context, workouts: workouts, current: current, allowApplyToOthers: true);
+    if (choice == null || !context.mounted) return;
+    final repo = ref.read(workoutRepositoryProvider);
+    final ok = await runAction(context, () => repo.setRoutine(studentId, choice.useWeekdays ? const [] : choice.workoutIds));
+    if (!ok || !context.mounted) return;
+    ref.invalidate(routineProvider(studentId));
+    if (!choice.applyToOthers) return;
+    final others = await showPickStudents(context, title: 'Copiar a sequência para', exclude: {studentId});
+    if (others == null || others.isEmpty || !context.mounted) return;
+    final copied = await runAction(context, () => ref.read(trainerWorkoutsRepositoryProvider).applyRoutine(others, choice.workoutIds));
+    if (!copied || !context.mounted) return;
+    for (final id in others) {
+      ref.invalidate(studentWorkoutsProvider(id));
+      ref.invalidate(routineProvider(id));
+    }
+    ref.invalidate(trainerWorkoutsProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(others.length == 1 ? 'Sequência copiada para 1 aluno' : 'Sequência copiada para ${others.length} alunos')),
+    );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workouts = ref.watch(studentWorkoutsProvider(studentId));
+    final routine = ref.watch(routineProvider(studentId)).value ?? Routine.weekdays;
     return workouts.when(
       loading: () => const SkeletonBox(height: 60),
       error: (error, _) => Text(messageOf(error), style: AppText.body(color: AppColors.textMuted)),
@@ -440,15 +469,26 @@ class _Workouts extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(w.name, style: AppText.body(size: 15.5, weight: FontWeight.w600)),
-                                Text(
-                                  w.weekdays.isEmpty ? 'Sem dia definido' : formatWeekdays(w.weekdays),
-                                  key: Key('student-workout-days-${w.id}'),
-                                  style: AppText.body(
-                                    size: 12.5,
-                                    weight: FontWeight.w500,
-                                    color: w.weekdays.isEmpty ? AppColors.textMuted : AppColors.volt,
+                                if (routine.rotation)
+                                  Text(
+                                    routine.orderOf(w.id) == null ? 'Fora da sequência' : '${routine.orderOf(w.id)}º da sequência',
+                                    key: Key('student-workout-order-${w.id}'),
+                                    style: AppText.body(
+                                      size: 12.5,
+                                      weight: FontWeight.w500,
+                                      color: routine.orderOf(w.id) == null ? AppColors.textMuted : AppColors.volt,
+                                    ),
+                                  )
+                                else
+                                  Text(
+                                    w.weekdays.isEmpty ? 'Sem dia definido' : formatWeekdays(w.weekdays),
+                                    key: Key('student-workout-days-${w.id}'),
+                                    style: AppText.body(
+                                      size: 12.5,
+                                      weight: FontWeight.w500,
+                                      color: w.weekdays.isEmpty ? AppColors.textMuted : AppColors.volt,
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),
@@ -457,15 +497,34 @@ class _Workouts extends ConsumerWidget {
                       ),
                     ),
                   ),
-                if (active)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      key: const Key('edit-week'),
-                      icon: const Icon(LucideIcons.calendarDays, size: 18),
-                      label: const Text('Organizar a semana'),
-                      onPressed: () => _editWeek(context, ref, items),
+                if (routine.rotation && routine.sequence.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      'Sequência: ${describeSequence(routine)}'
+                      '${routine.nextWorkoutId == null ? '' : ' · próximo: ${routine.sequence.firstWhere((i) => i.workoutId == routine.nextWorkoutId).name}'}',
+                      key: const Key('student-sequence'),
+                      style: AppText.body(size: 13, color: AppColors.textSecondary),
                     ),
+                  ),
+                if (active)
+                  Wrap(
+                    spacing: 4,
+                    children: [
+                      TextButton.icon(
+                        key: const Key('edit-week'),
+                        icon: const Icon(LucideIcons.calendarDays, size: 18),
+                        label: const Text('Organizar a semana'),
+                        onPressed: () => _editWeek(context, ref, items),
+                      ),
+                      if (items.length >= 2)
+                        TextButton.icon(
+                          key: const Key('edit-sequence'),
+                          icon: const Icon(LucideIcons.repeat, size: 18),
+                          label: const Text('Montar sequência'),
+                          onPressed: () => _editSequence(context, ref, items, routine),
+                        ),
+                    ],
                   ),
               ],
             ),

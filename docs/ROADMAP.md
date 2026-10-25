@@ -135,7 +135,7 @@ Objetivo: o personal organiza treinos e alunos do jeito dele, define em que dia 
   - **por treino:** no editor do treino, escolher os dias e marcar vários alunos de uma vez (cada aluno pode depois ser ajustado sozinho).
   - App do aluno: "Treino de hoje" segue os dias; os outros treinos continuam acessíveis (o aluno pode trocar o dia). Histórico mostra o planejado × feito na semana. Meta semanal sugerida = número de dias marcados.
   - Backend: dias guardados na atribuição (ex.: `workout_assignments.weekdays`, conjunto de 1–7); a API valida que só o personal dono do vínculo edita; atribuição sem dias continua valendo como hoje (treino "livre").
-- [ ] F3. **Esquema rotativo (AB, ABC, ABCD...):** em vez de dias fixos, o personal monta uma **sequência** de treinos para o aluno; o "treino de hoje" é o próximo da sequência depois do último **concluído**, não importa o dia da semana (bom para quem treina dia sim, dia não). Pode ser adiado se der muito trabalho (decisão do dono).
+- [x] F3. **Esquema rotativo (AB, ABC, ABCD...)** — feito em 25/10/2026 (V18: `workout_assignments.rotation_order` e `student_routines`). Feito: "Montar sequência" no perfil do aluno (marcar e arrastar para a ordem; mínimo 2 treinos), "Usar e copiar para outros alunos" (atribui o que faltar e aplica a mesma sequência, tudo ou nada), o aluno sem personal monta a própria sequência; na aba Treinos do aluno, o cartão vira "PRÓXIMO DA SEQUÊNCIA" (os dias da semana não valem nesse modo), a lista mostra "2º da sequência" e há "Pular para o próximo". Organizar a semana volta o aluno para os dias da semana. Pedido original: em vez de dias fixos, o personal monta uma **sequência** de treinos para o aluno; o "treino de hoje" é o próximo da sequência depois do último **concluído**, não importa o dia da semana (bom para quem treina dia sim, dia não). Pode ser adiado se der muito trabalho (decisão do dono).
   - Backend: uma "rotina" por aluno com modo `WEEKDAYS` ou `ROTATION`, a ordem dos treinos e o ponto atual (calculado pelas sessões concluídas, com "pular" e "voltar" manuais).
   - Também por aluno ou montando a sequência e escolhendo vários alunos.
 - [ ] F4. **Pastas na aba Treinos:** o personal cria, renomeia e exclui pastas, e move treinos para dentro ou deixa fora (raiz). Um nível de pasta no começo (subpastas depois, se pedirem). Excluir pasta não apaga treinos: eles voltam para a raiz. Busca continua achando treinos em qualquer pasta.
@@ -350,3 +350,12 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - **Fuso:** o "hoje" é o dia do celular do aluno.
 - **Aviso ao aluno** quando o personal muda a semana dele (precisa de push).
 - **Painel web:** não mostra nem edita os dias (entra no B6).
+
+### F3 — Esquema rotativo (25/10/2026)
+- **Próximo da sequência** é calculado no servidor pela última sessão **concluída**; uma sessão aberta e não finalizada não avança.
+- **Copiar para outros alunos** só aceita treinos do personal (não os que um aluno montou).
+- **Treino retirado** de um aluno sai da sequência sozinho (só contam as atribuições ativas); um treino novo atribuído não entra na sequência até o personal montar de novo.
+- **"Pular" pelo aluno com personal** é permitido (escolher o próximo); mudar a sequência, só o personal.
+- **Montar a sequência a partir do treino** (no editor, escolhendo vários alunos) não foi feito: hoje é pelo perfil de um aluno + "copiar para outros".
+- O Histórico ainda não mostra "planejado × feito" na sequência.
+- Painel web não mostra nem edita (entra no B6).

@@ -69,6 +69,12 @@ class TrainerWorkoutsRepository {
         data: {'weekdays': (weekdays.toList()..sort())},
       ));
 
+  /// A mesma sequência para vários alunos (atribui os treinos que faltarem).
+  Future<void> applyRoutine(Set<int> studentIds, List<int> workoutIds) => _guard(() => _dio.post<void>(
+        '/workouts/routine/batch',
+        data: {'studentIds': studentIds.toList(), 'workoutIds': workoutIds},
+      ));
+
   Future<void> unassign(int workoutId, int studentId) =>
       _guard(() => _dio.delete<void>('/workouts/$workoutId/assignments/$studentId'));
 

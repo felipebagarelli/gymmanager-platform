@@ -37,4 +37,7 @@ public class WorkoutAssignment {
     @Builder.Default
     @Column(nullable = false)
     private int weekdays = 0;
+
+    /** Posicao na sequencia do esquema rotativo (1, 2, 3...); null = fora da sequencia. */
+    private Integer rotationOrder;
 }

@@ -62,7 +62,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/workouts/*", "/workout-exercises/*").hasAnyRole("TRAINER", "STUDENT")
                         .requestMatchers(HttpMethod.POST, "/workouts/*/assignments", "/workouts/*/assignments/batch", "/exercises").hasRole("TRAINER")
                         // dias da semana: o personal, ou o aluno sem personal no treino dele (o servico confere)
-                        .requestMatchers(HttpMethod.PUT, "/workouts/*/assignments/*", "/workouts/student/*/schedule").hasAnyRole("TRAINER", "STUDENT")
+                        .requestMatchers(HttpMethod.PUT, "/workouts/*/assignments/*", "/workouts/student/*/schedule",
+                                "/workouts/student/*/routine").hasAnyRole("TRAINER", "STUDENT")
+                        .requestMatchers(HttpMethod.POST, "/workouts/student/*/routine/next").hasAnyRole("TRAINER", "STUDENT")
+                        .requestMatchers(HttpMethod.POST, "/workouts/routine/batch").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.GET, "/workouts/*/assignments").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.PUT, "/exercises/*").hasRole("TRAINER")
                         .requestMatchers(HttpMethod.DELETE, "/workouts/*/assignments/*", "/exercises/*").hasRole("TRAINER")

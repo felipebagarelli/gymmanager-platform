@@ -17,6 +17,8 @@ import '../../trainer/workouts/presentation/trainer_workouts_page.dart';
 import '../../sessions/application/session_providers.dart';
 import '../../sessions/domain/training_stats.dart';
 import '../application/workout_providers.dart';
+import '../domain/routine.dart';
+import 'sequence_sheet.dart';
 import '../domain/workout.dart';
 import '../../../core/providers.dart';
 import 'today_reminder_banner.dart';
@@ -69,6 +71,17 @@ class MyWorkoutsPage extends ConsumerWidget {
                 _Content(workouts: items),
                 if (independent) ...[
                   const SizedBox(height: 14),
+                  if (items.length >= 2) ...[
+                    PillButton(
+                      key: const Key('own-sequence'),
+                      label: 'Montar minha sequência',
+                      icon: LucideIcons.repeat,
+                      style: PillStyle.ghost,
+                      height: 46,
+                      onPressed: () => _editOwnSequence(context, ref, items),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   PillButton(
                     key: const Key('own-week'),
                     label: 'Organizar minha semana',
@@ -112,7 +125,24 @@ Future<void> _editOwnWeek(BuildContext context, WidgetRef ref, List<Workout> wor
   final days = await showWeekScheduleSheet(context, workouts: workouts);
   if (days == null || !context.mounted) return;
   final ok = await runAction(context, () => ref.read(workoutRepositoryProvider).setSchedule(studentId, days));
-  if (ok) ref.invalidate(myWorkoutsProvider);
+  if (ok) {
+    ref.invalidate(myWorkoutsProvider);
+    ref.invalidate(myRoutineProvider);
+  }
+}
+
+/// Aluno sem personal: monta a sequência (AB, ABC...) com os treinos dele.
+Future<void> _editOwnSequence(BuildContext context, WidgetRef ref, List<Workout> workouts) async {
+  final studentId = ref.read(currentStudentProvider)?.id;
+  if (studentId == null) return;
+  final current = ref.read(myRoutineProvider).value ?? Routine.weekdays;
+  final choice = await showSequenceSheet(context, workouts: workouts, current: current);
+  if (choice == null || !context.mounted) return;
+  final ok = await runAction(
+    context,
+    () => ref.read(workoutRepositoryProvider).setRoutine(studentId, choice.useWeekdays ? const [] : choice.workoutIds),
+  );
+  if (ok) ref.invalidate(myRoutineProvider);
 }
 
 /// Aluno sem personal e sem treinos: convite para montar o primeiro.
@@ -210,9 +240,12 @@ class _Content extends ConsumerWidget {
 
     final todaySession = stats?.todaySession;
     final today = ref.watch(clockProvider)().weekday;
+    final routine = ref.watch(myRoutineProvider).value ?? Routine.weekdays;
+    final sequenceNext = routine.rotation ? workouts.where((w) => w.id == routine.nextWorkoutId).firstOrNull : null;
     // com dias marcados, o cartão segue a semana; sem dias, sugere pelo histórico (o que faz mais tempo)
-    final scheduled = workouts.any((w) => w.weekdays.isNotEmpty);
-    final forToday = [for (final w in workouts) if (w.weekdays.contains(today)) w];
+    // na sequência os dias da semana não valem
+    final scheduled = sequenceNext == null && workouts.any((w) => w.weekdays.isNotEmpty);
+    final forToday = scheduled ? [for (final w in workouts) if (w.weekdays.contains(today)) w] : <Workout>[];
     final restDay = scheduled && forToday.isEmpty;
     final candidates = forToday.isNotEmpty ? forToday : workouts;
     final suggestedId = suggestedWorkoutId([for (final w in candidates) w.id], history);
@@ -226,13 +259,25 @@ class _Content extends ConsumerWidget {
       final inDays = daysUntilNext(hero.weekdays, today)!;
       heroLabel = 'PRÓXIMO · ${weekdayLong[((today - 1 + inDays) % 7) + 1]!.toUpperCase()}';
     }
+    if (sequenceNext != null) {
+      hero = sequenceNext;
+      heroLabel = 'PRÓXIMO DA SEQUÊNCIA';
+    }
     final doneWorkout = todaySession == null
         ? null
         : workouts.where((w) => w.id == todaySession.workoutId).firstOrNull;
     final highlighted = doneWorkout ?? hero;
-    // próximos: na ordem da semana a partir de hoje; os sem dia, no fim
-    final others = [for (final w in workouts) if (w.id != highlighted.id) w]
-      ..sort((a, b) => (daysUntilNext(a.weekdays, today) ?? 99).compareTo(daysUntilNext(b.weekdays, today) ?? 99));
+    // próximos: na ordem da sequência (a partir do próximo) ou da semana a partir de hoje; os de fora, no fim
+    int rank(Workout w) {
+      if (sequenceNext != null) {
+        final order = routine.orderOf(w.id);
+        final start = routine.orderOf(sequenceNext.id)!;
+        return order == null ? 99 : (order - start) % routine.sequence.length;
+      }
+      return daysUntilNext(w.weekdays, today) ?? 99;
+    }
+
+    final others = [for (final w in workouts) if (w.id != highlighted.id) w]..sort((a, b) => rank(a).compareTo(rank(b)));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,21 +294,41 @@ class _Content extends ConsumerWidget {
             stats: ref.watch(planStatsProvider(hero.id)).value,
             onStart: () => context.push('/workouts/${hero.id}'),
           ),
+        if (sequenceNext != null && doneWorkout == null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: const Key('skip-sequence'),
+              onPressed: () => _skip(context, ref, routine.after(sequenceNext.id)),
+              child: const Text('Pular para o próximo da sequência'),
+            ),
+          ),
         if (others.isNotEmpty) ...[
           const SizedBox(height: 22),
           const SectionTitle('Próximos treinos'),
           const SizedBox(height: 10),
-          for (final workout in others) _WorkoutRow(workout: workout),
+          for (final workout in others) _WorkoutRow(workout: workout, order: sequenceNext == null ? null : routine.orderOf(workout.id)),
         ],
       ],
     );
   }
 }
 
+/// "Pular": o próximo da sequência passa a ser [workoutId].
+Future<void> _skip(BuildContext context, WidgetRef ref, int? workoutId) async {
+  final studentId = ref.read(currentStudentProvider)?.id;
+  if (studentId == null || workoutId == null) return;
+  final ok = await runAction(context, () => ref.read(workoutRepositoryProvider).skipTo(studentId, workoutId));
+  if (ok) ref.invalidate(myRoutineProvider);
+}
+
 class _WorkoutRow extends ConsumerWidget {
-  const _WorkoutRow({required this.workout});
+  const _WorkoutRow({required this.workout, this.order});
 
   final Workout workout;
+
+  /// Posição na sequência (null fora do modo sequência).
+  final int? order;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -290,7 +355,11 @@ class _WorkoutRow extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(workout.name, style: AppText.body(size: 16, weight: FontWeight.w600)),
-                  if (workout.weekdays.isNotEmpty)
+                  if (order != null)
+                    Text('$orderº da sequência',
+                        key: Key('workout-order-${workout.id}'),
+                        style: AppText.body(size: 12.5, weight: FontWeight.w600, color: AppColors.volt))
+                  else if (workout.weekdays.isNotEmpty)
                     Text(formatWeekdays(workout.weekdays),
                         key: Key('workout-days-${workout.id}'),
                         style: AppText.body(size: 12.5, weight: FontWeight.w600, color: AppColors.volt)),

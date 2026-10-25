@@ -10,6 +10,7 @@ import 'package:gymmanager_mobile/features/auth/domain/student_profile.dart';
 import 'package:gymmanager_mobile/features/sessions/application/session_providers.dart';
 import 'package:gymmanager_mobile/features/sessions/domain/workout_session.dart';
 import 'package:gymmanager_mobile/features/workouts/application/workout_providers.dart';
+import 'package:gymmanager_mobile/features/workouts/domain/routine.dart';
 import 'package:gymmanager_mobile/features/workouts/domain/workout.dart';
 import 'package:gymmanager_mobile/features/workouts/presentation/my_workouts_page.dart';
 
@@ -48,7 +49,32 @@ class _WeekRepository extends FakeWorkoutRepository {
     saved.add(days);
     return myWorkouts(studentId);
   }
+
+  /// Esquema devolvido pelo servidor (dias da semana até alguém montar uma sequência).
+  Routine current = Routine.weekdays;
+  final routineCalls = <String>[];
+
+  @override
+  Future<Routine> routine(int studentId) async => current;
+
+  @override
+  Future<Routine> setRoutine(int studentId, List<int> workoutIds) async {
+    routineCalls.add('set:${workoutIds.join(',')}');
+    return current;
+  }
+
+  @override
+  Future<Routine> skipTo(int studentId, int workoutId) async {
+    routineCalls.add('skip:$workoutId');
+    return current;
+  }
 }
+
+const _sequenceBA = Routine(
+  rotation: true,
+  sequence: [RoutineItem(workoutId: 11, name: 'Treino B', order: 1), RoutineItem(workoutId: 10, name: 'Treino A', order: 2)],
+  nextWorkoutId: 11,
+);
 
 Widget _weekApp(DateTime now, _WeekRepository repo, {bool hasTrainer = true}) => ProviderScope(
       retry: (retryCount, error) => null,
@@ -86,6 +112,46 @@ void main() {
       expect(find.text('PRÓXIMO · SEXTA'), findsOneWidget);
       expect(find.text('TREINO B'), findsOneWidget);
       expect(find.byKey(const Key('workout-10')), findsOneWidget);
+    });
+
+    testWidgets('na sequência, o cartão é o próximo dela (os dias não valem) e dá para pular', (tester) async {
+      final repo = _WeekRepository()..current = _sequenceBA;
+      // quinta: pelos dias seria descanso, mas na sequência o próximo é o B
+      await tester.pumpWidget(_weekApp(DateTime(2026, 10, 22, 9), repo));
+      await tester.pumpAndSettle();
+
+      expect(find.text('PRÓXIMO DA SEQUÊNCIA'), findsOneWidget);
+      expect(find.text('TREINO B'), findsOneWidget);
+      expect(find.byKey(const Key('today-rest')), findsNothing);
+      expect(find.text('2º da sequência'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('skip-sequence')));
+      await tester.pumpAndSettle();
+      expect(repo.routineCalls, ['skip:10']);
+    });
+
+    testWidgets('aluno sem personal monta a própria sequência', (tester) async {
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repo = _WeekRepository();
+      await tester.pumpWidget(_weekApp(DateTime(2026, 10, 21, 9), repo, hasTrainer: false));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('own-sequence')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('sequence-sheet')), findsOneWidget);
+      // sem sequência ainda: todos marcados, na ordem da lista
+      await tester.tap(find.byKey(const Key('seq-check-11')));
+      await tester.pump();
+      expect(find.text('MARQUE 2 OU MAIS TREINOS'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('seq-check-11')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('save-sequence')));
+      await tester.pumpAndSettle();
+
+      expect(repo.routineCalls, ['set:10,11']);
     });
 
     testWidgets('aluno sem personal organiza a própria semana', (tester) async {

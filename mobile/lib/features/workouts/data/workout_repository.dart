@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/errors/app_exception.dart';
+import '../domain/routine.dart';
 import '../domain/workout.dart';
 
 class WorkoutRepository {
@@ -20,6 +21,30 @@ class WorkoutRepository {
         ],
       });
       return (response.data ?? const []).map((item) => Workout.fromJson(item as Map<String, dynamic>)).toList();
+    } on DioException catch (error) {
+      throw AppException.fromDio(error);
+    }
+  }
+
+  /// Esquema do aluno (dias da semana ou sequência) e o próximo treino da sequência.
+  Future<Routine> routine(int studentId) => _routine(() => _dio.get<Map<String, dynamic>>('/workouts/student/$studentId/routine'));
+
+  /// Sequência na ordem de [workoutIds]; [workoutIds] vazio volta para os dias da semana.
+  Future<Routine> setRoutine(int studentId, List<int> workoutIds) => _routine(() => _dio.put<Map<String, dynamic>>(
+        '/workouts/student/$studentId/routine',
+        data: {'mode': workoutIds.isEmpty ? 'WEEKDAYS' : 'ROTATION', 'workoutIds': workoutIds},
+      ));
+
+  /// "Pular": escolhe o próximo treino da sequência.
+  Future<Routine> skipTo(int studentId, int workoutId) => _routine(() => _dio.post<Map<String, dynamic>>(
+        '/workouts/student/$studentId/routine/next',
+        data: {'workoutId': workoutId},
+      ));
+
+  Future<Routine> _routine(Future<Response<Map<String, dynamic>>> Function() request) async {
+    try {
+      final response = await request();
+      return Routine.fromJson(response.data ?? const {});
     } on DioException catch (error) {
       throw AppException.fromDio(error);
     }

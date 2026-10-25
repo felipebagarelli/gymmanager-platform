@@ -464,3 +464,93 @@ String exerciseCountLabel(int? count) => switch (count) {
       1 => '1 exercício',
       _ => '$count exercícios',
     };
+
+/// Escolhe alunos ativos (com busca). Retorna os ids escolhidos ou null se fechou.
+Future<Set<int>?> showPickStudents(BuildContext context, {required String title, Set<int> exclude = const {}}) {
+  return showModalBottomSheet<Set<int>>(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => _PickStudents(title: title, exclude: exclude),
+  );
+}
+
+class _PickStudents extends ConsumerStatefulWidget {
+  const _PickStudents({required this.title, required this.exclude});
+
+  final String title;
+  final Set<int> exclude;
+
+  @override
+  ConsumerState<_PickStudents> createState() => _PickStudentsState();
+}
+
+class _PickStudentsState extends ConsumerState<_PickStudents> {
+  final _selected = <int>{};
+  final _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final students = ref.watch(trainerStudentsProvider).value ?? const [];
+    final query = normalizeSearch(_search.text);
+    final shown = [
+      for (final s in students)
+        if (s.active && !widget.exclude.contains(s.id) && (query.isEmpty || normalizeSearch('${s.name} ${s.email}').contains(query))) s,
+    ];
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.75,
+      child: Column(
+        key: const Key('pick-students'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(widget.title.toUpperCase(), style: AppText.display(26)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: TextField(
+              key: const Key('pick-search'),
+              controller: _search,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(hintText: 'Buscar aluno', prefixIcon: Icon(LucideIcons.search, size: 18)),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              children: [
+                for (final s in shown)
+                  CheckboxListTile(
+                    key: Key('pick-student-${s.id}'),
+                    value: _selected.contains(s.id),
+                    onChanged: (v) => setState(() => v == true ? _selected.add(s.id) : _selected.remove(s.id)),
+                    secondary: InitialsAvatar(name: s.name, size: 38),
+                    title: Text(s.name, style: AppText.body(size: 15.5, weight: FontWeight.w600)),
+                    activeColor: AppColors.volt,
+                    checkColor: AppColors.onVolt,
+                  ),
+              ],
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+              child: PillButton(
+                key: const Key('pick-confirm'),
+                label: _selected.isEmpty ? 'Escolha os alunos' : 'Confirmar (${_selected.length})',
+                onPressed: _selected.isEmpty ? null : () => Navigator.of(context).pop({..._selected}),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

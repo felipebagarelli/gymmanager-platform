@@ -63,6 +63,13 @@ public class WorkoutService {
 
     private static final int MAX_NAME_LENGTH = 255;
 
+    private RoutineService routineService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setRoutineService(RoutineService routineService) {
+        this.routineService = routineService;
+    }
+
     /** Visao do aluno (ou de quem nao e dono): sem o numero de alunos do personal. */
     public WorkoutResponse toResponse(Workout workout){
         Long trainerId = workout.getTrainer() != null ? workout.getTrainer().getId() : null;
@@ -318,6 +325,7 @@ public class WorkoutService {
             assignment.setWeekdays(Weekdays.toMask(item.weekdays()));
             workoutAssignmentRepository.save(assignment);
         }
+        if (routineService != null) routineService.useWeekdays(studentId);
         return allWorkout(studentId, authenticatedEmail);
     }
 

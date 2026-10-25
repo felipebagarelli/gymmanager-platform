@@ -181,6 +181,11 @@ class FakeTrainerWorkoutsRepository extends TrainerWorkoutsRepository {
   }
 
   @override
+  Future<void> applyRoutine(Set<int> studentIds, List<int> workoutIds) async {
+    calls.add('routine:${(studentIds.toList()..sort()).join(',')}:${workoutIds.join(',')}');
+  }
+
+  @override
   Future<void> setWeekdays(int workoutId, int studentId, Set<int> weekdays) async {
     calls.add('days:$workoutId:$studentId:${(weekdays.toList()..sort()).join(',')}');
     days['$workoutId:$studentId'] = {...weekdays};

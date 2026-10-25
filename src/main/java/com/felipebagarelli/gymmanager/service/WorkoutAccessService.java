@@ -105,6 +105,11 @@ public class WorkoutAccessService {
                 .orElse(false);
     }
 
+    /** O proprio aluno, sem personal ativo ou pausado (organiza os treinos que montou). */
+    public boolean isIndependentStudent(Long studentId, String email) {
+        return isStudentThemselves(studentId, email) && !isCurrentLink(studentId);
+    }
+
     private boolean isCurrentLink(Long studentId) {
         return trainerStudentRepository.findByStudentId(studentId)
                 .map(link -> link.getStatus() == com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.ACTIVE
@@ -112,7 +117,7 @@ public class WorkoutAccessService {
                 .orElse(false);
     }
 
-    private boolean isStudentThemselves(Long studentId, String email) {
+    public boolean isStudentThemselves(Long studentId, String email) {
         StudentProfile student = studentProfileRepository.findById(studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aluno não encontrado!"));
         return student.getUser().getEmail().equalsIgnoreCase(email);
