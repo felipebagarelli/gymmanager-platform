@@ -37,6 +37,28 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       PLATFORM_FEE_PERCENT: ${PLATFORM_FEE_PERCENT:-10}
+      # endereco publico do backend (link do responsavel, retorno do checkout, /conta/excluir)
+      PUBLIC_URL: https://${API_DOMAIN}
+      # e-mail: obrigatorio em producao (sem MAIL_HOST o backend nao sobe)
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-GymManager <nao-responda@gymmanager.local>}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-}
+      # termos e privacidade
+      TERMS_VERSION: ${TERMS_VERSION:-2026-10-16-rascunho}
+      TERMS_URL: ${TERMS_URL:-}
+      PRIVACY_URL: ${PRIVACY_URL:-}
+      # plano da plataforma (GymManager Pro) e IA que monta treinos
+      STRIPE_PLATFORM_WEBHOOK_SECRET: ${STRIPE_PLATFORM_WEBHOOK_SECRET:-}
+      PLATFORM_PLAN_ENABLED: ${PLATFORM_PLAN_ENABLED:-false}
+      PLATFORM_PLAN_MONTHLY_CENTS: ${PLATFORM_PLAN_MONTHLY_CENTS:-1990}
+      PLATFORM_PLAN_YEARLY_CENTS: ${PLATFORM_PLAN_YEARLY_CENTS:-14990}
+      PLATFORM_PLAN_TRIAL_DAYS: ${PLATFORM_PLAN_TRIAL_DAYS:-7}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-1500}
+      AI_PROPOSALS_FREE_PER_MONTH: ${AI_PROPOSALS_FREE_PER_MONTH:-1}
+      AI_PROPOSALS_PRO_PER_MONTH: ${AI_PROPOSALS_PRO_PER_MONTH:-30}
     healthcheck:
       test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
       interval: 15s
