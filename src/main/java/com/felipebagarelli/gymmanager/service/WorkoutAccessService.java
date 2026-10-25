@@ -32,8 +32,9 @@ public class WorkoutAccessService {
         this.billingAccessGuard = billingAccessGuard;
     }
 
+    /** Escrever (atribuir, agenda): so com o acompanhamento ativo ou pausado. Ler o historico vale tambem depois. */
     public void assertCanWrite(Long studentId, String authenticatedEmail) {
-        if (!isOwningTrainer(studentId, authenticatedEmail)) {
+        if (!isOwningTrainer(studentId, authenticatedEmail) || !isCurrentLink(studentId)) {
             throw new AccessDeniedException(DENIED_STUDENT);
         }
     }
@@ -101,6 +102,13 @@ public class WorkoutAccessService {
                 .filter(link -> !link.pendingPayment())
                 .map(TrainerStudent::getTrainer)
                 .map(trainer -> trainer.getUser().getEmail().equalsIgnoreCase(email))
+                .orElse(false);
+    }
+
+    private boolean isCurrentLink(Long studentId) {
+        return trainerStudentRepository.findByStudentId(studentId)
+                .map(link -> link.getStatus() == com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.ACTIVE
+                        || link.getStatus() == com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.PAUSED)
                 .orElse(false);
     }
 

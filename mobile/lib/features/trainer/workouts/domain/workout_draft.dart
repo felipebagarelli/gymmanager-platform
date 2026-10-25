@@ -42,16 +42,20 @@ class PlanItemDraft {
 
 /// Aluno com o treino ativo.
 class WorkoutAssignee {
-  const WorkoutAssignee({required this.studentId, required this.studentName, this.startedAt});
+  const WorkoutAssignee({required this.studentId, required this.studentName, this.startedAt, this.weekdays = const []});
 
   final int studentId;
   final String studentName;
   final DateTime? startedAt;
 
+  /// Dias da semana do treino para este aluno (vazio = sem dia marcado).
+  final List<int> weekdays;
+
   factory WorkoutAssignee.fromJson(Map<String, dynamic> json) => WorkoutAssignee(
         studentId: (json['studentId'] as num).toInt(),
         studentName: json['studentName'] as String? ?? 'Aluno',
         startedAt: json['startedAt'] == null ? null : DateTime.parse(json['startedAt'] as String),
+        weekdays: [for (final d in (json['weekdays'] as List<dynamic>? ?? const [])) (d as num).toInt()],
       );
 }
 

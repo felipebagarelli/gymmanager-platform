@@ -32,4 +32,9 @@ public class WorkoutAssignment {
 
     private LocalDateTime startedAt;
     private LocalDateTime endedAt;
+
+    /** Dias da semana do treino para este aluno (ver {@link Weekdays}); 0 = sem dia marcado. */
+    @Builder.Default
+    @Column(nullable = false)
+    private int weekdays = 0;
 }

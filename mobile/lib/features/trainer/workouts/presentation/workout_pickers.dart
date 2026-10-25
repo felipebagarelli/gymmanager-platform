@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../workouts/presentation/weekdays.dart';
+import '../../../../core/utils/formatters.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text.dart';
 import '../../../../core/utils/async_widgets.dart';
@@ -238,22 +240,30 @@ class _AssignStudents extends ConsumerStatefulWidget {
 
 class _AssignStudentsState extends ConsumerState<_AssignStudents> {
   final _selected = <int>{};
+  final _search = TextEditingController();
+  Set<int> _days = {};
   bool _saving = false;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   Future<void> _assign() async {
     setState(() => _saving = true);
-    final repo = ref.read(trainerWorkoutsRepositoryProvider);
-    var done = 0;
-    final ok = await runAction(context, () async {
-      for (final id in _selected) {
-        await repo.assign(widget.workoutId, id);
-        done++;
-        ref.invalidate(studentWorkoutsProvider(id));
-      }
-    });
+    // um pedido só: todos recebem ou ninguém recebe
+    final ok = await runAction(
+      context,
+      () => ref.read(trainerWorkoutsRepositoryProvider).assignBatch(widget.workoutId, _selected, _days),
+    );
     if (!mounted) return;
     setState(() => _saving = false);
-    if (ok || done > 0) Navigator.of(context).pop(done);
+    if (!ok) return;
+    for (final id in _selected) {
+      ref.invalidate(studentWorkoutsProvider(id));
+    }
+    Navigator.of(context).pop(_selected.length);
   }
 
   @override
@@ -274,6 +284,13 @@ class _AssignStudentsState extends ConsumerState<_AssignStudents> {
               error: (error, _) => ErrorRetry(error: error, onRetry: () => ref.invalidate(trainerStudentsProvider)),
               data: (items) {
                 final available = [for (final s in items) if (s.active && !widget.alreadyAssigned.contains(s.id)) s];
+                final query = normalizeSearch(_search.text);
+                final shown = query.isEmpty
+                    ? available
+                    : [
+                        for (final s in available)
+                          if (normalizeSearch('${s.name} ${s.email}').contains(query)) s,
+                      ];
                 if (available.isEmpty) {
                   return Center(
                     child: Padding(
@@ -290,7 +307,26 @@ class _AssignStudentsState extends ConsumerState<_AssignStudents> {
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                   children: [
-                    for (final s in available)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                      child: TextField(
+                        key: const Key('assign-search'),
+                        controller: _search,
+                        onChanged: (_) => setState(() {}),
+                        style: AppText.body(size: 15),
+                        decoration: const InputDecoration(
+                          hintText: 'Buscar aluno por nome ou e-mail',
+                          prefixIcon: Icon(LucideIcons.search, size: 18),
+                        ),
+                      ),
+                    ),
+                    if (shown.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text('Nenhum aluno encontrado.',
+                            key: const Key('assign-no-match'), style: AppText.body(color: AppColors.textMuted)),
+                      ),
+                    for (final s in shown)
                       CheckboxListTile(
                         key: Key('assign-student-${s.id}'),
                         value: _selected.contains(s.id),
@@ -305,10 +341,21 @@ class _AssignStudentsState extends ConsumerState<_AssignStudents> {
               },
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Dias da semana (opcional)', style: AppText.body(size: 13.5, color: AppColors.textMuted)),
+                const SizedBox(height: 6),
+                WeekdayToggles(selected: _days, onChanged: (days) => setState(() => _days = days), keyPrefix: 'assign-day'),
+              ],
+            ),
+          ),
           SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
               child: PillButton(
                 key: const Key('assign-confirm'),
                 label: _selected.isEmpty

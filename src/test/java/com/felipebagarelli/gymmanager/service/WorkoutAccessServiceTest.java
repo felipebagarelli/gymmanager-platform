@@ -43,6 +43,7 @@ class WorkoutAccessServiceTest {
     private WorkoutAccessService accessService;
 
     private Workout workout;
+    private TrainerStudent link;
 
     @BeforeEach
     void setUp() {
@@ -50,7 +51,8 @@ class WorkoutAccessServiceTest {
         User studentUser = User.builder().email("aluno@example.com").role(Role.STUDENT).build();
         StudentProfile student = StudentProfile.builder().id(2L).user(studentUser).build();
         TrainerProfile trainer = TrainerProfile.builder().id(1L).user(trainerUser).build();
-        TrainerStudent link = TrainerStudent.builder().trainer(trainer).student(student).build();
+        link = TrainerStudent.builder().trainer(trainer).student(student)
+                .status(com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.ACTIVE).build();
         workout = Workout.builder().id(10L).name("Treino A").trainer(trainer).build();
 
         lenient().when(trainerStudentRepository.findByStudentId(2L)).thenReturn(Optional.of(link));
@@ -62,6 +64,13 @@ class WorkoutAccessServiceTest {
     @Test
     void assertCanWrite_allowsOwningTrainer() {
         assertThatCode(() -> accessService.assertCanWrite(2L, "trainer@example.com")).doesNotThrowAnyException();
+    }
+
+    @Test
+    void endedLink_trainerStillReadsTheHistory_butCannotWrite() {
+        link.setStatus(com.felipebagarelli.gymmanager.student.entity.TrainerStudentStatus.CANCELED);
+        assertThatThrownBy(() -> accessService.assertCanWrite(2L, "trainer@example.com")).isInstanceOf(AccessDeniedException.class);
+        assertThatCode(() -> accessService.assertCanRead(2L, "trainer@example.com")).doesNotThrowAnyException();
     }
 
     @Test

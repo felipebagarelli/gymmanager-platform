@@ -1,5 +1,12 @@
 class Workout {
-  const Workout({required this.id, required this.name, this.exerciseCount, this.studentCount, this.trainerId});
+  const Workout({
+    required this.id,
+    required this.name,
+    this.exerciseCount,
+    this.studentCount,
+    this.trainerId,
+    this.weekdays = const [],
+  });
 
   final int id;
   final String name;
@@ -15,12 +22,17 @@ class Workout {
 
   bool get ownedByStudent => trainerId == null;
 
+  /// Dias da semana deste treino para o aluno (1 = segunda ... 7 = domingo). Vazio = sem dia marcado.
+  /// Só vem na lista de treinos de um aluno.
+  final List<int> weekdays;
+
   factory Workout.fromJson(Map<String, dynamic> json) => Workout(
         id: (json['id'] as num).toInt(),
         name: json['name'] as String,
         exerciseCount: (json['exerciseCount'] as num?)?.toInt(),
         studentCount: (json['studentCount'] as num?)?.toInt(),
         trainerId: (json['trainerId'] as num?)?.toInt(),
+        weekdays: [for (final d in (json['weekdays'] as List<dynamic>? ?? const [])) (d as num).toInt()],
       );
 }
 

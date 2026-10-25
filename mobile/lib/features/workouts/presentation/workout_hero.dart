@@ -23,11 +23,14 @@ double _heroTitleSize(String title) => title.length <= 12 ? 60 : (title.length <
 
 /// Card em destaque (gradiente volt) com o treino sugerido para hoje.
 class WorkoutHero extends StatelessWidget {
-  const WorkoutHero({super.key, required this.name, required this.stats, required this.onStart});
+  const WorkoutHero({super.key, required this.name, required this.stats, required this.onStart, this.label = 'TREINO DE HOJE'});
 
   final String name;
   final PlanStats? stats;
   final VoidCallback onStart;
+
+  /// Etiqueta do cartão ("TREINO DE HOJE", ou o próximo dia quando hoje é descanso).
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +58,7 @@ class WorkoutHero extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: AppColors.onVolt, borderRadius: BorderRadius.circular(99)),
-                child: Text('TREINO DE HOJE',
+                child: Text(label,
                     style: AppText.body(size: 11, weight: FontWeight.w700, color: AppColors.volt).copyWith(letterSpacing: 1)),
               ),
               const SizedBox(height: 12),

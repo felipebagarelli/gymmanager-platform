@@ -18,7 +18,9 @@ import '../../sessions/application/session_providers.dart';
 import '../../sessions/domain/training_stats.dart';
 import '../application/workout_providers.dart';
 import '../domain/workout.dart';
+import '../../../core/providers.dart';
 import 'today_reminder_banner.dart';
+import 'weekdays.dart';
 import 'week_card.dart';
 import 'workout_hero.dart';
 
@@ -68,6 +70,15 @@ class MyWorkoutsPage extends ConsumerWidget {
                 if (independent) ...[
                   const SizedBox(height: 14),
                   PillButton(
+                    key: const Key('own-week'),
+                    label: 'Organizar minha semana',
+                    icon: LucideIcons.calendarDays,
+                    style: PillStyle.ghost,
+                    height: 46,
+                    onPressed: () => _editOwnWeek(context, ref, items),
+                  ),
+                  const SizedBox(height: 8),
+                  PillButton(
                     key: const Key('ai-workout'),
                     label: 'Pedir treino à IA',
                     icon: LucideIcons.sparkles,
@@ -92,6 +103,16 @@ class MyWorkoutsPage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Aluno sem personal: escolhe em que dias faz cada treino que montou.
+Future<void> _editOwnWeek(BuildContext context, WidgetRef ref, List<Workout> workouts) async {
+  final studentId = ref.read(currentStudentProvider)?.id;
+  if (studentId == null) return;
+  final days = await showWeekScheduleSheet(context, workouts: workouts);
+  if (days == null || !context.mounted) return;
+  final ok = await runAction(context, () => ref.read(workoutRepositoryProvider).setSchedule(studentId, days));
+  if (ok) ref.invalidate(myWorkoutsProvider);
 }
 
 /// Aluno sem personal e sem treinos: convite para montar o primeiro.
@@ -188,24 +209,42 @@ class _Content extends ConsumerWidget {
     final goal = ref.watch(currentStudentProvider)?.weeklyGoal;
 
     final todaySession = stats?.todaySession;
-    final suggestedId = suggestedWorkoutId([for (final w in workouts) w.id], history);
-    final hero = workouts.where((w) => w.id == suggestedId).firstOrNull ?? workouts.first;
+    final today = ref.watch(clockProvider)().weekday;
+    // com dias marcados, o cartão segue a semana; sem dias, sugere pelo histórico (o que faz mais tempo)
+    final scheduled = workouts.any((w) => w.weekdays.isNotEmpty);
+    final forToday = [for (final w in workouts) if (w.weekdays.contains(today)) w];
+    final restDay = scheduled && forToday.isEmpty;
+    final candidates = forToday.isNotEmpty ? forToday : workouts;
+    final suggestedId = suggestedWorkoutId([for (final w in candidates) w.id], history);
+    var hero = candidates.where((w) => w.id == suggestedId).firstOrNull ?? candidates.first;
+    var heroLabel = 'TREINO DE HOJE';
+    if (restDay) {
+      // descanso hoje: mostra o próximo treino da semana
+      final next = [for (final w in workouts) if (w.weekdays.isNotEmpty) w]
+        ..sort((a, b) => daysUntilNext(a.weekdays, today)!.compareTo(daysUntilNext(b.weekdays, today)!));
+      hero = next.first;
+      final inDays = daysUntilNext(hero.weekdays, today)!;
+      heroLabel = 'PRÓXIMO · ${weekdayLong[((today - 1 + inDays) % 7) + 1]!.toUpperCase()}';
+    }
     final doneWorkout = todaySession == null
         ? null
         : workouts.where((w) => w.id == todaySession.workoutId).firstOrNull;
     final highlighted = doneWorkout ?? hero;
-    final others = [for (final w in workouts) if (w.id != highlighted.id) w];
+    // próximos: na ordem da semana a partir de hoje; os sem dia, no fim
+    final others = [for (final w in workouts) if (w.id != highlighted.id) w]
+      ..sort((a, b) => (daysUntilNext(a.weekdays, today) ?? 99).compareTo(daysUntilNext(b.weekdays, today) ?? 99));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (stats != null) ...[WeekCard(stats: stats, weeklyGoal: goal), const SizedBox(height: 14)],
-        const TodayReminderBanner(),
+        TodayReminderBanner(restDay: restDay),
         const SizedBox(height: 14),
         if (doneWorkout != null && todaySession != null)
           TodayDoneCard(workoutName: doneWorkout.name, session: todaySession)
         else
           WorkoutHero(
+            label: heroLabel,
             name: hero.name,
             stats: ref.watch(planStatsProvider(hero.id)).value,
             onStart: () => context.push('/workouts/${hero.id}'),
@@ -251,6 +290,10 @@ class _WorkoutRow extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(workout.name, style: AppText.body(size: 16, weight: FontWeight.w600)),
+                  if (workout.weekdays.isNotEmpty)
+                    Text(formatWeekdays(workout.weekdays),
+                        key: Key('workout-days-${workout.id}'),
+                        style: AppText.body(size: 12.5, weight: FontWeight.w600, color: AppColors.volt)),
                   if (stats != null)
                     Text(describePlan(stats), style: AppText.body(size: 13, color: AppColors.textMuted)),
                 ],

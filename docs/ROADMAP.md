@@ -129,8 +129,8 @@ Objetivo: o aluno encontra e contrata um personal dentro do app.
 
 ### Fase F — Rotina do personal (pedidos de 24/10/2026)
 Objetivo: o personal organiza treinos e alunos do jeito dele, define em que dia cada aluno faz cada treino e traz alunos novos por link. Ordem sugerida: do mais simples e mais urgente para o maior.
-- [ ] F1. **Busca de alunos ao atribuir um treino:** campo de busca (nome/e-mail, sem diferenciar acento) na lista de alunos do "Atribuir", com marcar vários. Só app.
-- [ ] F2. **Dias da semana (imprescindível):** cada atribuição (treino × aluno) ganha os dias da semana em que o aluno faz aquele treino (ex.: Peito e tríceps → segunda). Dá para definir de dois jeitos:
+- [x] F1. **Busca de alunos ao atribuir um treino:** campo de busca (nome/e-mail, sem diferenciar maiúsculas nem acento) na lista do "Atribuir"; a seleção continua ao trocar a busca. A busca da lista de alunos também passou a ignorar acento. *(24/10/2026)*
+- [x] F2. **Dias da semana (imprescindível)** — feito em 24/10/2026 (V17: `workout_assignments.weekdays`, máscara de bits). Feito: atribuir a vários alunos de uma vez já com os dias (`POST /workouts/{id}/assignments/batch`, tudo ou nada); dias de cada aluno no editor do treino (`PUT /workouts/{id}/assignments/{studentId}`); "Organizar a semana" no perfil do aluno (`PUT /workouts/student/{id}/schedule`); o aluno sem personal organiza a própria semana; na aba Treinos do aluno, o cartão é o treino do dia, dia sem treino mostra "descanso" e o próximo treino, e a lista segue a ordem da semana. Pedido original: cada atribuição (treino × aluno) ganha os dias da semana em que o aluno faz aquele treino (ex.: Peito e tríceps → segunda). Dá para definir de dois jeitos:
   - **por aluno:** no perfil do aluno, uma "semana" com os 7 dias e o treino de cada dia (um dia pode ter mais de um treino ou ser descanso);
   - **por treino:** no editor do treino, escolher os dias e marcar vários alunos de uma vez (cada aluno pode depois ser ajustado sozinho).
   - App do aluno: "Treino de hoje" segue os dias; os outros treinos continuam acessíveis (o aluno pode trocar o dia). Histórico mostra o planejado × feito na semana. Meta semanal sugerida = número de dias marcados.
@@ -340,3 +340,13 @@ Itens que ficaram de fora de propósito, para atualizações futuras. Ao fazer u
 - **Link de convite e lojas:** deep link exige domínio próprio e os arquivos de verificação (Android App Links / iOS Universal Links); sem isso, o link abre a página do servidor.
 - **B2 "Reenviar acesso / senha provisória":** deixa de existir com o F5 (o aluno cria a própria senha).
 - **B4 "Organização: divisão por dias (A/B/C)":** passa a ser o F2/F3.
+
+### F1/F2 — Busca e dias da semana (24/10/2026)
+- **Correção junto:** com o "Desativar" encerrando o vínculo, o ex-personal ainda podia atribuir treinos ao ex-aluno. Agora escrever (atribuir, agenda) exige vínculo ativo ou pausado; ler o histórico continua liberado.
+- **Planejado × feito:** o Histórico ainda não compara a semana planejada com o que foi feito, e o calendário da semana (cartão "semana") não marca os dias com treino previsto.
+- **Meta semanal:** continua um número livre; não é calculada pelos dias marcados (decidir).
+- **"Atribuir" a partir do perfil do aluno** (escolher o treino) ainda não pergunta os dias: atribui sem dia e os dias se ajustam em "Organizar a semana".
+- **Treino de hoje:** se houver dois treinos no mesmo dia, o cartão escolhe pelo histórico (o que faz mais tempo); o outro aparece em "Próximos treinos".
+- **Fuso:** o "hoje" é o dia do celular do aluno.
+- **Aviso ao aluno** quando o personal muda a semana dele (precisa de push).
+- **Painel web:** não mostra nem edita os dias (entra no B6).

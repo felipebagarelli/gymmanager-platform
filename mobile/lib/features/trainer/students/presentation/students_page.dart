@@ -46,8 +46,8 @@ class _StudentsPageState extends ConsumerState<StudentsPage> {
   }
 
   bool _matches(ManagedStudent s, Map<int, TuitionStatus> tuition) {
-    final query = _search.text.trim().toLowerCase();
-    if (query.isNotEmpty && !s.name.toLowerCase().contains(query) && !s.email.toLowerCase().contains(query)) {
+    final query = normalizeSearch(_search.text);
+    if (query.isNotEmpty && !normalizeSearch('${s.name} ${s.email}').contains(query)) {
       return false;
     }
     return switch (_filter) {

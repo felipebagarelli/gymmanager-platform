@@ -213,14 +213,35 @@ void main() {
       await _tap(tester, find.text('Atribuir'));
       expect(find.byKey(const Key('assign-student-2')), findsOneWidget);
       expect(find.byKey(const Key('assign-student-4')), findsNothing); // inativa
-      await _tap(tester, find.byKey(const Key('assign-student-2')));
+      // F1: a busca filtra sem diferenciar maiúsculas; a seleção continua ao limpar
+      await tester.enterText(find.byKey(const Key('assign-search')), 'SILVA');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('assign-student-2')), findsNothing);
       await _tap(tester, find.byKey(const Key('assign-student-3')));
+      await tester.enterText(find.byKey(const Key('assign-search')), 'ninguem');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('assign-no-match')), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('assign-search')), '');
+      await tester.pumpAndSettle();
+      await _tap(tester, find.byKey(const Key('assign-student-2')));
       expect(_in('assign-confirm', find.text('ATRIBUIR A 2 ALUNOS')), findsOneWidget);
+      // F2: os dois recebem nas segundas e quartas
+      await _tap(tester, find.byKey(const Key('assign-day-1')));
+      await _tap(tester, find.byKey(const Key('assign-day-3')));
       await _tap(tester, find.byKey(const Key('assign-confirm')));
 
-      expect(repo.calls, containsAll(['assign:10:2', 'assign:10:3']));
+      expect(repo.calls, contains('batch:10:2,3:1,3'));
       expect(find.byKey(const Key('assignee-2')), findsOneWidget);
       expect(find.byKey(const Key('assignee-3')), findsOneWidget);
+      expect(_in('assignee-2', find.text('Seg · Qua')), findsOneWidget);
+
+      // só a Maria passa a treinar também na sexta
+      await _tap(tester, find.byKey(const Key('assignee-days-2')));
+      await _tap(tester, find.byKey(const Key('weekday-5')));
+      await _tap(tester, find.byKey(const Key('save-weekdays')));
+      expect(repo.calls, contains('days:10:2:1,3,5'));
+      expect(_in('assignee-2', find.text('Seg · Qua · Sex')), findsOneWidget);
+      expect(_in('assignee-3', find.text('Seg · Qua')), findsOneWidget);
 
       await _tap(tester, find.byKey(const Key('unassign-3')));
       await _tap(tester, find.byKey(const Key('confirm-unassign')));

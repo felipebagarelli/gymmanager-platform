@@ -10,6 +10,7 @@ import 'package:gymmanager_mobile/features/auth/domain/student_profile.dart';
 import 'package:gymmanager_mobile/features/sessions/application/session_providers.dart';
 import 'package:gymmanager_mobile/features/sessions/domain/workout_session.dart';
 import 'package:gymmanager_mobile/features/workouts/application/workout_providers.dart';
+import 'package:gymmanager_mobile/features/workouts/domain/workout.dart';
 import 'package:gymmanager_mobile/features/workouts/presentation/my_workouts_page.dart';
 
 import 'support/fake_repositories.dart';
@@ -32,7 +33,84 @@ Widget _app(List<WorkoutSession> sessions, {int? weeklyGoal}) => ProviderScope(
       child: MaterialApp(theme: AppTheme.dark(), home: const Scaffold(body: MyWorkoutsPage())),
     );
 
+/// Treino A nas segundas e quartas, treino B nas terças e sextas.
+class _WeekRepository extends FakeWorkoutRepository {
+  final saved = <Map<int, Set<int>>>[];
+
+  @override
+  Future<List<Workout>> myWorkouts(int studentId) async => const [
+        Workout(id: 10, name: 'Treino A', weekdays: [1, 3]),
+        Workout(id: 11, name: 'Treino B', weekdays: [2, 5]),
+      ];
+
+  @override
+  Future<List<Workout>> setSchedule(int studentId, Map<int, Set<int>> days) async {
+    saved.add(days);
+    return myWorkouts(studentId);
+  }
+}
+
+Widget _weekApp(DateTime now, _WeekRepository repo, {bool hasTrainer = true}) => ProviderScope(
+      retry: (retryCount, error) => null,
+      overrides: [
+        tokenStorageProvider.overrideWithValue(
+          InMemoryTokenStorage(StoredSession(token: 't', expiresAt: DateTime.now().add(const Duration(hours: 1)))),
+        ),
+        authRepositoryProvider.overrideWithValue(FakeAuthRepository(
+          profile: StudentProfile(id: 2, email: 'a@a.com', name: 'Maria Aluna', hasTrainer: hasTrainer),
+        )),
+        sessionRepositoryProvider.overrideWithValue(FakeSessionRepository()),
+        workoutRepositoryProvider.overrideWithValue(repo),
+        clockProvider.overrideWithValue(() => now),
+      ],
+      child: MaterialApp(theme: AppTheme.dark(), home: const Scaffold(body: MyWorkoutsPage())),
+    );
+
 void main() {
+  group('semana de treinos', () {
+    testWidgets('no dia marcado, o cartão é o treino do dia; os outros mostram os dias', (tester) async {
+      await tester.pumpWidget(_weekApp(DateTime(2026, 10, 21, 9), _WeekRepository())); // quarta
+      await tester.pumpAndSettle();
+
+      expect(find.text('TREINO DE HOJE'), findsOneWidget);
+      expect(find.text('TREINO A'), findsOneWidget);
+      expect(find.byKey(const Key('today-reminder')), findsOneWidget);
+      expect(find.text('Ter · Sex'), findsOneWidget);
+    });
+
+    testWidgets('dia sem treino é descanso e o cartão mostra o próximo', (tester) async {
+      await tester.pumpWidget(_weekApp(DateTime(2026, 10, 22, 9), _WeekRepository())); // quinta
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('today-rest')), findsOneWidget);
+      expect(find.text('PRÓXIMO · SEXTA'), findsOneWidget);
+      expect(find.text('TREINO B'), findsOneWidget);
+      expect(find.byKey(const Key('workout-10')), findsOneWidget);
+    });
+
+    testWidgets('aluno sem personal organiza a própria semana', (tester) async {
+      tester.view.physicalSize = const Size(900, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final repo = _WeekRepository();
+      await tester.pumpWidget(_weekApp(DateTime(2026, 10, 21, 9), repo, hasTrainer: false));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('own-week')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('week-schedule')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('day-1-workout-11'))); // B também na segunda
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('day-3-workout-10'))); // A sai da quarta
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('save-week')));
+      await tester.pumpAndSettle();
+
+      expect(repo.saved.single, {10: {1}, 11: {1, 2, 5}});
+    });
+  });
+
   testWidgets('mostra saudação, semana, treino sugerido e os próximos treinos', (tester) async {
     await tester.pumpWidget(_app(const []));
     await tester.pumpAndSettle();

@@ -58,6 +58,17 @@ class TrainerWorkoutsRepository {
   Future<void> assign(int workoutId, int studentId) =>
       _guard(() => _dio.post<void>('/workouts/$workoutId/assignments', data: {'studentId': studentId}));
 
+  /// Atribui a vários alunos nos mesmos dias (quem já tem o treino só tem os dias atualizados).
+  Future<void> assignBatch(int workoutId, Set<int> studentIds, Set<int> weekdays) => _guard(() => _dio.post<void>(
+        '/workouts/$workoutId/assignments/batch',
+        data: {'studentIds': studentIds.toList(), 'weekdays': (weekdays.toList()..sort())},
+      ));
+
+  Future<void> setWeekdays(int workoutId, int studentId, Set<int> weekdays) => _guard(() => _dio.put<void>(
+        '/workouts/$workoutId/assignments/$studentId',
+        data: {'weekdays': (weekdays.toList()..sort())},
+      ));
+
   Future<void> unassign(int workoutId, int studentId) =>
       _guard(() => _dio.delete<void>('/workouts/$workoutId/assignments/$studentId'));
 

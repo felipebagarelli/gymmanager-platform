@@ -7,6 +7,8 @@ public record WorkoutResponse(
         /* exercicios no plano atual */
         Integer exerciseCount,
         /* alunos com o treino ativo (so para o personal dono; null para os demais) */
-        Integer studentCount
+        Integer studentCount,
+        /* dias da semana deste treino para o aluno (so na lista de treinos de um aluno; null nas demais) */
+        java.util.List<Integer> weekdays
 ) {
 }

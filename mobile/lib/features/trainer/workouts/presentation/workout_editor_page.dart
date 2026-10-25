@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../workouts/presentation/weekdays.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/async_widgets.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/pill_button.dart';
 import '../../../../core/widgets/skeleton.dart';
@@ -331,6 +331,13 @@ class _Assignees extends ConsumerWidget {
     if (ok) refreshAssignments(ref, workoutId: workoutId, studentId: studentId);
   }
 
+  Future<void> _editDays(BuildContext context, WidgetRef ref, WorkoutAssignee a) async {
+    final days = await showWeekdaysPicker(context, title: 'Dias de ${a.studentName.split(' ').first}', initial: {...a.weekdays});
+    if (days == null || !context.mounted) return;
+    final ok = await runAction(context, () => ref.read(trainerWorkoutsRepositoryProvider).setWeekdays(workoutId, a.studentId, days));
+    if (ok) refreshAssignments(ref, workoutId: workoutId, studentId: a.studentId);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final assignees = ref.watch(workoutAssigneesProvider(workoutId));
@@ -369,11 +376,23 @@ class _Assignees extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(a.studentName, style: AppText.body(size: 15, weight: FontWeight.w600)),
-                                    if (a.startedAt != null)
-                                      Text('Desde ${formatShortDate(a.startedAt!)}',
-                                          style: AppText.body(size: 12.5, color: AppColors.textMuted)),
+                                    Text(
+                                      a.weekdays.isEmpty ? 'Sem dia definido' : formatWeekdays(a.weekdays),
+                                      key: Key('assignee-days-text-${a.studentId}'),
+                                      style: AppText.body(
+                                        size: 12.5,
+                                        weight: FontWeight.w500,
+                                        color: a.weekdays.isEmpty ? AppColors.textMuted : AppColors.volt,
+                                      ),
+                                    ),
                                   ],
                                 ),
+                              ),
+                              IconButton(
+                                key: Key('assignee-days-${a.studentId}'),
+                                tooltip: 'Dias da semana de ${a.studentName}',
+                                icon: const Icon(LucideIcons.calendarDays, size: 18, color: AppColors.textSecondary),
+                                onPressed: () => _editDays(context, ref, a),
                               ),
                               IconButton(
                                 key: Key('unassign-${a.studentId}'),

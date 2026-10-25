@@ -159,8 +159,32 @@ class FakeTrainerWorkoutsRepository extends TrainerWorkoutsRepository {
   @override
   Future<List<WorkoutAssignee>> assignees(int workoutId) async => [
         for (final e in assigned[workoutId]!.entries)
-          WorkoutAssignee(studentId: e.key, studentName: e.value, startedAt: DateTime(2026, 10, 1)),
+          WorkoutAssignee(
+            studentId: e.key,
+            studentName: e.value,
+            startedAt: DateTime(2026, 10, 1),
+            weekdays: (days['$workoutId:${e.key}'] ?? const <int>{}).toList()..sort(),
+          ),
       ];
+
+  /// Dias da semana por atribuição ("treino:aluno").
+  final Map<String, Set<int>> days = {};
+
+  @override
+  Future<void> assignBatch(int workoutId, Set<int> studentIds, Set<int> weekdays) async {
+    calls.add('batch:$workoutId:${(studentIds.toList()..sort()).join(',')}:${(weekdays.toList()..sort()).join(',')}');
+    for (final id in studentIds) {
+      assigned[workoutId]![id] = studentNames[id] ?? 'Aluno $id';
+      days['$workoutId:$id'] = {...weekdays};
+    }
+    everAssigned.add(workoutId);
+  }
+
+  @override
+  Future<void> setWeekdays(int workoutId, int studentId, Set<int> weekdays) async {
+    calls.add('days:$workoutId:$studentId:${(weekdays.toList()..sort()).join(',')}');
+    days['$workoutId:$studentId'] = {...weekdays};
+  }
 
   @override
   Future<void> assign(int workoutId, int studentId) async {

@@ -17,7 +17,9 @@ import '../../../sessions/domain/history_stats.dart';
 import '../../../sessions/domain/training_stats.dart';
 import '../../../sessions/domain/workout_session.dart';
 import '../../../sessions/presentation/session_detail_sheet.dart';
+import '../../../workouts/application/workout_providers.dart';
 import '../../../workouts/domain/workout.dart';
+import '../../../workouts/presentation/weekdays.dart';
 import '../../../chat/application/chat_providers.dart';
 import '../../messages/presentation/trainer_messages_page.dart';
 import '../../workouts/presentation/workout_pickers.dart';
@@ -187,7 +189,7 @@ class StudentDetailPage extends ConsumerWidget {
               const SizedBox(height: 20),
               _WorkoutsTitle(studentId: s.id, active: s.active),
               const SizedBox(height: 8),
-              _Workouts(studentId: s.id),
+              _Workouts(studentId: s.id, active: s.active),
               const SizedBox(height: 20),
               SectionTitle('Sessões recentes',
                   action: 'Calendário', onAction: () => context.push('/trainer/students/${s.id}/progress')),
@@ -399,9 +401,17 @@ class _WorkoutsTitle extends ConsumerWidget {
 }
 
 class _Workouts extends ConsumerWidget {
-  const _Workouts({required this.studentId});
+  const _Workouts({required this.studentId, required this.active});
 
   final int studentId;
+  final bool active;
+
+  Future<void> _editWeek(BuildContext context, WidgetRef ref, List<Workout> workouts) async {
+    final days = await showWeekScheduleSheet(context, workouts: workouts);
+    if (days == null || !context.mounted) return;
+    final ok = await runAction(context, () => ref.read(workoutRepositoryProvider).setSchedule(studentId, days));
+    if (ok) ref.invalidate(studentWorkoutsProvider(studentId));
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -425,10 +435,36 @@ class _Workouts extends ConsumerWidget {
                         children: [
                           const Icon(LucideIcons.dumbbell, size: 20, color: AppColors.volt),
                           const SizedBox(width: 12),
-                          Expanded(child: Text(w.name, style: AppText.body(size: 15.5, weight: FontWeight.w600))),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(w.name, style: AppText.body(size: 15.5, weight: FontWeight.w600)),
+                                Text(
+                                  w.weekdays.isEmpty ? 'Sem dia definido' : formatWeekdays(w.weekdays),
+                                  key: Key('student-workout-days-${w.id}'),
+                                  style: AppText.body(
+                                    size: 12.5,
+                                    weight: FontWeight.w500,
+                                    color: w.weekdays.isEmpty ? AppColors.textMuted : AppColors.volt,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                           const Icon(LucideIcons.chevronRight, size: 20, color: AppColors.textMuted),
                         ],
                       ),
+                    ),
+                  ),
+                if (active)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: const Key('edit-week'),
+                      icon: const Icon(LucideIcons.calendarDays, size: 18),
+                      label: const Text('Organizar a semana'),
+                      onPressed: () => _editWeek(context, ref, items),
                     ),
                   ),
               ],

@@ -118,3 +118,19 @@ String formatChatTime(DateTime value, DateTime now) {
   if (days == 1) return 'Ontem';
   return formatDayMonthPadded(local);
 }
+
+const _accents = {
+  'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+  'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i', 'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
+  'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u', 'ç': 'c', 'ñ': 'n',
+};
+
+/// Texto para busca: minúsculas, sem acento e sem espaços nas pontas ("José" acha "jose").
+String normalizeSearch(String text) {
+  final lower = text.trim().toLowerCase();
+  final out = StringBuffer();
+  for (final ch in lower.split('')) {
+    out.write(_accents[ch] ?? ch);
+  }
+  return out.toString();
+}

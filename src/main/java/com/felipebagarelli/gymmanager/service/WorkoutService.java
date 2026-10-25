@@ -6,6 +6,7 @@ import com.felipebagarelli.gymmanager.dto.request.UpdateWorkoutRequest;
 import com.felipebagarelli.gymmanager.dto.response.WorkoutAssignmentResponse;
 import com.felipebagarelli.gymmanager.dto.response.WorkoutResponse;
 import com.felipebagarelli.gymmanager.entity.Workout;
+import com.felipebagarelli.gymmanager.entity.Weekdays;
 import com.felipebagarelli.gymmanager.entity.WorkoutAssignment;
 import com.felipebagarelli.gymmanager.entity.WorkoutAssignmentStatus;
 import com.felipebagarelli.gymmanager.entity.WorkoutExercises;
@@ -66,19 +67,26 @@ public class WorkoutService {
     public WorkoutResponse toResponse(Workout workout){
         Long trainerId = workout.getTrainer() != null ? workout.getTrainer().getId() : null;
         int exercises = (int) workoutExercisesRepository.countByWorkoutIdAndRemovedAtIsNull(workout.getId());
-        return new WorkoutResponse(workout.getId(), workout.getName(), trainerId, exercises, null);
+        return new WorkoutResponse(workout.getId(), workout.getName(), trainerId, exercises, null, null);
+    }
+
+    /** Treino na lista de um aluno: com os dias da semana dele. */
+    private WorkoutResponse toStudentResponse(WorkoutAssignment assignment){
+        WorkoutResponse base = toResponse(assignment.getWorkout());
+        return new WorkoutResponse(base.id(), base.name(), base.trainerId(), base.exerciseCount(), null,
+                Weekdays.fromMask(assignment.getWeekdays()));
     }
 
     /** Visao do personal dono: inclui quantos alunos estao com o treino ativo. */
     private WorkoutResponse toOwnerResponse(Workout workout){
         WorkoutResponse base = toResponse(workout);
         int students = (int) workoutAssignmentRepository.countByWorkoutIdAndStatus(workout.getId(), WorkoutAssignmentStatus.ACTIVE);
-        return new WorkoutResponse(base.id(), base.name(), base.trainerId(), base.exerciseCount(), students);
+        return new WorkoutResponse(base.id(), base.name(), base.trainerId(), base.exerciseCount(), students, null);
     }
 
     private WorkoutAssignmentResponse toResponse(WorkoutAssignment a){
         return new WorkoutAssignmentResponse(a.getId(), a.getWorkout().getId(), a.getStudent().getId(),
-                a.getStatus(), a.getStartedAt(), a.getEndedAt(), a.getStudent().getName());
+                a.getStatus(), a.getStartedAt(), a.getEndedAt(), a.getStudent().getName(), Weekdays.fromMask(a.getWeekdays()));
     }
 
     private Workout findWorkout(Long id){
@@ -90,6 +98,10 @@ public class WorkoutService {
     }
 
     private WorkoutAssignmentResponse assign(Workout workout, StudentProfile student){
+        return assign(workout, student, 0);
+    }
+
+    private WorkoutAssignmentResponse assign(Workout workout, StudentProfile student, int weekdays){
         if (workoutAssignmentRepository.findByWorkoutIdAndStudentIdAndStatus(
                 workout.getId(), student.getId(), WorkoutAssignmentStatus.ACTIVE).isPresent()) {
             throw new ConflictException("Este treino já está ativo para o aluno.");
@@ -99,6 +111,7 @@ public class WorkoutService {
                 .student(student)
                 .status(WorkoutAssignmentStatus.ACTIVE)
                 .startedAt(LocalDateTime.now())
+                .weekdays(weekdays)
                 .build();
         return toResponse(workoutAssignmentRepository.save(assignment));
     }
@@ -154,9 +167,9 @@ public class WorkoutService {
             // aluno sem personal: os treinos dele que estao em uso
             StudentProfile owner = independentStudent(authenticatedEmail);
             return workoutAssignmentRepository.findByStudentIdAndStatus(owner.getId(), WorkoutAssignmentStatus.ACTIVE).stream()
-                    .map(WorkoutAssignment::getWorkout)
-                    .filter(w -> w.getStudentOwner() != null && w.getStudentOwner().getId().equals(owner.getId()))
-                    .map(this::toResponse)
+                    .filter(a -> a.getWorkout().getStudentOwner() != null
+                            && a.getWorkout().getStudentOwner().getId().equals(owner.getId()))
+                    .map(this::toStudentResponse)
                     .sorted(Comparator.comparing(WorkoutResponse::name, String.CASE_INSENSITIVE_ORDER))
                     .toList();
         }
@@ -170,7 +183,7 @@ public class WorkoutService {
     public List<WorkoutResponse> allWorkout (Long studentId, String authenticatedEmail){
         workoutAccessService.assertCanRead(studentId, authenticatedEmail);
         return workoutAssignmentRepository.findByStudentIdAndStatus(studentId, WorkoutAssignmentStatus.ACTIVE).stream()
-                .map(a -> toResponse(a.getWorkout()))
+                .map(this::toStudentResponse)
                 .toList();
     }
 
@@ -234,6 +247,12 @@ public class WorkoutService {
 
     @Transactional
     public WorkoutAssignmentResponse assignToStudent(Long workoutId, Long studentId, String authenticatedEmail){
+        return assignToStudent(workoutId, studentId, List.of(), authenticatedEmail);
+    }
+
+    @Transactional
+    public WorkoutAssignmentResponse assignToStudent(Long workoutId, Long studentId, List<Integer> weekdays, String authenticatedEmail){
+        int days = Weekdays.toMask(weekdays);
         Workout workout = findWorkout(workoutId);
         if (workout.getTrainer() == null) {
             throw new ConflictException("Treinos montados pelo aluno não podem ser atribuídos a outros alunos.");
@@ -241,7 +260,74 @@ public class WorkoutService {
         workoutAccessService.assertOwnsWorkout(workout, authenticatedEmail);
         StudentProfile student = findStudent(studentId);
         workoutAccessService.assertCanWrite(student.getId(), authenticatedEmail);
-        return assign(workout, student);
+        return assign(workout, student, days);
+    }
+
+    /**
+     * Atribui o treino a varios alunos nos mesmos dias. Quem ja tem o treino ativo so tem os dias
+     * atualizados. Tudo ou nada: um aluno que nao e do personal cancela o pedido inteiro.
+     */
+    @Transactional
+    public List<WorkoutAssignmentResponse> assignBatch(Long workoutId, List<Long> studentIds, List<Integer> weekdays,
+                                                       String authenticatedEmail){
+        int days = Weekdays.toMask(weekdays);
+        Workout workout = findWorkout(workoutId);
+        if (workout.getTrainer() == null) {
+            throw new ConflictException("Treinos montados pelo aluno não podem ser atribuídos a outros alunos.");
+        }
+        workoutAccessService.assertOwnsWorkout(workout, authenticatedEmail);
+        List<WorkoutAssignmentResponse> result = new java.util.ArrayList<>();
+        for (Long studentId : new java.util.LinkedHashSet<>(studentIds)) {
+            workoutAccessService.assertCanWrite(studentId, authenticatedEmail);
+            Optional<WorkoutAssignment> active = workoutAssignmentRepository
+                    .findByWorkoutIdAndStudentIdAndStatus(workoutId, studentId, WorkoutAssignmentStatus.ACTIVE);
+            if (active.isPresent()) {
+                active.get().setWeekdays(days);
+                result.add(toResponse(workoutAssignmentRepository.save(active.get())));
+            } else {
+                result.add(assign(workout, findStudent(studentId), days));
+            }
+        }
+        return result;
+    }
+
+    /** Muda os dias de um treino ativo de um aluno (o personal dele, ou o aluno sem personal no treino dele). */
+    @Transactional
+    public WorkoutAssignmentResponse setWeekdays(Long workoutId, Long studentId, List<Integer> weekdays, String authenticatedEmail){
+        int days = Weekdays.toMask(weekdays);
+        WorkoutAssignment assignment = workoutAssignmentRepository
+                .findByWorkoutIdAndStudentIdAndStatus(workoutId, studentId, WorkoutAssignmentStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("Atribuição ativa não encontrada!"));
+        assertCanSchedule(assignment, authenticatedEmail);
+        assignment.setWeekdays(days);
+        return toResponse(workoutAssignmentRepository.save(assignment));
+    }
+
+    /**
+     * A semana do aluno de uma vez: os dias de cada treino ativo informado (os nao informados ficam como
+     * estao). Tudo ou nada.
+     */
+    @Transactional
+    public List<WorkoutResponse> setStudentSchedule(Long studentId, List<com.felipebagarelli.gymmanager.dto.request.WorkoutScheduleRequests.StudentScheduleRequest.Item> items,
+                                                    String authenticatedEmail){
+        for (var item : items) {
+            WorkoutAssignment assignment = workoutAssignmentRepository
+                    .findByWorkoutIdAndStudentIdAndStatus(item.workoutId(), studentId, WorkoutAssignmentStatus.ACTIVE)
+                    .orElseThrow(() -> new ResourceNotFoundException("Este treino não está ativo para o aluno."));
+            assertCanSchedule(assignment, authenticatedEmail);
+            assignment.setWeekdays(Weekdays.toMask(item.weekdays()));
+            workoutAssignmentRepository.save(assignment);
+        }
+        return allWorkout(studentId, authenticatedEmail);
+    }
+
+    /** Quem define os dias: o personal que acompanha o aluno, ou o proprio aluno no treino que ele montou. */
+    private void assertCanSchedule(WorkoutAssignment assignment, String email){
+        Workout workout = assignment.getWorkout();
+        if (workout.getTrainer() == null && workoutAccessService.isStudentOwner(workout, email)) {
+            return;
+        }
+        workoutAccessService.assertCanWrite(assignment.getStudent().getId(), email);
     }
 
     /** Alunos com o treino ativo (so o personal dono ve). */

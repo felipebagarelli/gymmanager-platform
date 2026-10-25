@@ -11,6 +11,20 @@ class WorkoutRepository {
   Future<List<Workout>> myWorkouts(int studentId) =>
       _list('/workouts/student/$studentId', Workout.fromJson);
 
+  /// Dias da semana de cada treino do aluno (id → dias). Devolve a lista atualizada.
+  Future<List<Workout>> setSchedule(int studentId, Map<int, Set<int>> days) async {
+    try {
+      final response = await _dio.put<List<dynamic>>('/workouts/student/$studentId/schedule', data: {
+        'items': [
+          for (final e in days.entries) {'workoutId': e.key, 'weekdays': (e.value.toList()..sort())},
+        ],
+      });
+      return (response.data ?? const []).map((item) => Workout.fromJson(item as Map<String, dynamic>)).toList();
+    } on DioException catch (error) {
+      throw AppException.fromDio(error);
+    }
+  }
+
   Future<List<PlanItem>> plan(int workoutId) =>
       _list('/workout-exercises/workout/$workoutId', PlanItem.fromJson);
 

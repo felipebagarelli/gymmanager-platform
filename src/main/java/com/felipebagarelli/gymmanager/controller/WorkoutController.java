@@ -55,7 +55,31 @@ public class WorkoutController {
 
     @PostMapping("/{id}/assignments")
     public WorkoutAssignmentResponse assignToStudent(@PathVariable Long id, @RequestBody @Valid AssignWorkoutRequest request, @AuthenticationPrincipal Jwt jwt){
+        if (request.weekdays() != null) {
+            return workoutService.assignToStudent(id, request.studentId(), request.weekdays(), jwt.getSubject());
+        }
         return workoutService.assignToStudent(id, request.studentId(), jwt.getSubject());
+    }
+
+    @PostMapping("/{id}/assignments/batch")
+    public List<WorkoutAssignmentResponse> assignBatch(@PathVariable Long id,
+                                                       @RequestBody @Valid com.felipebagarelli.gymmanager.dto.request.WorkoutScheduleRequests.BatchAssignRequest request,
+                                                       @AuthenticationPrincipal Jwt jwt){
+        return workoutService.assignBatch(id, request.studentIds(), request.weekdays(), jwt.getSubject());
+    }
+
+    @PutMapping("/{id}/assignments/{studentId}")
+    public WorkoutAssignmentResponse setWeekdays(@PathVariable Long id, @PathVariable Long studentId,
+                                                 @RequestBody com.felipebagarelli.gymmanager.dto.request.WorkoutScheduleRequests.WeekdaysRequest request,
+                                                 @AuthenticationPrincipal Jwt jwt){
+        return workoutService.setWeekdays(id, studentId, request.weekdays(), jwt.getSubject());
+    }
+
+    @PutMapping("/student/{studentId}/schedule")
+    public List<WorkoutResponse> setStudentSchedule(@PathVariable Long studentId,
+                                                    @RequestBody @Valid com.felipebagarelli.gymmanager.dto.request.WorkoutScheduleRequests.StudentScheduleRequest request,
+                                                    @AuthenticationPrincipal Jwt jwt){
+        return workoutService.setStudentSchedule(studentId, request.items(), jwt.getSubject());
     }
 
     @GetMapping("/{id}/assignments")

@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gymmanager_mobile/features/workouts/data/workout_repository.dart';
+import 'package:gymmanager_mobile/features/workouts/domain/workout.dart';
 import 'package:gymmanager_mobile/core/errors/app_exception.dart';
 import 'package:gymmanager_mobile/core/providers.dart';
 import 'package:gymmanager_mobile/core/routing/app_router.dart';
@@ -133,7 +135,26 @@ List<ManagedStudent> _students() => [
 WorkoutSession _session(int id, DateTime start, List<Performance> sets) =>
     WorkoutSession(id: id, workoutId: 10, startedAt: start, finishedAt: start.add(const Duration(minutes: 45)), performances: sets);
 
-Widget _app(FakeStudentsRepository students, {List<WorkoutSession> sessions = const []}) => ProviderScope(
+/// Lembra os dias salvos e devolve os treinos com eles.
+class _ScheduleWorkouts extends FakeWorkoutRepository {
+  final Map<int, Set<int>> days = {};
+  final saved = <Map<int, Set<int>>>[];
+
+  @override
+  Future<List<Workout>> myWorkouts(int studentId) async => [
+        for (final w in await super.myWorkouts(studentId))
+          Workout(id: w.id, name: w.name, weekdays: (days[w.id] ?? const <int>{}).toList()..sort()),
+      ];
+
+  @override
+  Future<List<Workout>> setSchedule(int studentId, Map<int, Set<int>> days) async {
+    saved.add(days);
+    this.days.addAll(days);
+    return myWorkouts(studentId);
+  }
+}
+
+Widget _app(FakeStudentsRepository students, {List<WorkoutSession> sessions = const [], WorkoutRepository? workouts}) => ProviderScope(
       retry: (retryCount, error) => null,
       overrides: [
         tokenStorageProvider.overrideWithValue(InMemoryTokenStorage(
@@ -142,7 +163,7 @@ Widget _app(FakeStudentsRepository students, {List<WorkoutSession> sessions = co
         authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
         studentsRepositoryProvider.overrideWithValue(students),
         sessionRepositoryProvider.overrideWithValue(FakeSessionRepository(initial: sessions)),
-        workoutRepositoryProvider.overrideWithValue(FakeWorkoutRepository()),
+        workoutRepositoryProvider.overrideWithValue(workouts ?? FakeWorkoutRepository()),
         clockProvider.overrideWithValue(() => _now),
       ],
       child: Consumer(
@@ -241,6 +262,29 @@ void main() {
       await tester.tap(find.byKey(const Key('session-1')));
       await tester.pumpAndSettle();
       expect(_in('session-detail', find.text('Difícil')), findsOneWidget);
+    });
+
+    testWidgets('organizar a semana define os dias de cada treino do aluno', (tester) async {
+      final workouts = _ScheduleWorkouts();
+      await _pump(tester, _app(FakeStudentsRepository(_students()), workouts: workouts));
+      await tester.tap(find.byKey(const Key('student-2')));
+      await tester.pumpAndSettle();
+
+      expect(_in('student-workout-10', find.text('Sem dia definido')), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('edit-week')));
+      await tester.tap(find.byKey(const Key('edit-week')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('day-1-workout-10')));
+      await tester.pump();
+      await tester.ensureVisible(find.byKey(const Key('day-4-workout-11')));
+      await tester.tap(find.byKey(const Key('day-4-workout-11')));
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('save-week')));
+      await tester.pumpAndSettle();
+
+      expect(workouts.saved.single, {10: {1}, 11: {4}});
+      expect(_in('student-workout-10', find.text('Seg')), findsOneWidget);
+      expect(_in('student-workout-11', find.text('Qui')), findsOneWidget);
     });
 
     testWidgets('sem treinos e sem sessões, explica em vez de mostrar vazio', (tester) async {

@@ -65,6 +65,7 @@ class StudentOwnedWorkoutTest {
                 .user(User.builder().email(ANA).role(Role.STUDENT).build()).build();
         StudentProfileRepository students = mock(StudentProfileRepository.class);
         when(students.findByUserEmail(ANA)).thenReturn(Optional.of(ana));
+        when(students.findById(9L)).thenReturn(Optional.of(ana));
         TrainerProfileRepository trainers = mock(TrainerProfileRepository.class);
         when(trainers.findByUserEmail(ANA)).thenReturn(Optional.empty());
         links = mock(TrainerStudentRepository.class);
@@ -196,6 +197,48 @@ class StudentOwnedWorkoutTest {
         // outro personal nao edita
         assertThatThrownBy(() -> planService.addWorkoutExercise(
                 new CreateWorkoutExerciseRequest(2L, created.id(), 10, 3, null, 60, null, null), "outro@example.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void weekdays_studentSchedulesOwnWorkout_invalidDayIsRejected() {
+        WorkoutResponse created = service.addWorkout(new CreateWorkoutRequest("Treino A", null), ANA);
+
+        service.setWeekdays(created.id(), 9L, List.of(3, 1), ANA);
+        assertThat(service.myWorkouts(ANA)).singleElement().satisfies(w -> assertThat(w.weekdays()).containsExactly(1, 3));
+        assertThat(assignments.getFirst().getWeekdays()).isEqualTo(0b101);
+
+        assertThatThrownBy(() -> service.setWeekdays(created.id(), 9L, List.of(8), ANA))
+                .isInstanceOf(com.felipebagarelli.gymmanager.exception.BadRequestException.class);
+        assertThatThrownBy(() -> service.setWeekdays(created.id(), 9L, List.of(2), "outro@example.com"))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void weekdays_trainerAssignsInBatch_updatesExisting_andSetsTheStudentsWeek() {
+        TrainerProfile joao = TrainerProfile.builder().id(5L)
+                .user(User.builder().email("joao@example.com").role(Role.TRAINER).build()).build();
+        when(links.findByStudentId(9L)).thenReturn(Optional.of(
+                TrainerStudent.builder().trainer(joao).student(ana).status(TrainerStudentStatus.ACTIVE).build()));
+        Workout peito = workoutRepository.save(Workout.builder().name("Peito").trainer(joao).build());
+        Workout pernas = workoutRepository.save(Workout.builder().name("Pernas").trainer(joao).build());
+
+        service.assignBatch(peito.getId(), List.of(9L, 9L), List.of(1), "joao@example.com");
+        service.assignBatch(peito.getId(), List.of(9L), List.of(1, 4), "joao@example.com");
+        assertThat(assignments).hasSize(1);
+        assertThat(assignments.getFirst().getWeekdays()).isEqualTo(0b1001);
+
+        service.assignBatch(pernas.getId(), List.of(9L), null, "joao@example.com");
+        var week = service.setStudentSchedule(9L, List.of(
+                new com.felipebagarelli.gymmanager.dto.request.WorkoutScheduleRequests.StudentScheduleRequest.Item(pernas.getId(), List.of(2, 5))),
+                "joao@example.com");
+        assertThat(week).filteredOn(w -> w.id().equals(pernas.getId())).singleElement()
+                .satisfies(w -> assertThat(w.weekdays()).containsExactly(2, 5));
+        assertThat(week).filteredOn(w -> w.id().equals(peito.getId())).singleElement()
+                .satisfies(w -> assertThat(w.weekdays()).containsExactly(1, 4));
+
+        // outro personal nao mexe na agenda
+        assertThatThrownBy(() -> service.setWeekdays(peito.getId(), 9L, List.of(3), "outro@example.com"))
                 .isInstanceOf(AccessDeniedException.class);
     }
 }
